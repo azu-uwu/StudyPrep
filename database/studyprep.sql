@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Oct 05, 2026 at 03:33 AM
+-- Generation Time: Oct 05, 2026 at 06:45 AM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -24,10 +24,10 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Table structure for table `aianalyses`
+-- Table structure for table `ai_analysis`
 --
 
-CREATE TABLE `aianalyses` (
+CREATE TABLE `ai_analysis` (
   `analysis_id` bigint NOT NULL,
   `attempt_id` bigint NOT NULL,
   `skill_id` tinyint DEFAULT NULL,
@@ -41,32 +41,15 @@ CREATE TABLE `aianalyses` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `answeroptions`
+-- Table structure for table `answer_option`
 --
 
-CREATE TABLE `answeroptions` (
+CREATE TABLE `answer_option` (
   `option_id` bigint NOT NULL,
   `question_id` bigint NOT NULL,
   `label` varchar(5) COLLATE utf8mb4_unicode_ci NOT NULL,
   `content` text COLLATE utf8mb4_unicode_ci NOT NULL,
   `is_correct` tinyint(1) NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `attemptresponses`
---
-
-CREATE TABLE `attemptresponses` (
-  `response_id` bigint NOT NULL,
-  `attempt_id` bigint NOT NULL,
-  `question_id` bigint NOT NULL,
-  `text_response` text COLLATE utf8mb4_unicode_ci,
-  `media_url` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `score` decimal(6,2) DEFAULT NULL,
-  `feedback` text COLLATE utf8mb4_unicode_ci,
-  `submitted_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -89,10 +72,27 @@ CREATE TABLE `attempts` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `blueprintrules`
+-- Table structure for table `attempt_response`
 --
 
-CREATE TABLE `blueprintrules` (
+CREATE TABLE `attempt_response` (
+  `response_id` bigint NOT NULL,
+  `attempt_id` bigint NOT NULL,
+  `question_id` bigint NOT NULL,
+  `text_response` text COLLATE utf8mb4_unicode_ci,
+  `media_url` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `score` decimal(6,2) DEFAULT NULL,
+  `feedback` text COLLATE utf8mb4_unicode_ci,
+  `submitted_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `blueprint_rule`
+--
+
+CREATE TABLE `blueprint_rule` (
   `rule_id` bigint NOT NULL,
   `blueprint_id` bigint NOT NULL,
   `section_id` bigint NOT NULL,
@@ -105,10 +105,10 @@ CREATE TABLE `blueprintrules` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `examsections`
+-- Table structure for table `exam_section`
 --
 
-CREATE TABLE `examsections` (
+CREATE TABLE `exam_section` (
   `section_id` bigint NOT NULL,
   `skill_id` tinyint NOT NULL,
   `code` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -157,10 +157,10 @@ CREATE TABLE `questions` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `questionsets`
+-- Table structure for table `question_set`
 --
 
-CREATE TABLE `questionsets` (
+CREATE TABLE `question_set` (
   `question_set_id` bigint NOT NULL,
   `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `stimulus_text` text COLLATE utf8mb4_unicode_ci,
@@ -172,10 +172,10 @@ CREATE TABLE `questionsets` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `questiontypes`
+-- Table structure for table `question_type`
 --
 
-CREATE TABLE `questiontypes` (
+CREATE TABLE `question_type` (
   `question_type_id` bigint NOT NULL,
   `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `response_mode` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL
@@ -184,10 +184,10 @@ CREATE TABLE `questiontypes` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `scoreresults`
+-- Table structure for table `score_result`
 --
 
-CREATE TABLE `scoreresults` (
+CREATE TABLE `score_result` (
   `result_id` bigint NOT NULL,
   `attempt_id` bigint NOT NULL,
   `listening_score` decimal(6,2) DEFAULT NULL,
@@ -213,10 +213,10 @@ CREATE TABLE `skills` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `testblueprints`
+-- Table structure for table `test_blueprint`
 --
 
-CREATE TABLE `testblueprints` (
+CREATE TABLE `test_blueprint` (
   `blueprint_id` bigint NOT NULL,
   `name` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
   `exam_type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -228,28 +228,28 @@ CREATE TABLE `testblueprints` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `testformquestions`
+-- Table structure for table `test_form`
 --
 
-CREATE TABLE `testformquestions` (
-  `test_form_id` bigint NOT NULL,
-  `question_id` bigint NOT NULL,
-  `sequence_no` int NOT NULL,
-  `point` decimal(6,2) NOT NULL DEFAULT '1.00'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `testforms`
---
-
-CREATE TABLE `testforms` (
+CREATE TABLE `test_form` (
   `test_form_id` bigint NOT NULL,
   `blueprint_id` bigint NOT NULL,
   `title` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `generation_seed` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `test_form_question`
+--
+
+CREATE TABLE `test_form_question` (
+  `test_form_id` bigint NOT NULL,
+  `question_id` bigint NOT NULL,
+  `sequence_no` int NOT NULL,
+  `point` decimal(6,2) NOT NULL DEFAULT '1.00'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -291,10 +291,10 @@ CREATE TABLE `users` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `uservocabularies`
+-- Table structure for table `user_vocabulary`
 --
 
-CREATE TABLE `uservocabularies` (
+CREATE TABLE `user_vocabulary` (
   `user_voca_id` bigint NOT NULL,
   `vocabulary_id` bigint NOT NULL,
   `user_id` bigint NOT NULL,
@@ -324,27 +324,19 @@ CREATE TABLE `vocabularies` (
 --
 
 --
--- Indexes for table `aianalyses`
+-- Indexes for table `ai_analysis`
 --
-ALTER TABLE `aianalyses`
+ALTER TABLE `ai_analysis`
   ADD PRIMARY KEY (`analysis_id`),
   ADD KEY `FK_AIAnalyses_Attempts` (`attempt_id`),
   ADD KEY `FK_AIAnalyses_Skills` (`skill_id`);
 
 --
--- Indexes for table `answeroptions`
+-- Indexes for table `answer_option`
 --
-ALTER TABLE `answeroptions`
+ALTER TABLE `answer_option`
   ADD PRIMARY KEY (`option_id`),
   ADD UNIQUE KEY `UQ_AnswerOptions` (`question_id`,`label`);
-
---
--- Indexes for table `attemptresponses`
---
-ALTER TABLE `attemptresponses`
-  ADD PRIMARY KEY (`response_id`),
-  ADD UNIQUE KEY `UQ_AttemptResponses` (`attempt_id`,`question_id`),
-  ADD KEY `FK_AttemptResponses_Questions` (`question_id`);
 
 --
 -- Indexes for table `attempts`
@@ -355,18 +347,26 @@ ALTER TABLE `attempts`
   ADD KEY `FK_Attempts_TestForms` (`test_form_id`);
 
 --
--- Indexes for table `blueprintrules`
+-- Indexes for table `attempt_response`
 --
-ALTER TABLE `blueprintrules`
+ALTER TABLE `attempt_response`
+  ADD PRIMARY KEY (`response_id`),
+  ADD UNIQUE KEY `UQ_AttemptResponses` (`attempt_id`,`question_id`),
+  ADD KEY `FK_AttemptResponses_Questions` (`question_id`);
+
+--
+-- Indexes for table `blueprint_rule`
+--
+ALTER TABLE `blueprint_rule`
   ADD PRIMARY KEY (`rule_id`),
   ADD KEY `FK_BlueprintRules_TestBlueprints` (`blueprint_id`),
   ADD KEY `FK_BlueprintRules_ExamSections` (`section_id`),
   ADD KEY `FK_BlueprintRules_QuestionTypes` (`question_type_id`);
 
 --
--- Indexes for table `examsections`
+-- Indexes for table `exam_section`
 --
-ALTER TABLE `examsections`
+ALTER TABLE `exam_section`
   ADD PRIMARY KEY (`section_id`),
   ADD KEY `FK_ExamSections_Skills` (`skill_id`);
 
@@ -387,21 +387,21 @@ ALTER TABLE `questions`
   ADD KEY `FK_Questions_QuestionSets` (`question_set_id`);
 
 --
--- Indexes for table `questionsets`
+-- Indexes for table `question_set`
 --
-ALTER TABLE `questionsets`
+ALTER TABLE `question_set`
   ADD PRIMARY KEY (`question_set_id`);
 
 --
--- Indexes for table `questiontypes`
+-- Indexes for table `question_type`
 --
-ALTER TABLE `questiontypes`
+ALTER TABLE `question_type`
   ADD PRIMARY KEY (`question_type_id`);
 
 --
--- Indexes for table `scoreresults`
+-- Indexes for table `score_result`
 --
-ALTER TABLE `scoreresults`
+ALTER TABLE `score_result`
   ADD PRIMARY KEY (`result_id`),
   ADD UNIQUE KEY `attempt_id` (`attempt_id`);
 
@@ -413,24 +413,24 @@ ALTER TABLE `skills`
   ADD UNIQUE KEY `code` (`code`);
 
 --
--- Indexes for table `testblueprints`
+-- Indexes for table `test_blueprint`
 --
-ALTER TABLE `testblueprints`
+ALTER TABLE `test_blueprint`
   ADD PRIMARY KEY (`blueprint_id`);
 
 --
--- Indexes for table `testformquestions`
+-- Indexes for table `test_form`
 --
-ALTER TABLE `testformquestions`
-  ADD PRIMARY KEY (`test_form_id`,`question_id`),
-  ADD KEY `FK_TestFormQuestions_Questions` (`question_id`);
-
---
--- Indexes for table `testforms`
---
-ALTER TABLE `testforms`
+ALTER TABLE `test_form`
   ADD PRIMARY KEY (`test_form_id`),
   ADD KEY `FK_TestForms_TestBlueprints` (`blueprint_id`);
+
+--
+-- Indexes for table `test_form_question`
+--
+ALTER TABLE `test_form_question`
+  ADD PRIMARY KEY (`test_form_id`,`question_id`),
+  ADD KEY `FK_TestFormQuestions_Questions` (`question_id`);
 
 --
 -- Indexes for table `topics`
@@ -448,9 +448,9 @@ ALTER TABLE `users`
   ADD UNIQUE KEY `email` (`email`);
 
 --
--- Indexes for table `uservocabularies`
+-- Indexes for table `user_vocabulary`
 --
-ALTER TABLE `uservocabularies`
+ALTER TABLE `user_vocabulary`
   ADD PRIMARY KEY (`user_voca_id`),
   ADD UNIQUE KEY `UQ_UserVocabularies` (`user_id`,`vocabulary_id`),
   ADD KEY `FK_UserVocabularies_Vocabularies` (`vocabulary_id`);
@@ -467,22 +467,16 @@ ALTER TABLE `vocabularies`
 --
 
 --
--- AUTO_INCREMENT for table `aianalyses`
+-- AUTO_INCREMENT for table `ai_analysis`
 --
-ALTER TABLE `aianalyses`
+ALTER TABLE `ai_analysis`
   MODIFY `analysis_id` bigint NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `answeroptions`
+-- AUTO_INCREMENT for table `answer_option`
 --
-ALTER TABLE `answeroptions`
+ALTER TABLE `answer_option`
   MODIFY `option_id` bigint NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `attemptresponses`
---
-ALTER TABLE `attemptresponses`
-  MODIFY `response_id` bigint NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `attempts`
@@ -491,15 +485,21 @@ ALTER TABLE `attempts`
   MODIFY `attempt_id` bigint NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `blueprintrules`
+-- AUTO_INCREMENT for table `attempt_response`
 --
-ALTER TABLE `blueprintrules`
+ALTER TABLE `attempt_response`
+  MODIFY `response_id` bigint NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `blueprint_rule`
+--
+ALTER TABLE `blueprint_rule`
   MODIFY `rule_id` bigint NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `examsections`
+-- AUTO_INCREMENT for table `exam_section`
 --
-ALTER TABLE `examsections`
+ALTER TABLE `exam_section`
   MODIFY `section_id` bigint NOT NULL AUTO_INCREMENT;
 
 --
@@ -515,21 +515,21 @@ ALTER TABLE `questions`
   MODIFY `question_id` bigint NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `questionsets`
+-- AUTO_INCREMENT for table `question_set`
 --
-ALTER TABLE `questionsets`
+ALTER TABLE `question_set`
   MODIFY `question_set_id` bigint NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `questiontypes`
+-- AUTO_INCREMENT for table `question_type`
 --
-ALTER TABLE `questiontypes`
+ALTER TABLE `question_type`
   MODIFY `question_type_id` bigint NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `scoreresults`
+-- AUTO_INCREMENT for table `score_result`
 --
-ALTER TABLE `scoreresults`
+ALTER TABLE `score_result`
   MODIFY `result_id` bigint NOT NULL AUTO_INCREMENT;
 
 --
@@ -539,15 +539,15 @@ ALTER TABLE `skills`
   MODIFY `skill_id` tinyint NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `testblueprints`
+-- AUTO_INCREMENT for table `test_blueprint`
 --
-ALTER TABLE `testblueprints`
+ALTER TABLE `test_blueprint`
   MODIFY `blueprint_id` bigint NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `testforms`
+-- AUTO_INCREMENT for table `test_form`
 --
-ALTER TABLE `testforms`
+ALTER TABLE `test_form`
   MODIFY `test_form_id` bigint NOT NULL AUTO_INCREMENT;
 
 --
@@ -563,9 +563,9 @@ ALTER TABLE `users`
   MODIFY `user_id` bigint NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `uservocabularies`
+-- AUTO_INCREMENT for table `user_vocabulary`
 --
-ALTER TABLE `uservocabularies`
+ALTER TABLE `user_vocabulary`
   MODIFY `user_voca_id` bigint NOT NULL AUTO_INCREMENT;
 
 --
@@ -579,44 +579,44 @@ ALTER TABLE `vocabularies`
 --
 
 --
--- Constraints for table `aianalyses`
+-- Constraints for table `ai_analysis`
 --
-ALTER TABLE `aianalyses`
+ALTER TABLE `ai_analysis`
   ADD CONSTRAINT `FK_AIAnalyses_Attempts` FOREIGN KEY (`attempt_id`) REFERENCES `attempts` (`attempt_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `FK_AIAnalyses_Skills` FOREIGN KEY (`skill_id`) REFERENCES `skills` (`skill_id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
--- Constraints for table `answeroptions`
+-- Constraints for table `answer_option`
 --
-ALTER TABLE `answeroptions`
+ALTER TABLE `answer_option`
   ADD CONSTRAINT `FK_AnswerOptions_Questions` FOREIGN KEY (`question_id`) REFERENCES `questions` (`question_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `attemptresponses`
---
-ALTER TABLE `attemptresponses`
-  ADD CONSTRAINT `FK_AttemptResponses_Attempts` FOREIGN KEY (`attempt_id`) REFERENCES `attempts` (`attempt_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `FK_AttemptResponses_Questions` FOREIGN KEY (`question_id`) REFERENCES `questions` (`question_id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 --
 -- Constraints for table `attempts`
 --
 ALTER TABLE `attempts`
-  ADD CONSTRAINT `FK_Attempts_TestForms` FOREIGN KEY (`test_form_id`) REFERENCES `testforms` (`test_form_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  ADD CONSTRAINT `FK_Attempts_TestForms` FOREIGN KEY (`test_form_id`) REFERENCES `test_form` (`test_form_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   ADD CONSTRAINT `FK_Attempts_Users` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `blueprintrules`
+-- Constraints for table `attempt_response`
 --
-ALTER TABLE `blueprintrules`
-  ADD CONSTRAINT `FK_BlueprintRules_ExamSections` FOREIGN KEY (`section_id`) REFERENCES `examsections` (`section_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
-  ADD CONSTRAINT `FK_BlueprintRules_QuestionTypes` FOREIGN KEY (`question_type_id`) REFERENCES `questiontypes` (`question_type_id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `FK_BlueprintRules_TestBlueprints` FOREIGN KEY (`blueprint_id`) REFERENCES `testblueprints` (`blueprint_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `attempt_response`
+  ADD CONSTRAINT `FK_AttemptResponses_Attempts` FOREIGN KEY (`attempt_id`) REFERENCES `attempts` (`attempt_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `FK_AttemptResponses_Questions` FOREIGN KEY (`question_id`) REFERENCES `questions` (`question_id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 --
--- Constraints for table `examsections`
+-- Constraints for table `blueprint_rule`
 --
-ALTER TABLE `examsections`
+ALTER TABLE `blueprint_rule`
+  ADD CONSTRAINT `FK_BlueprintRules_ExamSections` FOREIGN KEY (`section_id`) REFERENCES `exam_section` (`section_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  ADD CONSTRAINT `FK_BlueprintRules_QuestionTypes` FOREIGN KEY (`question_type_id`) REFERENCES `question_type` (`question_type_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `FK_BlueprintRules_TestBlueprints` FOREIGN KEY (`blueprint_id`) REFERENCES `test_blueprint` (`blueprint_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `exam_section`
+--
+ALTER TABLE `exam_section`
   ADD CONSTRAINT `FK_ExamSections_Skills` FOREIGN KEY (`skill_id`) REFERENCES `skills` (`skill_id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 --
@@ -629,28 +629,28 @@ ALTER TABLE `goals`
 -- Constraints for table `questions`
 --
 ALTER TABLE `questions`
-  ADD CONSTRAINT `FK_Questions_ExamSections` FOREIGN KEY (`section_id`) REFERENCES `examsections` (`section_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
-  ADD CONSTRAINT `FK_Questions_QuestionSets` FOREIGN KEY (`question_set_id`) REFERENCES `questionsets` (`question_set_id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `FK_Questions_QuestionTypes` FOREIGN KEY (`question_type_id`) REFERENCES `questiontypes` (`question_type_id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+  ADD CONSTRAINT `FK_Questions_ExamSections` FOREIGN KEY (`section_id`) REFERENCES `exam_section` (`section_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  ADD CONSTRAINT `FK_Questions_QuestionSets` FOREIGN KEY (`question_set_id`) REFERENCES `question_set` (`question_set_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `FK_Questions_QuestionTypes` FOREIGN KEY (`question_type_id`) REFERENCES `question_type` (`question_type_id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 --
--- Constraints for table `scoreresults`
+-- Constraints for table `score_result`
 --
-ALTER TABLE `scoreresults`
+ALTER TABLE `score_result`
   ADD CONSTRAINT `FK_ScoreResults_Attempts` FOREIGN KEY (`attempt_id`) REFERENCES `attempts` (`attempt_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `testformquestions`
+-- Constraints for table `test_form`
 --
-ALTER TABLE `testformquestions`
-  ADD CONSTRAINT `FK_TestFormQuestions_Questions` FOREIGN KEY (`question_id`) REFERENCES `questions` (`question_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
-  ADD CONSTRAINT `FK_TestFormQuestions_TestForms` FOREIGN KEY (`test_form_id`) REFERENCES `testforms` (`test_form_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `test_form`
+  ADD CONSTRAINT `FK_TestForms_TestBlueprints` FOREIGN KEY (`blueprint_id`) REFERENCES `test_blueprint` (`blueprint_id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 --
--- Constraints for table `testforms`
+-- Constraints for table `test_form_question`
 --
-ALTER TABLE `testforms`
-  ADD CONSTRAINT `FK_TestForms_TestBlueprints` FOREIGN KEY (`blueprint_id`) REFERENCES `testblueprints` (`blueprint_id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `test_form_question`
+  ADD CONSTRAINT `FK_TestFormQuestions_Questions` FOREIGN KEY (`question_id`) REFERENCES `questions` (`question_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  ADD CONSTRAINT `FK_TestFormQuestions_TestForms` FOREIGN KEY (`test_form_id`) REFERENCES `test_form` (`test_form_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `topics`
@@ -660,9 +660,9 @@ ALTER TABLE `topics`
   ADD CONSTRAINT `FK_Topics_Users` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `uservocabularies`
+-- Constraints for table `user_vocabulary`
 --
-ALTER TABLE `uservocabularies`
+ALTER TABLE `user_vocabulary`
   ADD CONSTRAINT `FK_UserVocabularies_Users` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `FK_UserVocabularies_Vocabularies` FOREIGN KEY (`vocabulary_id`) REFERENCES `vocabularies` (`vocabulary_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 

@@ -430,3 +430,19 @@ CREATE TABLE IF NOT EXISTS AIAnalyses (
         ON DELETE SET NULL
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
+
+
+--- đổi tển -----------
+RENAME TABLE
+    aianalyses          TO ai_analysis,
+    answeroptions       TO answer_option,
+    attemptresponses    TO attempt_response,
+    blueprintrules      TO blueprint_rule,
+    examsections        TO exam_section,
+    questionsets        TO question_set,
+    questiontypes       TO question_type,
+    scoreresults        TO score_result,
+    testblueprints      TO test_blueprint,
+    testformquestions   TO test_form_question,
+    testforms           TO test_form,
+    uservocabularies    TO user_vocabulary;
