@@ -432,7 +432,7 @@ CREATE TABLE IF NOT EXISTS AIAnalyses (
 ) ENGINE=InnoDB;
 
 
---- đổi tển -----------
+--- đổi tên -----------
 RENAME TABLE
     aianalyses          TO ai_analysis,
     answeroptions       TO answer_option,
