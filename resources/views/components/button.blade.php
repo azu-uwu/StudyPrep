@@ -1,12 +1,27 @@
 @props([
     'variant' => 'primary',
+    'size' => 'medium',
     'type' => 'button',
+    'href' => null,
     'disabled' => false,
 ])
 
 @php
-    // Chỉ chấp nhận các biến thể đã định nghĩa, biến thể lạ sẽ rơi về primary
-    $variant = in_array($variant, ['primary', 'secondary', 'danger'], true) ? $variant : 'primary';
+    // Tương thích ngược: variant "secondary" cũ chính là nút trắng, nay đổi tên thành "neutral".
+    if ($variant === 'secondary') {
+        $variant = 'neutral';
+    }
+
+    // Spec từ ảnh Figma: 5 biến thể đã xác định rõ, tím Secondary Outline để dành sau.
+    $variant = in_array($variant, ['primary', 'neutral', 'success', 'warning', 'danger'], true)
+        ? $variant
+        : 'primary';
+
+    // 3 kích thước: small 36px / medium 44px (mặc định) / large 56px.
+    $size = in_array($size, ['small', 'medium', 'large'], true) ? $size : 'medium';
+
+    // Khi có href thì render thẻ <a> để điều hướng, ngược lại render <button>.
+    $isLink = ! is_null($href) && $href !== false && $href !== '';
 @endphp
 
 @once
@@ -22,65 +37,129 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            padding: 14px 32px;
-            border: none;
-            border-radius: 14px;
+            border: 0;
             font-family: 'Nunito', 'Instrument Sans', ui-sans-serif, system-ui, 'Segoe UI', sans-serif;
-            font-size: 20px;
-            font-weight: 700;
-            line-height: 1.2;
-            color: #ffffff;
+            font-weight: 800;
+            line-height: 1;
+            white-space: nowrap;
             cursor: pointer;
             user-select: none;
+            -webkit-user-select: none;
             text-decoration: none;
-            margin-right: 8px;
-            /* Viền đậm phía dưới tạo cảm giác nổi khối 3D giống hình mẫu */
-            box-shadow: inset 0 -5px 0 rgba(0, 0, 0, 0.22), 0 6px 14px rgba(13, 110, 253, 0.28);
-            transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+            transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
+        }
+
+        /* ===== Sizes theo spec: cao cố định + radius ===== */
+        .sp-btn--small {
+            height: 36px;
+            padding: 0 16px;
+            font-size: 14px;
+            border-radius: 10px;
+        }
+
+        .sp-btn--medium {
+            height: 44px;
+            padding: 0 24px;
+            font-size: 16px;
+            border-radius: 14px;
+        }
+
+        .sp-btn--large {
+            height: 56px;
+            padding: 0 32px;
+            font-size: 20px;
+            border-radius: 14px;
+        }
+
+        /* ===== Variants: Nền + Đáy 3D dày 4.5px ===== */
+        .sp-btn--primary {
+            background-color: #0076FE;
+            color: #FFFFFF;
+            box-shadow: 0 4.5px 0 #0053BF;
+        }
+
+        .sp-btn--neutral {
+            background-color: #FFFFFF;
+            color: #374151;
+            box-shadow: 0 4.5px 0 #CBD5E1;
+        }
+
+        .sp-btn--success {
+            background-color: #00B87A;
+            color: #FFFFFF;
+            box-shadow: 0 4.5px 0 #008A5B;
+        }
+
+        .sp-btn--warning {
+            background-color: #FF8A00;
+            color: #FFFFFF;
+            box-shadow: 0 4.5px 0 #D97706;
+        }
+
+        .sp-btn--danger {
+            background-color: #FF3B30;
+            color: #FFFFFF;
+            box-shadow: 0 4.5px 0 #CC2B22;
         }
 
         .sp-btn:hover {
             filter: brightness(1.06);
         }
 
-        .sp-btn:active {
-            transform: translateY(3px);
-            box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.22), 0 3px 8px rgba(13, 110, 253, 0.22);
+        /* Hiệu ứng nhấn Tactile: lún 3.5px + xẹp đáy còn ~1px */
+        .sp-btn:active:not(:disabled):not([aria-disabled='true']) {
+            transform: translateY(3.5px);
+            filter: brightness(0.99);
         }
 
+        .sp-btn--primary:active:not(:disabled):not([aria-disabled='true']) {
+            box-shadow: 0 1px 0 #0053BF;
+        }
+
+        .sp-btn--neutral:active:not(:disabled):not([aria-disabled='true']) {
+            box-shadow: 0 1px 0 #CBD5E1;
+        }
+
+        .sp-btn--success:active:not(:disabled):not([aria-disabled='true']) {
+            box-shadow: 0 1px 0 #008A5B;
+        }
+
+        .sp-btn--warning:active:not(:disabled):not([aria-disabled='true']) {
+            box-shadow: 0 1px 0 #D97706;
+        }
+
+        .sp-btn--danger:active:not(:disabled):not([aria-disabled='true']) {
+            box-shadow: 0 1px 0 #CC2B22;
+        }
+
+        /* Bàn phím: Tab tới là thấy vòng focus rõ ràng */
         .sp-btn:focus-visible {
-            outline: 3px solid rgba(13, 110, 253, 0.45);
+            outline: 3px solid rgba(0, 118, 254, 0.45);
             outline-offset: 2px;
         }
 
-        .sp-btn:disabled {
+        .sp-btn:disabled,
+        .sp-btn[aria-disabled='true'] {
             opacity: 0.55;
             cursor: not-allowed;
             filter: none;
             transform: none;
         }
-
-        .sp-btn--primary {
-            background: linear-gradient(180deg, #1e7bff 0%, #0b63e6 100%);
-        }
-
-        .sp-btn--secondary {
-            background: linear-gradient(180deg, #ffffff 0%, #e5e7eb 100%);
-            color: #1f2937;
-            box-shadow: inset 0 -5px 0 rgba(0, 0, 0, 0.10), 0 6px 14px rgba(31, 41, 55, 0.12);
-        }
-
-        .sp-btn--danger {
-            background: linear-gradient(180deg, #f05252 0%, #dc2626 100%);
-            box-shadow: inset 0 -5px 0 rgba(0, 0, 0, 0.22), 0 6px 14px rgba(220, 38, 38, 0.28);
-        }
     </style>
 @endonce
 
-<button
-    type="{{ $type }}"
-    @disabled($disabled)
-    {{ $attributes->class(['sp-btn', "sp-btn--{$variant}"]) }}
->
-    {{ $slot }}
-</button>
+@if ($isLink)
+    <a
+        href="{{ $disabled ? null : $href }}"
+        @if ($disabled) aria-disabled="true" @endif
+        {!! $disabled ? 'tabindex="-1" aria-hidden="false"' : '' !!}
+        {{ $attributes->class(['sp-btn', "sp-btn--{$variant}", "sp-btn--{$size}"]) }}
+    >{{ $slot }}</a>
+@else
+    <button
+        type="{{ $type }}"
+        @disabled($disabled)
+        {{ $attributes->class(['sp-btn', "sp-btn--{$variant}", "sp-btn--{$size}"]) }}
+    >{{ $slot }}</button>
+@endif
+
