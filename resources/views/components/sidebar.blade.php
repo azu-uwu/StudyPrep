@@ -37,9 +37,104 @@
 
     {{-- CSS riêng của Sidebar (không phụ thuộc build pipeline) --}}
     <link rel="stylesheet" href="{{ asset('css/sidebar.css') }}">
+
+    {{--
+        JS riêng của Sidebar: đóng/mở menu trượt trên điện thoại (< 768px).
+        Vanilla JS, không thư viện ngoài. Chay sau khi DOM san sang vi element
+        (.sp-sidebar-toggle/.sp-sidebar-backdrop) van chua duoc parse khi o day.
+    --}}
+    <script>
+        (function () {
+            'use strict';
+
+            function initSidebar() {
+                var aside = document.getElementById('sp-sidebar');
+                var toggle = document.querySelector('.sp-sidebar-toggle');
+                var backdrop = document.querySelector('.sp-sidebar-backdrop');
+
+                if (!aside || !toggle || !backdrop) {
+                    return;
+                }
+
+                var isOpen = false;
+
+                function setOpen(next) {
+                    isOpen = next;
+                    // Lop duoc CSS media query < 768px su dung de hien/anh sidebar truot
+                    document.body.classList.toggle('sp-sidebar-open', isOpen);
+                    toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                    toggle.setAttribute('aria-label', isOpen ? 'Đóng menu' : 'Mở menu');
+                }
+
+                toggle.addEventListener('click', function () {
+                    setOpen(!isOpen);
+                });
+
+                backdrop.addEventListener('click', function () {
+                    setOpen(false);
+                });
+
+                // Nhan Esc de dong menu
+                document.addEventListener('keydown', function (event) {
+                    if (event.key === 'Escape' && isOpen) {
+                        setOpen(false);
+                    }
+                });
+
+                // Chon 1 muc menu tren dien thoai -> tu dong dong sidebar
+                aside.addEventListener('click', function (event) {
+                    var target = event.target;
+                    var link = target && target.closest ? target.closest('.sp-sidebar__link') : null;
+                    if (link && isOpen) {
+                        setOpen(false);
+                    }
+                });
+
+                // Mo rong man hinh len tablet/laptop: sidebar tro lai binh thuong -> reset trang thai
+                var query = window.matchMedia('(min-width: 768px)');
+                var handleBreakpoint = function (event) {
+                    if (event.matches && isOpen) {
+                        setOpen(false);
+                    }
+                };
+
+                if (typeof query.addEventListener === 'function') {
+                    query.addEventListener('change', handleBreakpoint);
+                } else if (typeof query.addListener === 'function') {
+                    query.addListener(handleBreakpoint);
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initSidebar);
+            } else {
+                initSidebar();
+            }
+        })();
+    </script>
 @endonce
 
-<aside {{ $attributes->class(['sp-sidebar']) }}>
+{{--
+    Nut mo menu (chi hien tren dien thoai). Dat TRUOC <aside> vi tri fixed de
+    khong anh huong layout, va de luat bu .sp-sidebar + * van cham vao noi dung chinh.
+--}}
+<button type="button" class="sp-sidebar-toggle" aria-label="Mở menu" aria-controls="sp-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+        <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+    </svg>
+</button>
+
+{{-- Lop phu nen khi menu trượt dang mo (chi tren dien thoai; bam vao de dong) --}}
+<button type="button" class="sp-sidebar-backdrop" aria-label="Đóng menu" tabindex="-1"></button>
+
+<aside id="sp-sidebar" {{ $attributes->class(['sp-sidebar']) }}>
+    {{-- ===== Nut dong (chi tren dien thoai, goc phai tren cua sidebar trượt) ===== --}}
+    <button type="button" class="sp-sidebar__close" aria-label="Đóng menu">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+            <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+    </button>
+
     {{-- ===== Brand ===== --}}
     <a class="sp-sidebar__brand" href="#" aria-label="StudyPrep - Trang chủ">
         <svg class="sp-sidebar__mark" viewBox="0 0 36 40" fill="none" aria-hidden="true" focusable="false">
@@ -84,6 +179,8 @@
                             <a
                                 href="{{ $item['href'] }}"
                                 class="sp-sidebar__link{{ $isActive ? ' is-active' : '' }}"
+                                title="{{ $item['label'] }}"
+                                aria-label="{{ $item['label'] }}"
                                 @if ($isActive) aria-current="page" @endif
                             >
                                 <span class="sp-sidebar__icon" aria-hidden="true">
@@ -163,7 +260,7 @@
         <nav aria-label="Tài khoản">
             <ul class="sp-sidebar__list">
                 <li>
-                    <a href="#" class="sp-sidebar__link">
+                    <a href="#" class="sp-sidebar__link" title="Hồ sơ" aria-label="Hồ sơ">
                         <span class="sp-sidebar__icon sp-sidebar__icon--sm" aria-hidden="true">
                             <svg viewBox="0 0 24 24" fill="none" focusable="false">
                                 <circle cx="12" cy="8.2" r="3.7" fill="#8B5CF6" />
