@@ -1,0 +1,204 @@
+/*
+ * StudyPrep - Sidebar component
+ * Chi phuc vu resources/views/components/sidebar.blade.php
+ * Quy uoc dat ten: tien to "sp-" (giong sp-btn, sp-control, sp-label).
+ */
+
+/*
+ * Bien chieu rong sidebar. Dung chung cho .sp-sidebar va luat bu o duoi
+ * (.sp-sidebar + *), vi the dat o :root de phan tu ke ben truy cap duoc.
+ */
+:root {
+    --sp-sidebar-width: 264px;
+}
+
+.sp-sidebar {
+    --sp-sidebar-bg: #ffffff;
+    --sp-sidebar-border: #eef1f7;
+    --sp-sidebar-text: #3a4358;
+    --sp-sidebar-heading: #9aa5b7;
+    --sp-sidebar-hover-bg: #f3f7fd;
+    --sp-sidebar-active-bg: #e9f2fe;
+    --sp-sidebar-active-border: #d7e8ff;
+    --sp-sidebar-active-text: #0076fe;
+
+    box-sizing: border-box;
+    /*
+     * Co dinh sidebar tren man hinh (khong cuon theo trang).
+     * top/left/height theo vi tri hien tai: day man hinh, le trai, cao 100vh.
+     */
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    height: 100dvh; /* hon voi thanh dia chi tren mobile; fallback 100vh */
+    z-index: 100;   /* luon nam tren noi dung chinh */
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    width: var(--sp-sidebar-width);
+    padding: 22px 18px 18px;
+    background: var(--sp-sidebar-bg);
+    border-right: 1px solid var(--sp-sidebar-border);
+    font-family: 'Nunito', 'Instrument Sans', ui-sans-serif, system-ui, 'Segoe UI', sans-serif;
+    color: var(--sp-sidebar-text);
+}
+
+/*
+ * Vi sidebar da dung position: fixed, no khong con giu cho trong layout.
+ * Rule nay bu lai do rong sidebar cho noi dung chinh (phan tu ngay sau sidebar)
+ * de noi dung khong bi sidebar che. Chi co tac dung khi co .sp-sidebar dung truoc.
+ */
+.sp-sidebar + * {
+    margin-left: var(--sp-sidebar-width);
+}
+
+.sp-sidebar *,
+.sp-sidebar *::before,
+.sp-sidebar *::after {
+    box-sizing: border-box;
+}
+
+/* ===== Brand / Logo ===== */
+.sp-sidebar__brand {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    gap: 1px;
+    margin: 2px 0 22px 6px;
+    padding: 0;
+    text-decoration: none;
+}
+
+.sp-sidebar__mark {
+    display: block;
+    width: 31px;
+    height: 34px;
+    flex: none;
+}
+
+.sp-sidebar__word {
+    display: inline-flex;
+    align-items: baseline;
+    font-size: 21px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.4px;
+    white-space: nowrap;
+}
+
+.sp-sidebar__word-study {
+    color: #10254f;
+}
+
+.sp-sidebar__word-prep {
+    background: linear-gradient(93deg, #ff8a00 0%, #ffb100 45%, #ffd24d 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+/* ===== Navigation ===== */
+.sp-sidebar__nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    /* Chi menu ben trong cuon; logo (tren) va footer Ho so (duoi) giu nguyen vi tri */
+    overflow-y: auto;
+}
+
+.sp-sidebar__heading {
+    margin: 20px 6px 12px;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 14px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--sp-sidebar-heading);
+}
+
+.sp-sidebar__section:first-child .sp-sidebar__heading {
+    margin-top: 4px;
+}
+
+.sp-sidebar__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ===== Menu item ===== */
+.sp-sidebar__link {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    height: 46px;
+    padding: 0 12px;
+    border: 1.5px solid transparent;
+    border-radius: 14px;
+    color: var(--sp-sidebar-text);
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.sp-sidebar__link:hover {
+    background: var(--sp-sidebar-hover-bg);
+}
+
+/* Item đang chọn (vd: Từ vựng) */
+.sp-sidebar__link.is-active,
+.sp-sidebar__link.is-active:hover {
+    background: var(--sp-sidebar-active-bg);
+    border-color: var(--sp-sidebar-active-border);
+    color: var(--sp-sidebar-active-text);
+}
+
+.sp-sidebar__link.is-active .sp-sidebar__label {
+    font-weight: 800;
+}
+
+.sp-sidebar__link:focus-visible {
+    outline: 3px solid rgba(0, 118, 254, 0.45);
+    outline-offset: 2px;
+}
+
+/* ===== Icons ===== */
+.sp-sidebar__icon {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+}
+
+.sp-sidebar__icon--sm {
+    width: 22px;
+    height: 22px;
+}
+
+.sp-sidebar__icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* ===== Footer (Hồ sơ) ===== */
+.sp-sidebar__footer {
+    flex: none;
+    margin-top: 24px;
+    padding-top: 14px;
+    border-top: 1px solid var(--sp-sidebar-border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sp-sidebar__link {
+        transition: none;
+    }
+}

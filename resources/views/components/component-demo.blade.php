@@ -1,4 +1,12 @@
 
+{{-- ===== Demo: Sidebar (them man hinh chinh cua StudyPrep de xem, giu nguyen toan bo noi dung demo ben duoi) ===== --}}
+<div style="display: flex; align-items: flex-start; min-height: 100vh; background: #F9F9FF;">
+
+    {{-- Sidebar trai: active chon muc "Tu vung" (doi key trong prop active de chuyen muc dang to sang) --}}
+    <x-sidebar active="tu-vung" />
+
+    <div style="flex: 1 1 auto; min-width: 0;">
+
 <div style="max-width: 860px; margin: 40px auto; padding: 30px; font-family: 'Nunito', Arial, sans-serif; color: #111C2D; background: #F9F9FF;">
 
     <h1 style="font-size: 28px; margin-bottom: 8px;">
@@ -61,4 +69,7 @@
         <x-button variant="neutral" href="/component-demo" class="demo-link">Bắt đầu →</x-button>
     </div>
 
-</div>
+</div>{{-- /the demo component giu nguyen ban dau --}}
+
+    </div>{{-- /khung noi dung ben phai (flex: 1) --}}
+</div>{{-- /layout: sidebar trai + noi dung phai --}}
