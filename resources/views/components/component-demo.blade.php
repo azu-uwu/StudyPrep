@@ -7,6 +7,9 @@
 
     <div style="flex: 1 1 auto; min-width: 0;">
 
+    {{-- Header tren cung noi dung chinh: Setting / Ho so / Thong bao / Ho tro --}}
+    <x-header />
+
 <div style="max-width: 860px; margin: 40px auto; padding: 30px; font-family: 'Nunito', Arial, sans-serif; color: #111C2D; background: #F9F9FF;">
 
     <h1 style="font-size: 28px; margin-bottom: 8px;">
