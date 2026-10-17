@@ -70,32 +70,19 @@
     text-decoration: none;
 }
 
-.sp-sidebar__mark {
+/* Logo đầy đủ */
+.sp-sidebar__logo {
     display: block;
-    width: 31px;
-    height: 34px;
-    flex: none;
+    width: 150px; 
+    height: auto;
+    object-fit: contain;
 }
 
-.sp-sidebar__word {
-    display: inline-flex;
-    align-items: baseline;
-    font-size: 21px;
-    font-weight: 800;
-    line-height: 1;
-    letter-spacing: -0.4px;
-    white-space: nowrap;
-}
-
-.sp-sidebar__word-study {
-    color: #10254f;
-}
-
-.sp-sidebar__word-prep {
-    background: linear-gradient(93deg, #ff8a00 0%, #ffb100 45%, #ffd24d 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+.sp-sidebar__mark {
+    display: none;
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
 }
 
 /* ===== Navigation ===== */
@@ -311,6 +298,13 @@
     .sp-sidebar__word,
     .sp-sidebar__heading {
         display: none;
+    }
+    .sp-sidebar__logo {
+    display: none;
+}
+
+    .sp-sidebar__mark {
+        display: block;
     }
 
     /* Bo khoang cach cua heading da an, thay bang cach rieng giua cac nhom */

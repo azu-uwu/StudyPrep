@@ -137,32 +137,19 @@
 
     {{-- ===== Brand ===== --}}
     <a class="sp-sidebar__brand" href="#" aria-label="StudyPrep - Trang chủ">
-        <svg class="sp-sidebar__mark" viewBox="0 0 36 40" fill="none" aria-hidden="true" focusable="false">
-            <defs>
-                <linearGradient id="sp-sidebar-mark-gradient" x1="12" y1="10" x2="32" y2="36" gradientUnits="userSpaceOnUse">
-                    <stop stop-color="#63B8FF" />
-                    <stop offset="0.55" stop-color="#1A86FF" />
-                    <stop offset="1" stop-color="#0057BF" />
-                </linearGradient>
-            </defs>
+    <img
+        class="sp-sidebar__logo"
+        src="{{ asset('images/logo.svg') }}"
+        alt="StudyPrep"
+    >
 
-            {{-- Nón tốt nghiệp --}}
-            <path d="M10 3.4 1.2 7.6a.6.6 0 0 0 0 1.1l8.8 4.2a1 1 0 0 0 1 0l8.8-4.2a.6.6 0 0 0 0-1.1L11 3.4a1 1 0 0 0-1 0Z" fill="#14284F" />
-            <path d="M5.6 9.8v3.9c0 1.6 2 2.9 4.5 2.9" fill="none" stroke="#14284F" stroke-width="2" stroke-linecap="round" />
-
-            {{-- Letter S cách điệu dạng swoosh --}}
-            <path
-                d="M30.5 15.5c-2-4-7.5-5.5-12-4-4.5 1.5-6.5 5-4.5 8 2 2.9 7 3.3 11.6 4.5 4.7 1.2 7.4 3.7 6.4 7.2-1.1 3.8-6.5 5.8-11.5 4.8-3.8-.8-6.1-3-6.7-5.6"
-                stroke="url(#sp-sidebar-mark-gradient)"
-                stroke-width="5"
-                stroke-linecap="round"
-            />
-        </svg>
-
-        <span class="sp-sidebar__word">
-            <span class="sp-sidebar__word-study">tudy</span><span class="sp-sidebar__word-prep">PREP</span>
-        </span>
-    </a>
+    <img
+        class="sp-sidebar__mark"
+        src="{{ asset('favicon.svg') }}"
+        alt=""
+        aria-hidden="true"
+    >
+</a>
 
     {{-- ===== Các nhóm menu ===== --}}
     <nav class="sp-sidebar__nav" aria-label="Điều hướng chính">
