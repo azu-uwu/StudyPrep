@@ -372,11 +372,12 @@
 
     /*
      * Noi dung chinh: khong con le trai nua (khong bi sidebar che, khong xuat
-     * hien cuon ngang); them chieu cao o dau de tranh nut menu fixed.
+     * hien cuon ngang). Khong con dung padding-top cho vung nua: Header (phan tu
+     * dau tien cua noi dung) nam gon tai mép tren man hinh, va nut hamburger
+     * fixed (z-index 120) nam len tren Header (z-index 90) theo yeu cau.
      */
     .sp-sidebar + * {
         margin-left: 0;
-        padding-top: 64px;
     }
 
     /* Lop phu nen: hien khi menu dang mo, bam vao de dong */

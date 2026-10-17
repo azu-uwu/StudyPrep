@@ -1,5 +1,20 @@
 
 {{-- ===== Demo: Sidebar (them man hinh chinh cua StudyPrep de xem, giu nguyen toan bo noi dung demo ben duoi) ===== --}}
+
+{{--
+    Layout toan trang: UA mac dinh cho body margin/padding 8px, trong khi sidebar la
+    position: fixed (khong bi anh huong margin cua body) -> Header va noi dung bi lech
+    them 8px so voi sidebar, tao khoang trang giua Header va sidebar. Reset margin/padding
+    cua html/body de Header va noi dung bat dau sat ngay canh sidebar (khong doi kich thuoc sidebar).
+--}}
+<style>
+    html,
+    body {
+        margin: 0;
+        padding: 0;
+    }
+</style>
+
 <div style="display: flex; align-items: flex-start; min-height: 100vh; background: #F9F9FF;">
 
     {{-- Sidebar trai: active chon muc "Tu vung" (doi key trong prop active de chuyen muc dang to sang) --}}
