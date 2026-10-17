@@ -81,6 +81,10 @@
         .sp-btn--neutral {
             background-color: #FFFFFF;
             color: #374151;
+            /* Viền 1px cùng tông #CBD5E1 với đáy 4.5px -> mặt nút như một khối 3D nổi.
+               box-sizing: border-box để viền nằm gọn trong cao cố định 36/44/56px. */
+            box-sizing: border-box;
+            border: 1px solid #CBD5E1;
             box-shadow: 0 4.5px 0 #CBD5E1;
         }
 
