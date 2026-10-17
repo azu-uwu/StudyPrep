@@ -72,6 +72,31 @@
         <x-button variant="neutral" href="/component-demo" class="demo-link">Bắt đầu →</x-button>
     </div>
 
+    <h2 style="font-size: 18px; margin-top: 30px;">6. Modal Xác Nhận (Dialog — theo spec docs/modal)</h2>
+    <p style="color:#414755;font-size:13px;">Variant A: 2 nút hành động (max-width 440px) / Variant B: 3 nút quyết định (520px). Nền blur, Esc hoặc click nền tối để đóng, nút CTA dùng lại x-button.</p>
+
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 8px;">
+        <x-button variant="primary" data-sp-modal-open="demo-modal-a">Mở Variant A</x-button>
+        <x-button variant="danger" data-sp-modal-open="demo-modal-b">Mở Variant B</x-button>
+    </div>
+
+    <x-modal id="demo-modal-a" title="Nộp bài">
+        Bạn có câu hỏi chưa trả lời, bạn có muốn xem lại trước khi nộp không?
+        <x-slot:actions>
+            <x-button variant="primary" data-sp-modal-close>Xem lại</x-button>
+            <x-button variant="neutral">Nộp bài</x-button>
+        </x-slot:actions>
+    </x-modal>
+
+    <x-modal id="demo-modal-b" title="Bạn thật sự muốn dừng lại?" max-width="520px">
+        Nhấn "Lưu &amp; Thoát" để giữ bài và làm tiếp sau. Nhấn "Thoát" sẽ xoá bài đang làm.
+        <x-slot:actions>
+            <x-button variant="primary" data-sp-modal-close>Lưu &amp; Thoát</x-button>
+            <x-button variant="danger" data-sp-modal-close>Thoát</x-button>
+            <x-button variant="neutral" data-sp-modal-close>Tiếp tục</x-button>
+        </x-slot:actions>
+    </x-modal>
+
 </div>{{-- /the demo component giu nguyen ban dau --}}
 
     </div>{{-- /khung noi dung ben phai (flex: 1) --}}
