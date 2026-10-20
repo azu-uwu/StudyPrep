@@ -4,8 +4,6 @@ namespace Database\Factories;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 /**
  * @extends Factory<User>
@@ -13,32 +11,45 @@ use Illuminate\Support\Str;
 class UserFactory extends Factory
 {
     /**
-     * The current password being used by the factory.
-     */
-    protected static ?string $password;
-
-    /**
-     * Define the model's default state.
-     *
      * @return array<string, mixed>
      */
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
+            'user_name' => fake()->unique()->userName(),
             'email' => fake()->unique()->safeEmail(),
+            'password_hash' => 'password',
+            'full_name' => fake()->name(),
+            'avatar_url' => null,
+            'role' => 'user',
+            'energy' => 5,
+            'created_at' => now(),
+            'failed_login_attempts' => 0,
+            'locked_until' => null,
             'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
-            'remember_token' => Str::random(10),
+            'status' => 'ACTIVE',
         ];
     }
 
-    /**
-     * Indicate that the model's email address should be unverified.
-     */
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'role' => 'admin',
+            'full_name' => 'Nguyễn Admin',
+        ]);
+    }
+
+    public function locked(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'status' => 'LOCKED',
+            'locked_until' => now()->addDay(),
+        ]);
+    }
+
     public function unverified(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn (array $attributes): array => [
             'email_verified_at' => null,
         ]);
     }

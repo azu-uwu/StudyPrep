@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\SessionController;
 use Illuminate\Support\Facades\Route;
 
 // Trang chủ mặc định chuyển hướng đến màn hình chính: Luyện tập
@@ -29,3 +31,17 @@ Route::view('/cai-dat', 'pages.cai-dat')->name('cai-dat');
 
 // Trang demo component của nhóm (giữ nguyên không làm ảnh hưởng)
 Route::view('/component-demo', 'components.component-demo');
+
+Route::redirect('/login', '/admin/login')->name('login');
+
+Route::prefix('admin')->name('admin.')->group(function (): void {
+    Route::middleware('guest')->group(function (): void {
+        Route::get('/login', [SessionController::class, 'create'])->name('login');
+        Route::post('/login', [SessionController::class, 'store'])->name('login.store');
+    });
+
+    Route::middleware(['auth', 'admin'])->group(function (): void {
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::post('/logout', [SessionController::class, 'destroy'])->name('logout');
+    });
+});
