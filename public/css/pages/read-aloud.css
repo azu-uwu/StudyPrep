@@ -1,0 +1,582 @@
+/**
+ * StudyPrep - Styles for Read Aloud (Đọc Câu & Đọc Đoạn)
+ * Bám sát 100% hình ảnh tham chiếu, chuẩn hóa responsive với Sidebar chung của StudyPrep.
+ */
+
+/* ===== READ ALOUD CARD WRAPPER ===== */
+.ra-card-container {
+    max-width: 860px;
+    margin: 0 auto;
+    background: #FFFFFF;
+    border: 1px solid var(--sp-border, #EEF1F7);
+    border-radius: 24px;
+    box-shadow: 0 4px 24px rgba(17, 28, 45, 0.04);
+    padding: 30px 36px 40px;
+    box-sizing: border-box;
+}
+
+/* ===== HEADER ROW ===== */
+.ra-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 24px;
+}
+
+.ra-back-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--sp-text-main, #111C2D);
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: background-color var(--sp-transition-fast, 0.15s ease), transform 0.1s ease;
+    flex: none;
+}
+
+.ra-back-btn:hover {
+    background: #F1F5F9;
+}
+
+.ra-back-btn:active {
+    transform: scale(0.92);
+}
+
+.ra-back-btn svg {
+    width: 22px;
+    height: 22px;
+    display: block;
+}
+
+.ra-header-title-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ra-header-icon {
+    width: 28px;
+    height: 28px;
+    color: var(--sp-primary, #0076FE);
+    flex: none;
+}
+
+.ra-header-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--sp-text-main, #111C2D);
+    margin: 0;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+}
+
+/* ===== TABS (Đọc Câu vs Đọc Đoạn) ===== */
+.ra-tabs-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 60px;
+    border-bottom: 1.5px solid #F1F5F9;
+    margin-bottom: 24px;
+    position: relative;
+}
+
+.ra-tab-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 18px 16px;
+    font-size: 16px;
+    font-weight: 800;
+    color: #475569;
+    text-decoration: none;
+    cursor: pointer;
+    position: relative;
+    white-space: nowrap;
+    transition: color 0.15s ease;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+}
+
+.ra-tab-link:hover {
+    color: var(--sp-primary, #0076FE);
+}
+
+.ra-tab-link.is-active {
+    color: var(--sp-primary, #0076FE);
+}
+
+.ra-tab-link.is-active::after {
+    content: '';
+    position: absolute;
+    bottom: -1.5px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--sp-primary, #0076FE);
+    border-radius: 999px;
+}
+
+.ra-tab-link svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    fill: none;
+}
+
+/* ===== CATEGORY PILLS ===== */
+.ra-category-pills {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.ra-pill-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 18px;
+    border-radius: var(--sp-radius-full, 9999px);
+    font-size: 13.5px;
+    font-weight: 700;
+    font-family: inherit;
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    background: #F1F5F9;
+    color: #475569;
+    line-height: 1.2;
+}
+
+.ra-pill-btn:hover {
+    background: #E2E8F0;
+    color: #1E293B;
+}
+
+.ra-pill-btn.is-active {
+    background: var(--sp-primary, #0076FE);
+    color: #FFFFFF;
+    box-shadow: 0 4px 12px rgba(0, 118, 254, 0.25);
+}
+
+/* ===== METADATA & FILTER BAR ===== */
+.ra-filter-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 4px 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.ra-count-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #64748B;
+}
+
+.ra-count-info svg {
+    width: 16px;
+    height: 16px;
+    stroke: #64748B;
+}
+
+.ra-filter-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ra-filter-select {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: #F8FAFC;
+    border: 1px solid #EEF1F7;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #475569;
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 0.15s ease;
+}
+
+.ra-filter-select:focus {
+    outline: none;
+    border-color: var(--sp-primary, #0076FE);
+}
+
+/* ===== ITEM LIST ===== */
+.ra-item-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.ra-item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 12px;
+    border-bottom: 1px solid #F1F5F9;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    border-radius: 12px;
+    gap: 14px;
+}
+
+.ra-item-row:hover {
+    background-color: #F8FAFC;
+}
+
+.ra-item-row:last-child {
+    border-bottom: none;
+}
+
+.ra-item-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 1;
+    min-width: 0;
+}
+
+.ra-circle-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1.5px solid #CBD5E1;
+    flex: none;
+    background: transparent;
+    transition: border-color 0.15s ease;
+}
+
+.ra-item-row:hover .ra-circle-icon {
+    border-color: var(--sp-primary, #0076FE);
+}
+
+.ra-item-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1E293B;
+    margin: 0;
+    line-height: 1.45;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ra-item-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: none;
+}
+
+/* Difficulty Badges (Viền outline theo đúng ảnh tham chiếu) */
+.ra-diff-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.2;
+    background: transparent;
+    white-space: nowrap;
+}
+
+.ra-diff-badge--easy {
+    border: 1.5px solid #06B6D4;
+    color: #0891B2;
+}
+
+.ra-diff-badge--medium {
+    border: 1.5px solid #F59E0B;
+    color: #D97706;
+}
+
+.ra-diff-badge--hard {
+    border: 1.5px solid #EF4444;
+    color: #DC2626;
+}
+
+/* Score tag & bookmark icon (Đọc đoạn văn) */
+.ra-score-tag {
+    font-size: 13px;
+    font-weight: 700;
+    color: #94A3B8;
+}
+
+.ra-bookmark-icon {
+    width: 16px;
+    height: 16px;
+    color: #94A3B8;
+    flex: none;
+}
+
+.ra-chevron-icon {
+    width: 18px;
+    height: 18px;
+    color: #94A3B8;
+    flex: none;
+    transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.ra-item-row:hover .ra-chevron-icon {
+    color: var(--sp-primary, #0076FE);
+    transform: translateX(3px);
+}
+
+/* ===== INTERACTIVE READING MODAL ===== */
+.ra-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.ra-modal-backdrop.is-open {
+    display: flex;
+}
+
+.ra-modal {
+    background: #FFFFFF;
+    width: 100%;
+    max-width: 680px;
+    max-height: 90vh;
+    max-height: 90dvh;
+    border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: raModalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes raModalPop {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.ra-modal__header {
+    padding: 20px 28px;
+    border-bottom: 1px solid #EEF1F7;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.ra-modal__title {
+    font-size: 18px;
+    font-weight: 800;
+    color: #111C2D;
+    margin: 0;
+}
+
+.ra-modal__close {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: #F1F5F9;
+    color: #475569;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s ease;
+}
+
+.ra-modal__close:hover {
+    background: #E2E8F0;
+    color: #111C2D;
+}
+
+.ra-modal__body {
+    padding: 28px;
+    overflow-y: auto;
+}
+
+.ra-reading-box {
+    background: #F8FAFC;
+    border: 1.5px solid #EEF1F7;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.ra-reading-text {
+    font-size: 19px;
+    font-weight: 700;
+    color: #111C2D;
+    line-height: 1.6;
+    margin: 0 0 16px;
+}
+
+.ra-audio-ctrls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ra-record-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    height: 52px;
+    border-radius: 14px;
+    background: var(--sp-primary, #0076FE);
+    color: #FFFFFF;
+    font-size: 16px;
+    font-weight: 800;
+    font-family: inherit;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: 0 6px 16px rgba(0, 118, 254, 0.25);
+}
+
+.ra-record-btn:hover {
+    background: #0060D0;
+    transform: translateY(-1px);
+}
+
+.ra-record-btn.is-recording {
+    background: #DC2626;
+    animation: raPulse 1.2s infinite;
+    box-shadow: 0 6px 16px rgba(220, 38, 38, 0.35);
+}
+
+@keyframes raPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+}
+
+.ra-result-card {
+    display: none;
+    background: #F0FDF4;
+    border: 1.5px solid #BBF7D0;
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-top: 20px;
+    animation: spFadeUp 0.3s ease forwards;
+}
+
+@keyframes spFadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   RESPONSIVE MEDIA QUERIES (DESKTOP, TABLET, MOBILE, SMALL MOBILE)
+   ========================================================================== */
+
+/* ===== TABLET (768px <= width <= 1023px) ===== */
+@media (max-width: 1023.98px) {
+    .ra-card-container {
+        padding: 24px 24px 32px;
+        border-radius: 20px;
+    }
+
+    .ra-tabs-nav {
+        gap: 36px;
+    }
+}
+
+/* ===== MOBILE (width < 768px) ===== */
+@media (max-width: 767.98px) {
+    .ra-card-container {
+        padding: 20px 16px 28px;
+        border-radius: 18px;
+    }
+
+    .ra-header-title {
+        font-size: 20px;
+    }
+
+    .ra-tabs-nav {
+        gap: 20px;
+        justify-content: flex-start;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .ra-tab-link {
+        font-size: 15px;
+        padding: 10px 12px 14px;
+    }
+
+    .ra-item-row {
+        padding: 14px 8px;
+    }
+
+    .ra-item-title {
+        font-size: 14px;
+    }
+
+    .ra-filter-bar {
+        padding: 10px 0 12px;
+    }
+}
+
+/* ===== SMALL MOBILE (width < 480px) ===== */
+@media (max-width: 479.98px) {
+    .ra-card-container {
+        padding: 16px 12px 24px;
+    }
+
+    .ra-tabs-nav {
+        gap: 12px;
+    }
+
+    .ra-tab-link {
+        font-size: 14px;
+        padding: 8px 8px 12px;
+    }
+
+    .ra-category-pills {
+        gap: 8px;
+    }
+
+    .ra-pill-btn {
+        padding: 5px 14px;
+        font-size: 12.5px;
+    }
+
+    .ra-item-title {
+        font-size: 13.5px;
+    }
+
+    .ra-diff-badge {
+        padding: 2px 8px;
+        font-size: 11px;
+    }
+}

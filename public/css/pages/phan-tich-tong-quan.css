@@ -1,0 +1,527 @@
+/**
+ * StudyPrep - Styles for Trang tổng quan Phân tích (Analytics Overview)
+ * Bám sát 100% hình ảnh tham chiếu thiết kế mới.
+ */
+
+/* ===== OVERVIEW CARD CONTAINER ===== */
+.ptq-card-container {
+    max-width: 860px;
+    margin: 0 auto;
+    background: #FFFFFF;
+    border: 1px solid var(--sp-border, #EEF1F7);
+    border-radius: 24px;
+    box-shadow: 0 4px 24px rgba(17, 28, 45, 0.04);
+    padding: 34px 38px 40px;
+    box-sizing: border-box;
+}
+
+/* ===== HEADER ===== */
+.ptq-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 22px;
+}
+
+.ptq-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ptq-header-icon-wrap {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #D946EF;
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    box-shadow: 0 3px 10px rgba(217, 70, 239, 0.35);
+}
+
+.ptq-header-icon-wrap svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}
+
+.ptq-header-title {
+    font-size: 26px;
+    font-weight: 800;
+    color: #111C2D;
+    margin: 0;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+}
+
+.ptq-detail-btn-top {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #4F46E5;
+    background: #EEF2FF;
+    padding: 7px 16px;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.ptq-detail-btn-top:hover {
+    background: #E0E7FF;
+    color: #4338CA;
+    transform: translateY(-1px);
+}
+
+/* ===== SUB-NAVIGATION TABS ===== */
+.ptq-tabs-nav {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    border-bottom: 1.5px solid #F1F5F9;
+    margin-bottom: 26px;
+    position: relative;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.ptq-tab-link {
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 4px 14px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #64748B;
+    text-decoration: none;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    position: relative;
+    transition: color 0.15s ease;
+}
+
+.ptq-tab-link:hover {
+    color: #4F46E5;
+}
+
+.ptq-tab-link.is-active {
+    color: #4F46E5;
+    font-weight: 800;
+}
+
+.ptq-tab-link.is-active::after {
+    content: '';
+    position: absolute;
+    bottom: -1.5px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: #4F46E5;
+    border-radius: 999px;
+}
+
+/* ===== 3 SUMMARY STATS CARDS ===== */
+.ptq-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    margin-bottom: 32px;
+}
+
+.ptq-stat-card {
+    background: #FFFFFF;
+    border: 1px solid #EEF1F7;
+    border-radius: 18px;
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(17, 28, 45, 0.02);
+    min-height: 124px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ptq-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(17, 28, 45, 0.04);
+}
+
+.ptq-stat-card--amber {
+    background: #FFFDF5;
+    border: 1.5px solid #FCD34D;
+}
+
+.ptq-stat-label {
+    font-size: 12px;
+    font-weight: 800;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0 0 10px;
+}
+
+.ptq-stat-card--amber .ptq-stat-label {
+    color: #D97706;
+}
+
+.ptq-stat-val-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+}
+
+.ptq-stat-number {
+    font-size: 28px;
+    font-weight: 800;
+    color: #111C2D;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+}
+
+.ptq-stat-sub-count {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #0076FE;
+}
+
+.ptq-stat-number--amber {
+    color: #D97706;
+    font-size: 24px;
+}
+
+.ptq-stat-desc {
+    font-size: 12.5px;
+    color: #94A3B8;
+    margin: 0;
+    line-height: 1.35;
+}
+
+.ptq-stat-card--amber .ptq-stat-desc {
+    color: #92400E;
+    font-weight: 600;
+}
+
+/* ===== SECTION: TỈ LỆ ĐÚNG THEO PART ===== */
+.ptq-section-title {
+    font-size: 17px;
+    font-weight: 800;
+    color: #111C2D;
+    margin: 0 0 4px;
+}
+
+.ptq-section-desc {
+    font-size: 13px;
+    color: #64748B;
+    margin: 0 0 18px;
+    line-height: 1.45;
+}
+
+/* Chart Container Box */
+.ptq-chart-box {
+    background: #FFFFFF;
+    border: 1px solid #EEF1F7;
+    border-radius: 18px;
+    padding: 28px 24px 22px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 10px rgba(17, 28, 45, 0.02);
+}
+
+.ptq-chart-inner {
+    position: relative;
+    width: 100%;
+    height: 240px;
+    display: flex;
+    padding-left: 36px;
+    box-sizing: border-box;
+}
+
+/* Y-Axis Grid & Labels */
+.ptq-y-axis {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 30px;
+    width: 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-start;
+    font-size: 12px;
+    font-weight: 600;
+    color: #94A3B8;
+}
+
+.ptq-grid-lines {
+    position: absolute;
+    left: 36px;
+    right: 0;
+    top: 0;
+    bottom: 30px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    pointer-events: none;
+}
+
+.ptq-grid-line {
+    width: 100%;
+    height: 1px;
+    border-top: 1px dashed #E2E8F0;
+}
+
+.ptq-grid-line--base {
+    border-top: 1.5px solid #CBD5E1;
+}
+
+/* Bars Flex Container */
+.ptq-bars-wrap {
+    position: absolute;
+    left: 36px;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+}
+
+.ptq-bar-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    height: 100%;
+    width: 12%;
+    position: relative;
+}
+
+.ptq-bar-track {
+    width: 100%;
+    max-width: 44px;
+    height: calc(100% - 30px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    position: relative;
+}
+
+.ptq-bar-value-label {
+    font-size: 12px;
+    font-weight: 800;
+    color: #111C2D;
+    margin-bottom: 6px;
+    line-height: 1;
+}
+
+.ptq-bar-value-label--empty {
+    color: #94A3B8;
+    margin-bottom: 12px;
+}
+
+.ptq-bar-pillar {
+    width: 100%;
+    border-radius: 6px 6px 0 0;
+    transition: height 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+}
+
+.ptq-bar-pillar--blue {
+    background: #3B82F6;
+}
+
+.ptq-bar-pillar--indigo {
+    background: #6366F1;
+}
+
+.ptq-bar-pillar--purple {
+    background: #9333EA;
+}
+
+.ptq-bar-x-label {
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748B;
+    white-space: nowrap;
+}
+
+/* ===== BOTTOM ALERT / CTA BAR ===== */
+.ptq-bottom-alert {
+    background: #F8FAFC;
+    border: 1.5px solid #DBEAFE;
+    border-radius: 18px;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    transition: border-color 0.15s ease;
+}
+
+.ptq-bottom-alert:hover {
+    border-color: #BFDBFE;
+}
+
+.ptq-alert-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14.5px;
+    color: #1E293B;
+    font-weight: 600;
+}
+
+.ptq-info-icon-badge {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1.5px solid #4F46E5;
+    color: #4F46E5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+}
+
+.ptq-info-icon-badge svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+    stroke-width: 2.2;
+}
+
+.ptq-alert-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 9px 24px;
+    background: #4F46E5;
+    color: #FFFFFF;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.15s ease, transform 0.1s ease;
+    box-shadow: 0 3px 10px rgba(79, 70, 229, 0.25);
+    flex: none;
+}
+
+.ptq-alert-btn:hover {
+    background: #4338CA;
+    transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN (DESKTOP, TABLET, MOBILE, SMALL MOBILE)
+   ========================================================================== */
+
+/* ===== TABLET (768px <= width <= 1023px) ===== */
+@media (max-width: 1023.98px) {
+    .ptq-card-container {
+        padding: 28px 24px 34px;
+        border-radius: 20px;
+    }
+
+    .ptq-stats-grid {
+        gap: 14px;
+    }
+
+    .ptq-tabs-nav {
+        gap: 24px;
+    }
+}
+
+/* ===== MOBILE (width < 768px) ===== */
+@media (max-width: 767.98px) {
+    .ptq-card-container {
+        padding: 20px 16px 28px;
+        border-radius: 18px;
+    }
+
+    .ptq-stats-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .ptq-tabs-nav {
+        gap: 18px;
+        justify-content: flex-start;
+    }
+
+    .ptq-chart-box {
+        padding: 20px 14px 16px;
+    }
+
+    .ptq-chart-inner {
+        padding-left: 28px;
+        height: 210px;
+    }
+
+    .ptq-grid-lines,
+    .ptq-bars-wrap {
+        left: 28px;
+    }
+
+    .ptq-bar-col {
+        width: 13%;
+    }
+
+    .ptq-bar-track {
+        max-width: 32px;
+    }
+
+    .ptq-bar-value-label {
+        font-size: 11px;
+    }
+
+    .ptq-bar-x-label {
+        font-size: 11px;
+    }
+
+    .ptq-bottom-alert {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 16px;
+    }
+
+    .ptq-alert-btn {
+        width: 100%;
+    }
+}
+
+/* ===== SMALL MOBILE (width < 480px) ===== */
+@media (max-width: 479.98px) {
+    .ptq-header-title {
+        font-size: 22px;
+    }
+
+    .ptq-tab-link {
+        font-size: 13.5px;
+    }
+
+    .ptq-stat-number {
+        font-size: 24px;
+    }
+
+    .ptq-bar-track {
+        max-width: 24px;
+    }
+}

@@ -1,0 +1,822 @@
+/**
+ * StudyPrep - Styles for Speaking Practice (Luyện nói)
+ * Giao diện hiển thị toàn màn hình, không có sidebar, bám sát 100% ảnh thiết kế tham chiếu.
+ */
+
+/* ===== PAGE LAYOUT (FULL SCREEN, NO SIDEBAR) ===== */
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100%;
+    background-color: #FFFFFF;
+    color: #111C2D;
+    font-family: 'Nunito', 'Instrument Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    box-sizing: border-box;
+}
+
+*, *::before, *::after {
+    box-sizing: inherit;
+}
+
+.sp-speaking-page {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    background-color: #FFFFFF;
+    position: relative;
+}
+
+/* ===== TOP HEADER BAR ===== */
+.sp-speaking-header {
+    height: 64px;
+    background: #FFFFFF;
+    border-bottom: 1px solid #EEF1F7;
+    display: flex;
+    align-items: center;
+    padding: 0 28px;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+}
+
+.sp-speaking-logo-wrap {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    flex: none;
+}
+
+.sp-speaking-logo {
+    height: 32px;
+    width: auto;
+    display: block;
+}
+
+.sp-speaking-close-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: transparent;
+    color: #64748B;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    flex: none;
+}
+
+.sp-speaking-close-btn:hover {
+    background: #F1F5F9;
+    color: #111C2D;
+}
+
+.sp-speaking-close-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    stroke-width: 2.2;
+}
+
+.sp-speaking-header-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1E293B;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+}
+
+/* ===== MAIN CONTENT CONTAINER ===== */
+.sp-speaking-main {
+    flex: 1;
+    width: 100%;
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 32px 24px 130px;
+    box-sizing: border-box;
+}
+
+.sp-speaking-title {
+    font-size: 26px;
+    font-weight: 800;
+    color: #111C2D;
+    margin: 0 0 18px;
+    letter-spacing: -0.02em;
+}
+
+/* ===== MODE ROW (Chế độ: Phát âm / Shadowing) ===== */
+.sp-speaking-mode-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.sp-speaking-mode-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #475569;
+}
+
+.sp-mode-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
+    border-radius: 9999px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    line-height: 1.2;
+}
+
+.sp-mode-btn--active {
+    background: #0076FE;
+    color: #FFFFFF;
+    box-shadow: 0 3px 10px rgba(0, 118, 254, 0.25);
+}
+
+.sp-mode-btn--inactive {
+    background: #FFFFFF;
+    border-color: #E2E8F0;
+    color: #64748B;
+}
+
+.sp-mode-btn--inactive:hover {
+    background: #F8FAFC;
+    color: #1E293B;
+    border-color: #CBD5E1;
+}
+
+.sp-mode-btn svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
+
+/* ===== AUDIO PLAYER BAR ===== */
+.sp-audio-player-bar {
+    background: #FFFFFF;
+    border: 1px solid #EEF1F7;
+    border-radius: 9999px;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 2px 10px rgba(17, 28, 45, 0.03);
+    margin-bottom: 24px;
+}
+
+.sp-player-play-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #0076FE;
+    border: none;
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex: none;
+    transition: all 0.15s ease;
+    box-shadow: 0 3px 8px rgba(0, 118, 254, 0.3);
+}
+
+.sp-player-play-btn:hover {
+    background: #0060D0;
+    transform: scale(1.05);
+}
+
+.sp-player-play-btn svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+    margin-left: 2px;
+}
+
+.sp-player-speed-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    background: #0076FE;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    flex: none;
+    transition: background-color 0.15s ease;
+}
+
+.sp-player-speed-btn:hover {
+    background: #0060D0;
+}
+
+.sp-player-time {
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748B;
+    font-family: inherit;
+    flex: none;
+    min-width: 36px;
+}
+
+.sp-player-track-container {
+    flex: 1;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+}
+
+.sp-player-track {
+    width: 100%;
+    height: 4px;
+    background: #E2E8F0;
+    border-radius: 999px;
+    position: relative;
+    overflow: hidden;
+}
+
+.sp-player-fill {
+    height: 100%;
+    background: #0076FE;
+    width: 0%;
+    border-radius: 999px;
+    transition: width 0.1s linear;
+}
+
+.sp-player-thumb {
+    position: absolute;
+    top: 50%;
+    left: 0%;
+    transform: translate(-50%, -50%);
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #0076FE;
+    box-shadow: 0 1px 4px rgba(0, 118, 254, 0.4);
+    pointer-events: none;
+    transition: left 0.1s linear;
+}
+
+.sp-player-voice-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: #0076FE;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 9999px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    flex: none;
+    transition: background-color 0.15s ease;
+}
+
+.sp-player-voice-btn:hover {
+    background: #0060D0;
+}
+
+.sp-player-voice-btn svg {
+    width: 12px;
+    height: 12px;
+    stroke: currentColor;
+    stroke-width: 2.5;
+}
+
+/* ===== MAIN SENTENCE PRACTICE BOX (DASHED BORDER) ===== */
+.sp-sentence-box {
+    border: 1.5px dashed #CBD5E1;
+    border-radius: 20px;
+    background: #FFFFFF;
+    padding: 44px 32px 38px;
+    margin-bottom: 18px;
+    text-align: center;
+    transition: border-color 0.2s ease;
+}
+
+.sp-sentence-box:hover {
+    border-color: #94A3B8;
+}
+
+.sp-sentence-text {
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1.4;
+    margin: 0 0 14px;
+    letter-spacing: -0.01em;
+}
+
+.sp-chunk-red {
+    color: #EF4444;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+    border-radius: 4px;
+    padding: 2px 4px;
+}
+
+.sp-chunk-red:hover {
+    background: #FEF2F2;
+}
+
+.sp-chunk-green {
+    color: #10B981;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+    border-radius: 4px;
+    padding: 2px 4px;
+}
+
+.sp-chunk-green:hover {
+    background: #ECFDF5;
+}
+
+.sp-sentence-ipa {
+    font-size: 16px;
+    font-weight: 500;
+    color: #64748B;
+    margin: 0;
+    letter-spacing: 0.5px;
+    font-family: 'Instrument Sans', 'Nunito', sans-serif;
+    transition: opacity 0.2s ease;
+}
+
+.sp-sentence-ipa.is-hidden {
+    display: none;
+}
+
+.sp-sentence-translation {
+    display: none;
+    margin-top: 16px;
+    padding: 12px 18px;
+    background: #F8FAFC;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #334155;
+    border: 1px solid #EEF1F7;
+    animation: spFadeIn 0.2s ease forwards;
+}
+
+@keyframes spFadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== AUXILIARY TOOLS ROW ===== */
+.sp-tools-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 24px;
+}
+
+.sp-tools-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sp-tool-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+    text-decoration: none;
+}
+
+.sp-tool-btn--outline {
+    background: #FFFFFF;
+    border-color: #E2E8F0;
+    color: #475569;
+}
+
+.sp-tool-btn--outline:hover {
+    background: #F8FAFC;
+    border-color: #CBD5E1;
+    color: #1E293B;
+}
+
+.sp-tool-btn--outline.is-active {
+    background: #EFF6FF;
+    border-color: #BFDBFE;
+    color: #0076FE;
+}
+
+.sp-tool-btn--primary {
+    background: #0076FE;
+    color: #FFFFFF;
+}
+
+.sp-tool-btn--primary:hover {
+    background: #0060D0;
+}
+
+.sp-tool-btn svg {
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+}
+
+.sp-tools-hint {
+    font-size: 13px;
+    font-style: italic;
+    color: #94A3B8;
+    margin: 0;
+}
+
+/* ===== PREV / NEXT NAVIGATION BUTTONS ===== */
+.sp-nav-buttons-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 32px;
+}
+
+.sp-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    border: 1px solid #E2E8F0;
+    background: #FFFFFF;
+    color: #1E293B;
+    transition: all 0.15s ease;
+    text-decoration: none;
+}
+
+.sp-nav-btn:hover:not(:disabled) {
+    background: #F8FAFC;
+    border-color: #CBD5E1;
+}
+
+.sp-nav-btn:disabled,
+.sp-nav-btn--disabled {
+    background: #F8FAFC;
+    border-color: #EEF1F7;
+    color: #94A3B8;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* ===== SECTION DIVIDER ===== */
+.sp-section-divider {
+    border: none;
+    border-top: 1px solid #EEF1F7;
+    margin: 28px 0 24px;
+}
+
+/* ===== MY RECORDINGS SECTION (Ghi âm của tôi) ===== */
+.sp-recordings-section {
+    width: 100%;
+}
+
+.sp-recordings-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 800;
+    color: #111C2D;
+    margin-bottom: 20px;
+}
+
+.sp-recordings-header svg {
+    width: 18px;
+    height: 18px;
+    color: #111C2D;
+}
+
+.sp-recordings-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 36px 20px 20px;
+}
+
+.sp-empty-folder-icon {
+    width: 52px;
+    height: 44px;
+    color: #CBD5E1;
+    margin-bottom: 14px;
+}
+
+.sp-recordings-empty-text {
+    font-size: 14px;
+    color: #64748B;
+    max-width: 420px;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Danh sách bản ghi âm khi người dùng đã ghi âm */
+.sp-recording-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #F8FAFC;
+    border: 1px solid #EEF1F7;
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    animation: spFadeIn 0.3s ease forwards;
+}
+
+.sp-recording-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sp-recording-score {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    background: #DCFCE7;
+    color: #15803D;
+}
+
+/* ===== FIXED BOTTOM BAR ===== */
+.sp-speaking-bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 84px;
+    background: #F8FAFC;
+    border-top: 1px solid #EEF1F7;
+    display: flex;
+    align-items: center;
+    padding: 0 32px;
+    z-index: 50;
+    box-sizing: border-box;
+}
+
+.sp-bottom-left-action {
+    display: flex;
+    align-items: center;
+    position: absolute;
+    left: 32px;
+}
+
+.sp-circle-plus-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1.5px solid #60A5FA;
+    background: #FFFFFF;
+    color: #0076FE;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: 0 2px 6px rgba(0, 118, 254, 0.12);
+}
+
+.sp-circle-plus-btn:hover {
+    background: #EFF6FF;
+    border-color: #0076FE;
+    transform: scale(1.05);
+}
+
+.sp-circle-plus-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    stroke-width: 2.2;
+}
+
+.sp-bottom-center-action {
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+
+.sp-main-mic-btn {
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    background: #0076FE;
+    color: #FFFFFF;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(0, 118, 254, 0.4);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+}
+
+.sp-main-mic-btn:hover {
+    background: #0060D0;
+    transform: scale(1.06);
+    box-shadow: 0 10px 28px rgba(0, 118, 254, 0.45);
+}
+
+.sp-main-mic-btn:active {
+    transform: scale(0.96);
+}
+
+.sp-main-mic-btn.is-recording {
+    background: #DC2626;
+    box-shadow: 0 8px 24px rgba(220, 38, 38, 0.45);
+    animation: spMicPulse 1.2s infinite;
+}
+
+@keyframes spMicPulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4);
+    }
+    50% {
+        transform: scale(1.06);
+        box-shadow: 0 0 0 12px rgba(220, 38, 38, 0);
+    }
+}
+
+.sp-main-mic-btn svg {
+    width: 26px;
+    height: 26px;
+    fill: currentColor;
+}
+
+.sp-recording-status-toast {
+    position: absolute;
+    bottom: 74px;
+    background: #1E293B;
+    color: #FFFFFF;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 999px;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(6px);
+    pointer-events: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.sp-recording-status-toast.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN (DESKTOP, TABLET, MOBILE, SMALL MOBILE)
+   ========================================================================== */
+
+/* ===== TABLET (768px <= width <= 1023px) ===== */
+@media (max-width: 1023.98px) {
+    .sp-speaking-main {
+        max-width: 720px;
+        padding: 28px 20px 120px;
+    }
+
+    .sp-sentence-text {
+        font-size: 24px;
+    }
+
+    .sp-sentence-box {
+        padding: 36px 24px 30px;
+    }
+}
+
+/* ===== MOBILE (width < 768px) ===== */
+@media (max-width: 767.98px) {
+    .sp-speaking-header {
+        height: 58px;
+        padding: 0 16px;
+        gap: 12px;
+    }
+
+    .sp-speaking-logo {
+        height: 26px;
+    }
+
+    .sp-speaking-header-title {
+        font-size: 13.5px;
+    }
+
+    .sp-speaking-main {
+        padding: 20px 16px 110px;
+    }
+
+    .sp-speaking-title {
+        font-size: 22px;
+        margin-bottom: 14px;
+    }
+
+    .sp-audio-player-bar {
+        flex-wrap: wrap;
+        border-radius: 16px;
+        padding: 10px 14px;
+        gap: 10px;
+    }
+
+    .sp-player-track-container {
+        order: 5;
+        width: 100%;
+        flex: none;
+    }
+
+    .sp-sentence-box {
+        padding: 28px 16px 24px;
+        border-radius: 16px;
+    }
+
+    .sp-sentence-text {
+        font-size: 20px;
+    }
+
+    .sp-sentence-ipa {
+        font-size: 14px;
+    }
+
+    .sp-tools-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .sp-speaking-bottom-bar {
+        height: 74px;
+        padding: 0 20px;
+    }
+
+    .sp-bottom-left-action {
+        left: 20px;
+    }
+
+    .sp-main-mic-btn {
+        width: 56px;
+        height: 56px;
+    }
+}
+
+/* ===== SMALL MOBILE (width < 480px) ===== */
+@media (max-width: 479.98px) {
+    .sp-sentence-text {
+        font-size: 18px;
+    }
+
+    .sp-sentence-ipa {
+        font-size: 13px;
+    }
+
+    .sp-nav-buttons-row {
+        gap: 8px;
+    }
+
+    .sp-nav-btn {
+        padding: 8px 16px;
+        font-size: 13px;
+    }
+}

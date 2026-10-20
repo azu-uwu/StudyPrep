@@ -1,0 +1,398 @@
+/**
+ * StudyPrep - Styles for Trang Luyện Tập (luyen-tap.blade.php)
+ * Đã tách hoàn toàn khỏi Blade template, chuẩn hóa cấu trúc & responsive.
+ */
+
+/* ===== PAGE TITLE ===== */
+.lt-page-title {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--sp-text-main, #111C2D);
+    margin: 0 0 24px;
+    letter-spacing: -0.02em;
+}
+
+/* ===== SECTION CARD (white rounded box) ===== */
+.lt-section {
+    background: #FFFFFF;
+    border: 1px solid var(--sp-border, #EEF1F7);
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 12px rgba(17, 28, 45, 0.04);
+}
+
+/* ===== SECTION HEADER ===== */
+.lt-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.lt-section-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--sp-text-main, #111C2D);
+    margin: 0;
+}
+
+.lt-section-sub {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--sp-text-light, #94A3B8);
+    margin: 2px 0 0;
+}
+
+.lt-badge-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 24px;
+    padding: 0 10px;
+    background: #F1F5F9;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    color: #64748B;
+}
+
+.lt-link-all {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--sp-primary, #0076FE);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: opacity 0.15s ease;
+}
+
+.lt-link-all:hover {
+    text-decoration: underline;
+    opacity: 0.85;
+}
+
+/* ===== ĐANG HỌC: PROGRESS CARDS ===== */
+.lt-progress-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--sp-border-subtle, #F1F5F9);
+}
+
+.lt-progress-card:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.lt-progress-card:first-child {
+    padding-top: 0;
+}
+
+.lt-progress-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: var(--sp-primary, #0076FE);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    box-shadow: 0 4px 12px rgba(0, 118, 254, 0.2);
+}
+
+.lt-progress-icon svg {
+    width: 22px;
+    height: 22px;
+}
+
+.lt-progress-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.lt-progress-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+.lt-progress-name {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--sp-text-main, #111C2D);
+    margin: 0;
+    line-height: 1.35;
+}
+
+.lt-progress-cta {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--sp-primary, #0076FE);
+    text-decoration: none;
+    white-space: nowrap;
+    flex: none;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: var(--sp-primary-subtle, #F0F7FF);
+    transition: background-color 0.15s ease;
+}
+
+.lt-progress-cta:hover {
+    background: #E0EFFF;
+    text-decoration: none;
+}
+
+.lt-progress-meta {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--sp-text-muted, #64748B);
+    margin: 0 0 10px;
+}
+
+.lt-progress-bar-wrap {
+    height: 7px;
+    background: #EEF1F7;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+
+.lt-progress-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #0076FE, #3B9EFF);
+    transition: width 0.4s ease;
+}
+
+.lt-progress-pct {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--sp-text-muted, #64748B);
+}
+
+/* ===== LUYỆN THEO KỸ NĂNG: 2x2 PASTEL GRID ===== */
+.lt-skill-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.lt-skill-card {
+    border-radius: 18px;
+    padding: 20px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    text-decoration: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.lt-skill-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+}
+
+.lt-skill-card--nghe { background: #EDE9FE; }
+.lt-skill-card--doc  { background: #CCFBF1; }
+.lt-skill-card--noi  { background: #FFE4E6; }
+.lt-skill-card--viet { background: #FEF9C3; }
+
+.lt-skill-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+}
+
+.lt-skill-icon--nghe { background: #7C3AED; }
+.lt-skill-icon--doc  { background: #0D9488; }
+.lt-skill-icon--noi  { background: #F43F5E; }
+.lt-skill-icon--viet { background: #D97706; }
+.lt-skill-icon svg { width: 26px; height: 26px; }
+
+.lt-skill-label {
+    font-size: 16px;
+    font-weight: 800;
+    color: #111C2D;
+    margin: 0 0 3px;
+}
+
+.lt-skill-desc {
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* ===== CỦNG CỐ TỪ VỰNG: 3 COVERS ===== */
+.lt-vocab-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.lt-vocab-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lt-vocab-card:hover {
+    transform: translateY(-5px);
+}
+
+.lt-vocab-cover-wrap {
+    width: 100%;
+    border-radius: 18px;
+    overflow: hidden;
+    margin-bottom: 12px;
+    background: transparent;
+    transition: box-shadow 0.25s ease, transform 0.25s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lt-vocab-card:hover .lt-vocab-cover-wrap {
+    box-shadow: 0 12px 30px rgba(17, 28, 45, 0.12);
+}
+
+.lt-vocab-cover {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 470 / 410;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    border-radius: 18px;
+    transition: transform 0.3s ease;
+}
+
+.lt-vocab-card:hover .lt-vocab-cover {
+    transform: scale(1.02);
+}
+
+.lt-vocab-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--sp-text-main, #111C2D);
+    line-height: 1.4;
+    margin-top: 4px;
+    transition: color 0.15s ease;
+}
+
+.lt-vocab-card:hover .lt-vocab-name {
+    color: var(--sp-primary, #0076FE);
+}
+
+/* ===== RESPONSIVE BREAKPOINTS CHO LUYỆN TẬP ===== */
+@media (max-width: 1023.98px) {
+    .lt-section {
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .lt-skill-grid {
+        gap: 12px;
+    }
+    .lt-skill-card {
+        padding: 16px 14px;
+    }
+    .lt-vocab-grid {
+        gap: 16px;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .lt-page-title {
+        font-size: 22px;
+        margin-bottom: 18px;
+    }
+    .lt-section {
+        padding: 18px 16px;
+        border-radius: 16px;
+        margin-bottom: 16px;
+    }
+    .lt-skill-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+    .lt-skill-card {
+        padding: 14px 12px;
+        gap: 10px;
+        border-radius: 14px;
+    }
+    .lt-skill-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+    }
+    .lt-skill-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+    .lt-skill-label {
+        font-size: 14px;
+    }
+    .lt-skill-desc {
+        font-size: 11px;
+    }
+    .lt-vocab-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+    }
+    .lt-vocab-name {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 580px) {
+    .lt-vocab-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+}
+
+@media (max-width: 479.98px) {
+    .lt-skill-grid {
+        grid-template-columns: 1fr;
+    }
+    .lt-skill-card {
+        padding: 14px 16px;
+    }
+    .lt-progress-card {
+        gap: 12px;
+    }
+    .lt-progress-icon {
+        width: 38px;
+        height: 38px;
+    }
+    .lt-progress-icon svg {
+        width: 18px;
+        height: 18px;
+    }
+    .lt-progress-name {
+        font-size: 14px;
+    }
+    .lt-vocab-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+}

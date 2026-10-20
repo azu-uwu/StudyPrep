@@ -2,9 +2,30 @@
 
 use Illuminate\Support\Facades\Route;
 
+// Trang chủ mặc định chuyển hướng đến màn hình chính: Luyện tập
 Route::get('/', function () {
-    return view('welcome');
+    return redirect('/luyen-tap');
 });
 
-// route demo xem trang component, mn thêm trang nào thì viết route tương ứng nhé ('/tên-url-muốn-đặt', 'tên-view-tương-ứng')
+// Các màn hình chính trong Sidebar (HỌC & TIẾN ĐỘ)
+Route::view('/luyen-tap', 'pages.luyen-tap')->name('luyen-tap');
+Route::view('/luyen-tap/doc', 'pages.luyen-tap-doc')->name('luyen-tap.doc');
+Route::view('/luyen-tap/doc-cau', 'pages.doc-cau')->name('luyen-tap.doc-cau');
+Route::view('/luyen-tap/doc-doan', 'pages.doc-doan')->name('luyen-tap.doc-doan');
+Route::view('/luyen-tap/noi', 'pages.luyen-noi')->name('luyen-tap.noi');
+Route::view('/luyen-tap/viet', 'pages.luyen-tap-viet')->name('luyen-tap.viet');
+Route::view('/luyen-tap/viet-cau', 'pages.viet-cau')->name('luyen-tap.viet-cau');
+Route::view('/luyen-tap/viet-doan', 'pages.viet-doan')->name('luyen-tap.viet-doan');
+Route::view('/thi-thu', 'pages.thi-thu')->name('thi-thu');
+Route::view('/tu-vung', 'pages.tu-vung')->name('tu-vung');
+Route::view('/phan-tich', 'pages.phan-tich-tong-quan')->name('phan-tich');
+Route::view('/phan-tich/chi-tiet', 'pages.phan-tich')->name('phan-tich.chi-tiet');
+Route::view('/lich-su', 'pages.lich-su')->name('lich-su');
+Route::view('/cai-thien', 'pages.cai-thien')->name('cai-thien');
+
+// Các màn hình quản lý trong Header (Hồ sơ & Cài đặt)
+Route::view('/ho-so', 'pages.ho-so')->name('ho-so');
+Route::view('/cai-dat', 'pages.cai-dat')->name('cai-dat');
+
+// Trang demo component của nhóm (giữ nguyên không làm ảnh hưởng)
 Route::view('/component-demo', 'components.component-demo');

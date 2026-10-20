@@ -301,20 +301,28 @@
 <header class="sp-header" role="banner">
     <div class="sp-header__actions">
 
-        {{-- ===== Setting: chi hien nut, chua dieu huong ===== --}}
-        <button type="button" class="sp-header__icon-btn" title="Cài đặt" aria-label="Cài đặt">
+        {{-- ===== Hien thi luot thi hien tai (FR-030: toi da 5 luot) ===== --}}
+        <div class="sp-attempt-pill" title="Số lượt thi thử khả dụng hiện tại: 5/5">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
+            </svg>
+            <span>5/5 Lượt thi</span>
+        </div>
+
+        {{-- ===== Setting: lien ket den trang Cai dat ===== --}}
+        <a href="{{ url('/cai-dat') }}" class="sp-header__icon-btn" title="Cài đặt" aria-label="Cài đặt">
             <svg viewBox="0 0 24 24" fill="#0076FE" focusable="false" aria-hidden="true">
                 <path d="M19.14 12.94c.04-.31.06-.62.06-.94s-.02-.63-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.2 7.2 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.58.24-1.12.55-1.62.94l-2.39-.96a.48.48 0 0 0-.59.22L2.71 8.47a.48.48 0 0 0 .12.61l2.03 1.58c-.05.31-.09.63-.09.94s.02.63.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.13.24.42.34.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.58-.24 1.12-.56 1.62-.94l2.39.96c.22.09.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.05-1.58ZM12 15.6A3.6 3.6 0 1 1 15.6 12 3.61 3.61 0 0 1 12 15.6Z"/>
             </svg>
-        </button>
+        </a>
 
-        {{-- ===== Ho so: chi hien nut, chua dieu huong ===== --}}
-        <button type="button" class="sp-header__icon-btn" title="Hồ sơ" aria-label="Hồ sơ">
+        {{-- ===== Ho so: lien ket den trang Ho so ===== --}}
+        <a href="{{ url('/ho-so') }}" class="sp-header__icon-btn" title="Hồ sơ" aria-label="Hồ sơ">
             <svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true">
                 <circle cx="12" cy="8.2" r="3.7" fill="#8B5CF6" />
                 <path d="M4.8 20.4a7.2 7.2 0 0 1 14.4 0c0 .9-.7 1.6-1.6 1.6H6.4a1.6 1.6 0 0 1-1.6-1.6Z" fill="#8B5CF6" />
             </svg>
-        </button>
+        </a>
 
         {{-- ===== Thong bao: nut icon + dropdown danh sach ===== --}}
         <div class="sp-header__dropdown-wrap">

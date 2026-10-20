@@ -1,0 +1,603 @@
+/**
+ * StudyPrep - Styles for Trang Luyện Theo Kỹ Năng (Reading / Đọc)
+ * Bám sát 100% hình ảnh tham chiếu, chuẩn hóa responsive Desktop, Tablet và Mobile.
+ */
+
+/* ===== SKILL PAGE CONTAINER ===== */
+.sp-skill-page {
+    min-height: 100vh;
+    min-height: 100dvh;
+    background-color: var(--sp-bg-app, #F9F9FF);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 36px 20px 80px;
+    font-family: var(--sp-font-family, 'Nunito', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif);
+    color: var(--sp-text-main, #111C2D);
+    box-sizing: border-box;
+}
+
+.sp-skill-card {
+    width: 100%;
+    max-width: 880px;
+    background: #FFFFFF;
+    border: 1px solid var(--sp-border, #EEF1F7);
+    border-radius: 24px;
+    box-shadow: 0 4px 20px rgba(17, 28, 45, 0.04);
+    padding: 32px 36px 44px;
+    box-sizing: border-box;
+    position: relative;
+}
+
+/* ===== TOP BAR (BACK BUTTON & TITLE) ===== */
+.sp-skill-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.sp-skill-back-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--sp-text-main, #111C2D);
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: background-color var(--sp-transition-fast, 0.15s ease), transform 0.1s ease;
+    flex: none;
+}
+
+.sp-skill-back-btn:hover {
+    background: #F1F5F9;
+}
+
+.sp-skill-back-btn:active {
+    transform: scale(0.92);
+}
+
+.sp-skill-back-btn svg {
+    width: 22px;
+    height: 22px;
+    display: block;
+}
+
+.sp-skill-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--sp-text-main, #111C2D);
+    margin: 0;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+}
+
+/* ===== SKILL TABS NAV BAR ===== */
+.sp-skill-tabs {
+    display: flex;
+    align-items: center;
+    gap: 36px;
+    border-bottom: 1.5px solid #F1F5F9;
+    margin-bottom: 28px;
+    padding-bottom: 0;
+    position: relative;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.sp-skill-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.sp-skill-tab-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 4px 16px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: #64748B;
+    position: relative;
+    white-space: nowrap;
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.sp-skill-tab-item:hover {
+    color: var(--sp-primary, #0076FE);
+}
+
+/* Icon tròn thu nhỏ trong Tab */
+.sp-skill-tab-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sp-skill-tab-icon--nghe {
+    background: #8B5CF6;
+}
+
+.sp-skill-tab-icon--doc {
+    background: #0284C7;
+}
+
+.sp-skill-tab-icon--noi {
+    background: #F43F5E;
+}
+
+.sp-skill-tab-icon--viet {
+    background: #F59E0B;
+}
+
+.sp-skill-tab-icon svg {
+    width: 18px;
+    height: 18px;
+    fill: #FFFFFF;
+}
+
+.sp-skill-tab-item:hover .sp-skill-tab-icon {
+    transform: scale(1.08);
+}
+
+/* Active Tab State (Theo chuẩn ảnh mẫu) */
+.sp-skill-tab-item.is-active {
+    color: var(--sp-primary, #0076FE);
+}
+
+.sp-skill-tab-item.is-active::after {
+    content: '';
+    position: absolute;
+    bottom: -1.5px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--sp-primary, #0076FE);
+    border-radius: 999px;
+    box-shadow: 0 2px 6px rgba(0, 118, 254, 0.35);
+}
+
+/* ===== EXERCISE CARDS LIST ===== */
+.sp-exercise-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.sp-exercise-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #FFFFFF;
+    border: 1.5px solid #EEF1F7;
+    border-radius: 18px;
+    padding: 22px 26px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), 
+                box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), 
+                border-color 0.2s ease;
+    box-sizing: border-box;
+}
+
+.sp-exercise-card:hover {
+    transform: translateY(-2px);
+    border-color: #D5E8FE;
+    box-shadow: 0 8px 24px rgba(0, 118, 254, 0.08);
+}
+
+.sp-exercise-card:active {
+    transform: translateY(0);
+}
+
+.sp-exercise-card__main {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex: 1;
+    min-width: 0;
+}
+
+/* Icon tròn màu pastel lớn (56px) */
+.sp-exercise-icon-wrap {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    transition: transform 0.2s ease;
+}
+
+.sp-exercise-card:hover .sp-exercise-icon-wrap {
+    transform: scale(1.05);
+}
+
+/* Biến thể màu pastel theo đúng ảnh mẫu */
+.sp-exercise-icon-wrap--mint {
+    background: #E6F7F0;
+    color: #059669;
+}
+
+.sp-exercise-icon-wrap--lavender {
+    background: #EEF2FF;
+    color: #4F46E5;
+}
+
+.sp-exercise-icon-wrap--amber {
+    background: #FEF3C7;
+    color: #D97706;
+}
+
+.sp-exercise-icon-wrap--rose {
+    background: #FFE4E6;
+    color: #E11D48;
+}
+
+.sp-exercise-icon-wrap svg {
+    width: 26px;
+    height: 26px;
+}
+
+/* Tiêu đề & mô tả bài luyện */
+.sp-exercise-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.sp-exercise-title {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--sp-text-main, #111C2D);
+    margin: 0 0 5px;
+    line-height: 1.35;
+    transition: color 0.15s ease;
+}
+
+.sp-exercise-card:hover .sp-exercise-title {
+    color: var(--sp-primary, #0076FE);
+}
+
+.sp-exercise-desc {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #64748B;
+    margin: 0;
+    line-height: 1.45;
+}
+
+/* Mũi tên Chevron bên phải */
+.sp-exercise-chevron {
+    width: 20px;
+    height: 20px;
+    flex: none;
+    color: #94A3B8;
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.sp-exercise-card:hover .sp-exercise-chevron {
+    color: var(--sp-primary, #0076FE);
+    transform: translateX(4px);
+}
+
+/* ===== TAB CONTENT PANELS ===== */
+.sp-skill-panel {
+    display: none;
+    animation: spSkillFadeIn 0.25s ease forwards;
+}
+
+.sp-skill-panel.is-active {
+    display: block;
+}
+
+@keyframes spSkillFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===== INTERACTIVE PRACTICE MODAL / DRAWER ===== */
+.sp-practice-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.sp-practice-modal-backdrop.is-open {
+    display: flex;
+}
+
+.sp-practice-modal {
+    background: #FFFFFF;
+    width: 100%;
+    max-width: 680px;
+    max-height: 90vh;
+    max-height: 90dvh;
+    border-radius: 20px;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: spModalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes spModalPop {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.sp-practice-modal__header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #EEF1F7;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.sp-practice-modal__title {
+    font-size: 18px;
+    font-weight: 800;
+    color: #111C2D;
+    margin: 0;
+}
+
+.sp-practice-modal__close {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: #F1F5F9;
+    color: #475569;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s ease;
+}
+
+.sp-practice-modal__close:hover {
+    background: #E2E8F0;
+    color: #111C2D;
+}
+
+.sp-practice-modal__body {
+    padding: 24px;
+    overflow-y: auto;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #1E293B;
+}
+
+.sp-practice-modal__footer {
+    padding: 16px 24px;
+    border-top: 1px solid #EEF1F7;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    background: #FAFAFD;
+}
+
+/* Tùy chọn đáp án câu hỏi A, B, C, D */
+.sp-question-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border: 1.5px solid #E2E8F0;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #334155;
+    background: #FFFFFF;
+    transition: all 0.15s ease;
+}
+
+.sp-question-option:hover {
+    border-color: #0076FE;
+    background: #F0F7FF;
+}
+
+.sp-question-option.is-selected {
+    border-color: #0076FE;
+    background: #EBF4FF;
+    color: #0076FE;
+    font-weight: 800;
+}
+
+.sp-question-option.is-correct {
+    border-color: #10B981;
+    background: #ECFDF5;
+    color: #065F46;
+}
+
+/* ==========================================================================
+   RESPONSIVE MEDIA QUERIES (DESKTOP, TABLET, MOBILE, SMALL MOBILE)
+   ========================================================================== */
+
+/* ===== TABLET (768px <= width <= 1023px) ===== */
+@media (max-width: 1023.98px) {
+    .sp-skill-page {
+        padding: 28px 16px 60px;
+    }
+
+    .sp-skill-card {
+        padding: 28px 28px 36px;
+        border-radius: 20px;
+    }
+
+    .sp-skill-tabs {
+        gap: 24px;
+    }
+
+    .sp-exercise-card {
+        padding: 18px 20px;
+    }
+
+    .sp-exercise-icon-wrap {
+        width: 50px;
+        height: 50px;
+    }
+
+    .sp-exercise-icon-wrap svg {
+        width: 22px;
+        height: 22px;
+    }
+}
+
+/* ===== MOBILE (width < 768px) ===== */
+@media (max-width: 767.98px) {
+    .sp-skill-page {
+        padding: 16px 12px 48px;
+    }
+
+    .sp-skill-card {
+        padding: 22px 18px 32px;
+        border-radius: 18px;
+    }
+
+    .sp-skill-header {
+        margin-bottom: 18px;
+        gap: 12px;
+    }
+
+    .sp-skill-title {
+        font-size: 20px;
+    }
+
+    .sp-skill-tabs {
+        gap: 16px;
+        margin-bottom: 22px;
+        padding-bottom: 0;
+    }
+
+    .sp-skill-tab-item {
+        gap: 8px;
+        font-size: 13px;
+        padding-bottom: 12px;
+    }
+
+    .sp-skill-tab-icon {
+        width: 30px;
+        height: 30px;
+    }
+
+    .sp-skill-tab-icon svg {
+        width: 15px;
+        height: 15px;
+    }
+
+    .sp-exercise-card {
+        padding: 16px 14px;
+        border-radius: 16px;
+    }
+
+    .sp-exercise-card__main {
+        gap: 14px;
+    }
+
+    .sp-exercise-icon-wrap {
+        width: 44px;
+        height: 44px;
+    }
+
+    .sp-exercise-icon-wrap svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .sp-exercise-title {
+        font-size: 15px;
+        margin-bottom: 3px;
+    }
+
+    .sp-exercise-desc {
+        font-size: 12.5px;
+    }
+
+    .sp-exercise-chevron {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+/* ===== SMALL MOBILE (width < 480px) ===== */
+@media (max-width: 479.98px) {
+    .sp-skill-page {
+        padding: 10px 8px 36px;
+    }
+
+    .sp-skill-card {
+        padding: 18px 12px 24px;
+        border-radius: 16px;
+    }
+
+    .sp-skill-title {
+        font-size: 18px;
+    }
+
+    .sp-skill-tabs {
+        gap: 10px;
+    }
+
+    .sp-skill-tab-item {
+        gap: 6px;
+        font-size: 12px;
+    }
+
+    .sp-exercise-card {
+        padding: 14px 12px;
+    }
+
+    .sp-exercise-card__main {
+        gap: 12px;
+    }
+
+    .sp-exercise-icon-wrap {
+        width: 40px;
+        height: 40px;
+    }
+
+    .sp-exercise-title {
+        font-size: 14.5px;
+    }
+
+    .sp-exercise-desc {
+        font-size: 12px;
+    }
+}

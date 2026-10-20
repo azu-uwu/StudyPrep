@@ -4,23 +4,22 @@
 ])
 
 @php
-    // Menu theo ảnh thiết kế. Chưa có route thật nên href tạm là "#";
-    // sau này chỉ cần thay 'href' từng mục là điều hướng được.
+    // Menu theo ảnh thiết kế: kết nối trực tiếp đến các route màn hình tương ứng
     $sections = [
         [
             'label' => 'HỌC',
             'items' => [
-                ['key' => 'luyen-tap', 'label' => 'Luyện tập', 'href' => '#'],
-                ['key' => 'thi-thu', 'label' => 'Thi thử', 'href' => '#'],
-                ['key' => 'tu-vung', 'label' => 'Từ vựng', 'href' => '#'],
+                ['key' => 'luyen-tap', 'label' => 'Luyện tập', 'href' => url('/luyen-tap')],
+                ['key' => 'thi-thu', 'label' => 'Thi thử', 'href' => url('/thi-thu')],
+                ['key' => 'tu-vung', 'label' => 'Từ vựng', 'href' => url('/tu-vung')],
             ],
         ],
         [
             'label' => 'TIẾN ĐỘ',
             'items' => [
-                ['key' => 'phan-tich', 'label' => 'Phân tích', 'href' => '#'],
-                ['key' => 'lich-su', 'label' => 'Lịch sử', 'href' => '#'],
-                ['key' => 'cai-thien', 'label' => 'Cải thiện', 'href' => '#'],
+                ['key' => 'phan-tich', 'label' => 'Phân tích', 'href' => url('/phan-tich')],
+                ['key' => 'lich-su', 'label' => 'Lịch sử', 'href' => url('/lich-su')],
+                ['key' => 'cai-thien', 'label' => 'Cải thiện', 'href' => url('/cai-thien')],
             ],
         ],
     ];

@@ -1,0 +1,606 @@
+/**
+ * StudyPrep - Styles for Writing Practice (Viết câu & Viết đoạn văn)
+ * Bám sát 100% hình ảnh thiết kế tham chiếu, đồng bộ phong cách với StudyPrep.
+ */
+
+/* ===== WRITING PRACTICE CARD WRAPPER ===== */
+.wp-card-container {
+    max-width: 860px;
+    margin: 0 auto;
+    background: #FFFFFF;
+    border: 1px solid var(--sp-border, #EEF1F7);
+    border-radius: 24px;
+    box-shadow: 0 4px 24px rgba(17, 28, 45, 0.04);
+    padding: 30px 36px 40px;
+    box-sizing: border-box;
+}
+
+/* ===== HEADER ROW ===== */
+.wp-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 24px;
+}
+
+.wp-back-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--sp-text-main, #111C2D);
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: background-color var(--sp-transition-fast, 0.15s ease), transform 0.1s ease;
+    flex: none;
+}
+
+.wp-back-btn:hover {
+    background: #F1F5F9;
+}
+
+.wp-back-btn:active {
+    transform: scale(0.92);
+}
+
+.wp-back-btn svg {
+    width: 22px;
+    height: 22px;
+    display: block;
+}
+
+.wp-header-title-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.wp-header-icon {
+    width: 28px;
+    height: 28px;
+    color: var(--sp-primary, #0076FE);
+    flex: none;
+}
+
+.wp-header-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--sp-text-main, #111C2D);
+    margin: 0;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+}
+
+/* ===== TABS (Viết câu vs Viết đoạn văn) ===== */
+.wp-tabs-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 60px;
+    border-bottom: 1.5px solid #F1F5F9;
+    margin-bottom: 24px;
+    position: relative;
+}
+
+.wp-tab-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 18px 16px;
+    font-size: 16px;
+    font-weight: 800;
+    color: #475569;
+    text-decoration: none;
+    cursor: pointer;
+    position: relative;
+    white-space: nowrap;
+    transition: color 0.15s ease;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+}
+
+.wp-tab-link:hover {
+    color: var(--sp-primary, #0076FE);
+}
+
+.wp-tab-link.is-active {
+    color: var(--sp-primary, #0076FE);
+}
+
+.wp-tab-link.is-active::after {
+    content: '';
+    position: absolute;
+    bottom: -1.5px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--sp-primary, #0076FE);
+    border-radius: 999px;
+}
+
+.wp-tab-link svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    fill: none;
+}
+
+/* ===== CATEGORY PILLS ===== */
+.wp-category-pills {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.wp-pill-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 18px;
+    border-radius: var(--sp-radius-full, 9999px);
+    font-size: 13.5px;
+    font-weight: 700;
+    font-family: inherit;
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    background: #F1F5F9;
+    color: #475569;
+    line-height: 1.2;
+}
+
+.wp-pill-btn:hover {
+    background: #E2E8F0;
+    color: #1E293B;
+}
+
+.wp-pill-btn.is-active {
+    background: var(--sp-primary, #0076FE);
+    color: #FFFFFF;
+    box-shadow: 0 4px 12px rgba(0, 118, 254, 0.25);
+}
+
+/* ===== METADATA & FILTER BAR ===== */
+.wp-filter-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 4px 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.wp-count-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #64748B;
+}
+
+.wp-count-info svg {
+    width: 16px;
+    height: 16px;
+    stroke: #64748B;
+}
+
+.wp-filter-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.wp-filter-select {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: #F8FAFC;
+    border: 1px solid #EEF1F7;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #475569;
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 0.15s ease;
+}
+
+.wp-filter-select:focus {
+    outline: none;
+    border-color: var(--sp-primary, #0076FE);
+}
+
+/* ===== ITEM LIST ===== */
+.wp-item-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.wp-item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 12px;
+    border-bottom: 1px solid #F1F5F9;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    border-radius: 12px;
+    gap: 14px;
+}
+
+.wp-item-row:hover {
+    background-color: #F8FAFC;
+}
+
+.wp-item-row:last-child {
+    border-bottom: none;
+}
+
+.wp-item-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 1;
+    min-width: 0;
+}
+
+.wp-circle-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1.5px solid #CBD5E1;
+    flex: none;
+    background: transparent;
+    transition: border-color 0.15s ease;
+}
+
+.wp-item-row:hover .wp-circle-icon {
+    border-color: var(--sp-primary, #0076FE);
+}
+
+.wp-item-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1E293B;
+    margin: 0;
+    line-height: 1.45;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.wp-item-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: none;
+}
+
+/* Difficulty Badges (Khớp hoàn toàn ảnh tham chiếu) */
+.wp-diff-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.2;
+    background: transparent;
+    white-space: nowrap;
+}
+
+.wp-diff-badge--easy {
+    border: 1.5px solid #06B6D4;
+    color: #0891B2;
+}
+
+.wp-diff-badge--medium {
+    border: 1.5px solid #F59E0B;
+    color: #D97706;
+}
+
+.wp-diff-badge--hard {
+    border: 1.5px solid #EF4444;
+    color: #DC2626;
+}
+
+.wp-bookmark-btn {
+    background: transparent;
+    border: none;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #94A3B8;
+    transition: color 0.15s ease;
+}
+
+.wp-bookmark-btn:hover {
+    color: #0076FE;
+}
+
+.wp-bookmark-icon {
+    width: 17px;
+    height: 17px;
+    stroke: currentColor;
+    stroke-width: 2;
+    fill: none;
+}
+
+.wp-bookmark-btn.is-saved .wp-bookmark-icon {
+    color: #0076FE;
+    fill: #0076FE;
+}
+
+.wp-chevron-icon {
+    width: 18px;
+    height: 18px;
+    color: #94A3B8;
+    flex: none;
+    transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.wp-item-row:hover .wp-chevron-icon {
+    color: var(--sp-primary, #0076FE);
+    transform: translateX(3px);
+}
+
+/* ===== WRITING WORKSPACE MODAL ===== */
+.wp-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.wp-modal-backdrop.is-open {
+    display: flex;
+}
+
+.wp-modal {
+    background: #FFFFFF;
+    width: 100%;
+    max-width: 740px;
+    max-height: 90vh;
+    max-height: 90dvh;
+    border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: wpModalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes wpModalPop {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.wp-modal__header {
+    padding: 20px 28px;
+    border-bottom: 1px solid #EEF1F7;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.wp-modal__title {
+    font-size: 18px;
+    font-weight: 800;
+    color: #111C2D;
+    margin: 0;
+}
+
+.wp-modal__close {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: #F1F5F9;
+    color: #475569;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s ease;
+}
+
+.wp-modal__close:hover {
+    background: #E2E8F0;
+    color: #111C2D;
+}
+
+.wp-modal__body {
+    padding: 28px;
+    overflow-y: auto;
+}
+
+.wp-prompt-box {
+    background: #F8FAFC;
+    border: 1.5px solid #EEF1F7;
+    border-radius: 16px;
+    padding: 20px 22px;
+    margin-bottom: 20px;
+}
+
+.wp-prompt-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: #111C2D;
+    margin: 0 0 8px;
+}
+
+.wp-prompt-instruction {
+    font-size: 14px;
+    color: #475569;
+    line-height: 1.55;
+    margin: 0;
+}
+
+.wp-textarea-container {
+    position: relative;
+    margin-bottom: 16px;
+}
+
+.wp-textarea {
+    width: 100%;
+    min-height: 180px;
+    padding: 16px;
+    background: #FFFFFF;
+    border: 1.5px solid #CBD5E1;
+    border-radius: 14px;
+    font-size: 15px;
+    font-family: inherit;
+    line-height: 1.6;
+    color: #111C2D;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    box-sizing: border-box;
+}
+
+.wp-textarea:focus {
+    border-color: #0076FE;
+    box-shadow: 0 0 0 3px rgba(0, 118, 254, 0.15);
+}
+
+.wp-textarea-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #64748B;
+    font-weight: 600;
+    margin-bottom: 18px;
+}
+
+.wp-modal-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.wp-result-feedback {
+    display: none;
+    background: #F0FDF4;
+    border: 1.5px solid #BBF7D0;
+    border-radius: 16px;
+    padding: 20px;
+    margin-top: 20px;
+    animation: wpFadeUp 0.3s ease forwards;
+}
+
+@keyframes wpFadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN (DESKTOP, TABLET, MOBILE, SMALL MOBILE)
+   ========================================================================== */
+
+/* ===== TABLET (768px <= width <= 1023px) ===== */
+@media (max-width: 1023.98px) {
+    .wp-card-container {
+        padding: 24px 24px 32px;
+        border-radius: 20px;
+    }
+
+    .wp-tabs-nav {
+        gap: 36px;
+    }
+}
+
+/* ===== MOBILE (width < 768px) ===== */
+@media (max-width: 767.98px) {
+    .wp-card-container {
+        padding: 20px 16px 28px;
+        border-radius: 18px;
+    }
+
+    .wp-header-title {
+        font-size: 20px;
+    }
+
+    .wp-tabs-nav {
+        gap: 20px;
+        justify-content: flex-start;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .wp-tab-link {
+        font-size: 15px;
+        padding: 10px 12px 14px;
+    }
+
+    .wp-item-row {
+        padding: 14px 8px;
+    }
+
+    .wp-item-title {
+        font-size: 14px;
+    }
+
+    .wp-filter-bar {
+        padding: 10px 0 12px;
+    }
+}
+
+/* ===== SMALL MOBILE (width < 480px) ===== */
+@media (max-width: 479.98px) {
+    .wp-card-container {
+        padding: 16px 12px 24px;
+    }
+
+    .wp-tabs-nav {
+        gap: 12px;
+    }
+
+    .wp-tab-link {
+        font-size: 14px;
+        padding: 8px 8px 12px;
+    }
+
+    .wp-category-pills {
+        gap: 8px;
+    }
+
+    .wp-pill-btn {
+        padding: 5px 14px;
+        font-size: 12.5px;
+    }
+
+    .wp-item-title {
+        font-size: 13.5px;
+    }
+
+    .wp-diff-badge {
+        padding: 2px 8px;
+        font-size: 11px;
+    }
+}
