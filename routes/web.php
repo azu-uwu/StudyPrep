@@ -18,15 +18,25 @@ Route::view('/luyen-tap/noi', 'pages.luyen-noi')->name('luyen-tap.noi');
 Route::view('/luyen-tap/viet', 'pages.luyen-tap-viet')->name('luyen-tap.viet');
 Route::view('/luyen-tap/viet-cau', 'pages.viet-cau')->name('luyen-tap.viet-cau');
 Route::view('/luyen-tap/viet-doan', 'pages.viet-doan')->name('luyen-tap.viet-doan');
+
 Route::view('/thi-thu', 'pages.thi-thu')->name('thi-thu');
+Route::view('/thi-thu/gioi-thieu-de', 'pages.thi-thu-gioi-thieu-de')->name('thi-thu-gioi-thieu-de');
+Route::view('/thi-thu/giao-dien-thi', 'pages.thi-thu-giao-dien-thi')->name('thi-thu-giao-dien-thi');
+Route::view('/thi-thu/ket-qua', 'pages.thi-thu-ket-qua')->name('thi-thu-ket-qua');
+
 Route::view('/tu-vung', 'pages.tu-vung')->name('tu-vung');
+
 Route::view('/phan-tich', 'pages.phan-tich-tong-quan')->name('phan-tich');
 Route::view('/phan-tich/chi-tiet', 'pages.phan-tich')->name('phan-tich.chi-tiet');
+
 Route::view('/lich-su', 'pages.lich-su')->name('lich-su');
+
 Route::view('/cai-thien', 'pages.cai-thien')->name('cai-thien');
 
 // Các màn hình quản lý trong Header (Hồ sơ & Cài đặt)
 Route::view('/ho-so', 'pages.ho-so')->name('ho-so');
+Route::view('/ho-so/muc-tieu-thiet-lap', 'pages.muc-tieu-thiet-lap')->name('ho-so.muc-tieu-thiet-lap');
+
 Route::view('/cai-dat', 'pages.cai-dat')->name('cai-dat');
 
 // Trang demo component của nhóm (giữ nguyên không làm ảnh hưởng)
