@@ -1,4 +1,4 @@
-﻿<x-layouts.app active="luyen-tap" title="StudyPrep - Luyện tập">
+<x-layouts.app active="luyen-tap" title="StudyPrep - Luyện tập">
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/pages/luyen-tap.css') }}">
@@ -23,7 +23,7 @@
         <div class="lt-progress-body">
             <div class="lt-progress-top">
                 <p class="lt-progress-name">Nghe: Part 1 – Mô tả tranh</p>
-                <a href="{{ url('/luyen-tap') }}" class="lt-progress-cta">Tiếp tục</a>
+                <a href="{{ route('luyen-tap.nghe.mo-ta-hinh') }}" class="lt-progress-cta">Tiếp tục</a>
             </div>
             <p class="lt-progress-meta">Bài đang học dang dở • 12/20 câu</p>
             <div class="lt-progress-bar-wrap">
@@ -63,7 +63,7 @@
 
     <div class="lt-skill-grid">
         {{-- Nghe --}}
-        <a href="{{ url('/luyen-tap/doc?skill=nghe') }}" class="lt-skill-card lt-skill-card--nghe">
+        <a href="{{ route('luyen-tap.nghe') }}" class="lt-skill-card lt-skill-card--nghe">
             <div class="lt-skill-icon lt-skill-icon--nghe">
                 <svg viewBox="0 0 24 24" fill="none"><path d="M12 4a8 8 0 0 0-8 8v3a3 3 0 0 0 3 3h1a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1H5.07A7 7 0 0 1 19 12v.07A1 1 0 0 0 18 13h-1a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h1a3 3 0 0 0 3-3v-3a8 8 0 0 0-8-8Z" fill="white"/></svg>
             </div>
@@ -85,7 +85,7 @@
         </a>
 
         {{-- Nói --}}
-        <a href="{{ url('/luyen-tap/doc?skill=noi') }}" class="lt-skill-card lt-skill-card--noi">
+        <a href="{{ url('/luyen-tap/noi') }}" class="lt-skill-card lt-skill-card--noi">
             <div class="lt-skill-icon lt-skill-icon--noi">
                 <svg viewBox="0 0 24 24" fill="none"><path d="M12 2a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4Z" fill="white"/><path d="M6 10a6 6 0 0 0 12 0M12 18v4M8 22h8" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </div>

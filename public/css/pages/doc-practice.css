@@ -1,0 +1,746 @@
+/**
+ * StudyPrep - Styles for Màn hình làm bài & Setup luyện đọc (Part 5 / Part 6)
+ * Khớp 100% ảnh giao diện mẫu: Setup modal, vocaPREP practice interface, Confirm/Warning submit modals.
+ */
+
+/* ==========================================================================
+   1. SETUP MODAL (ẢNH MẪU 3: "PART 5 · ĐỌC - Hoàn thành câu")
+   ========================================================================== */
+.sp-setup-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.sp-setup-modal-backdrop.is-open {
+    display: flex;
+}
+
+.sp-setup-modal {
+    background: #FFFFFF;
+    width: 100%;
+    max-width: 580px;
+    border-radius: 24px;
+    box-shadow: 0 25px 60px rgba(15, 23, 42, 0.25);
+    padding: 32px 36px 36px;
+    position: relative;
+    box-sizing: border-box;
+    animation: spModalPop 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.sp-setup-modal__close {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: #475569;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s ease;
+}
+
+.sp-setup-modal__close:hover {
+    background: #F1F5F9;
+    color: #0F172A;
+}
+
+.sp-setup-modal__icon-wrap {
+    width: 68px;
+    height: 68px;
+    border-radius: 18px;
+    background: #EEF2FF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 14px;
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.15);
+}
+
+.sp-setup-modal__tag {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 800;
+    color: #64748B;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.sp-setup-modal__title {
+    text-align: center;
+    font-size: 24px;
+    font-weight: 800;
+    color: #111C2D;
+    margin: 0 0 20px;
+}
+
+.sp-setup-progress-card {
+    background: #FFFFFF;
+    border: 1.5px solid #EEF1F7;
+    border-radius: 16px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+}
+
+.sp-setup-progress-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 10px;
+}
+
+.sp-setup-progress-pct {
+    color: #5B4BF5;
+    font-weight: 800;
+}
+
+.sp-setup-progress-bar {
+    width: 100%;
+    height: 10px;
+    background: #F1F5F9;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.sp-setup-progress-fill {
+    height: 100%;
+    background: #5B4BF5;
+    border-radius: 999px;
+}
+
+.sp-setup-section-label {
+    font-size: 14.5px;
+    font-weight: 800;
+    color: #111C2D;
+    margin-bottom: 12px;
+}
+
+.sp-setup-count-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.sp-setup-count-card {
+    border: 1.5px solid #EEF1F7;
+    border-radius: 16px;
+    padding: 16px 8px;
+    text-align: center;
+    cursor: pointer;
+    background: #FFFFFF;
+    transition: all 0.18s ease;
+}
+
+.sp-setup-count-card:hover {
+    border-color: #5B4BF5;
+    background: #FBFBFF;
+}
+
+.sp-setup-count-card.is-active {
+    border-color: #5B4BF5;
+    background: #F5F3FF;
+    box-shadow: 0 0 0 1px #5B4BF5;
+}
+
+.sp-setup-card-num {
+    font-size: 22px;
+    font-weight: 800;
+    color: #111C2D;
+    line-height: 1.1;
+    margin-bottom: 4px;
+}
+
+.sp-setup-card-name {
+    font-size: 11px;
+    font-weight: 800;
+    color: #475569;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+}
+
+.sp-setup-card-time {
+    font-size: 11px;
+    font-weight: 600;
+    color: #94A3B8;
+}
+
+.sp-setup-dropdown-wrap {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.sp-setup-dropdown-wrap label {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #334155;
+}
+
+.sp-setup-select {
+    padding: 8px 16px;
+    border-radius: 12px;
+    border: 1.5px solid #E2E8F0;
+    font-weight: 700;
+    font-size: 14px;
+    color: #111C2D;
+    outline: none;
+    cursor: pointer;
+    background: #FFFFFF;
+}
+
+.sp-setup-start-btn {
+    width: 100%;
+    padding: 15px;
+    border-radius: 14px;
+    background: #5B4BF5;
+    color: #FFFFFF;
+    font-size: 16px;
+    font-weight: 800;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.15s ease;
+    box-shadow: 0 6px 20px rgba(91, 75, 245, 0.35);
+}
+
+.sp-setup-start-btn:hover {
+    background: #4A3AD4;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(91, 75, 245, 0.45);
+}
+
+/* ==========================================================================
+   2. VOCAPREP PRACTICE INTERFACE (ẢNH MẪU 4)
+   ========================================================================== */
+.sp-vp-page {
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: #F8FAFC;
+    display: flex;
+    flex-direction: column;
+    font-family: var(--sp-font-family, 'Nunito', 'Instrument Sans', sans-serif);
+    color: #111C2D;
+}
+
+/* Header thanh trên cùng */
+.sp-vp-header {
+    background: #FFFFFF;
+    border-bottom: 1.5px solid #EEF1F7;
+    height: 60px;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.sp-vp-header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.sp-vp-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 20px;
+    font-weight: 900;
+    color: #0076FE;
+    text-decoration: none;
+    letter-spacing: -0.02em;
+}
+
+.sp-vp-logo span {
+    color: #F59E0B;
+}
+
+.sp-vp-close-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: #64748B;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease;
+}
+
+.sp-vp-close-btn:hover {
+    background: #F1F5F9;
+    color: #0F172A;
+}
+
+.sp-vp-progress-bar-wrap {
+    flex: 1;
+    max-width: 520px;
+    height: 8px;
+    background: #E2E8F0;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.sp-vp-progress-bar-fill {
+    height: 100%;
+    background: #5B4BF5;
+    border-radius: 999px;
+    transition: width 0.3s ease;
+}
+
+.sp-vp-header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sp-vp-icon-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: #64748B;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease;
+}
+
+.sp-vp-icon-btn:hover {
+    background: #F1F5F9;
+    color: #0F172A;
+}
+
+.sp-vp-submit-btn {
+    padding: 8px 18px;
+    border-radius: 10px;
+    background: #5B4BF5;
+    color: #FFFFFF;
+    font-size: 13.5px;
+    font-weight: 800;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.sp-vp-submit-btn:hover {
+    background: #4A3AD4;
+}
+
+/* Thanh điều hướng câu & banner tip */
+.sp-vp-subnav {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 24px 8px;
+}
+
+.sp-vp-nav-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.sp-vp-nav-btn {
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1px solid #E2E8F0;
+    background: #FFFFFF;
+    color: #475569;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.sp-vp-nav-btn:hover {
+    background: #F8FAFC;
+    color: #0F172A;
+}
+
+.sp-vp-explain-btn {
+    padding: 6px 16px;
+    border-radius: 8px;
+    border: 1.5px solid #5B4BF5;
+    background: #5B4BF5;
+    color: #FFFFFF;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+}
+
+.sp-vp-explain-btn.is-active {
+    background: #4A3AD4;
+}
+
+.sp-vp-tip-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: #F59E0B;
+    color: #FFFFFF;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12.5px;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+}
+
+.sp-vp-tip-banner button {
+    background: transparent;
+    border: none;
+    color: #FFFFFF;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+/* Bố cục 3 cột chính */
+.sp-vp-main-layout {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding: 8px 24px 32px;
+    max-width: 1440px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+    transition: all 0.25s ease;
+}
+
+.sp-vp-main-layout.with-explanation {
+    grid-template-columns: 1.1fr 1fr 1fr;
+}
+
+/* Cột 1: Passage / Context */
+.sp-vp-panel {
+    background: #FFFFFF;
+    border: 1.5px solid #EEF1F7;
+    border-radius: 18px;
+    padding: 24px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+.sp-vp-passage-range {
+    font-size: 16px;
+    font-weight: 800;
+    color: #111C2D;
+    margin-bottom: 12px;
+}
+
+.sp-vp-passage-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: #1E293B;
+    margin: 0 0 14px;
+}
+
+.sp-vp-passage-text {
+    font-size: 14.5px;
+    line-height: 1.75;
+    color: #334155;
+}
+
+/* Cột 2: Giải thích chi tiết (Màu xanh da trời chuẩn Ảnh mẫu 4) */
+.sp-vp-explain-panel {
+    background: #38BDF8;
+    color: #FFFFFF;
+    border-radius: 18px;
+    padding: 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 24px rgba(56, 189, 248, 0.25);
+}
+
+.sp-vp-explain-tabs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    padding-bottom: 10px;
+    margin-bottom: 16px;
+}
+
+.sp-vp-explain-tab {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 800;
+    color: #FFFFFF;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    opacity: 0.8;
+}
+
+.sp-vp-explain-tab.is-active {
+    background: rgba(255, 255, 255, 0.25);
+    opacity: 1;
+}
+
+.sp-vp-explain-body {
+    font-size: 14px;
+    line-height: 1.65;
+    color: #FFFFFF;
+}
+
+.sp-vp-explain-body code {
+    background: rgba(0, 0, 0, 0.15);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: inherit;
+}
+
+/* Cột 3: Chọn đáp án */
+.sp-vp-answers-panel {
+    background: #FFFFFF;
+    border: 1.5px solid #EEF1F7;
+    border-radius: 18px;
+    padding: 20px 24px;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+.sp-vp-answers-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: #111C2D;
+    margin: 0 0 16px;
+}
+
+.sp-vp-question-block {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #F1F5F9;
+}
+
+.sp-vp-question-block:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.sp-vp-qnum {
+    font-size: 15px;
+    font-weight: 800;
+    color: #111C2D;
+    margin-bottom: 12px;
+}
+
+.sp-vp-opt-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border: 1.5px solid #EEF1F7;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    background: #FFFFFF;
+    transition: all 0.15s ease;
+}
+
+.sp-vp-opt-row:hover {
+    border-color: #5B4BF5;
+    background: #FBFBFF;
+}
+
+.sp-vp-opt-row.is-selected {
+    border-color: #5B4BF5;
+    background: #F5F3FF;
+}
+
+.sp-vp-opt-radio {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid #CBD5E1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+    color: #64748B;
+    flex: none;
+    transition: all 0.15s ease;
+}
+
+.sp-vp-opt-row.is-selected .sp-vp-opt-radio {
+    border-color: #5B4BF5;
+    background: #5B4BF5;
+    color: #FFFFFF;
+}
+
+.sp-vp-opt-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1E293B;
+}
+
+/* ==========================================================================
+   3. MODAL NỘP BÀI (ẢNH MẪU 1 & ẢNH MẪU 2)
+   ========================================================================== */
+.sp-submit-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(3px);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.sp-submit-modal-backdrop.is-open {
+    display: flex;
+}
+
+.sp-submit-modal {
+    background: #FFFFFF;
+    width: 100%;
+    max-width: 440px;
+    border-radius: 18px;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.18);
+    padding: 24px 28px;
+    box-sizing: border-box;
+    animation: spModalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.sp-submit-modal__title {
+    font-size: 20px;
+    font-weight: 800;
+    color: #111C2D;
+    margin: 0 0 14px;
+}
+
+.sp-submit-modal__msg {
+    font-size: 14.5px;
+    line-height: 1.55;
+    color: #334155;
+    margin: 0 0 24px;
+}
+
+.sp-submit-modal__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.sp-btn-revisit {
+    padding: 10px 24px;
+    border-radius: 12px;
+    background: #5B4BF5;
+    color: #FFFFFF;
+    font-size: 14px;
+    font-weight: 800;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.sp-btn-revisit:hover {
+    background: #4A3AD4;
+}
+
+.sp-btn-confirm-submit {
+    padding: 10px 20px;
+    border-radius: 12px;
+    background: #FFFFFF;
+    color: #111C2D;
+    font-size: 14px;
+    font-weight: 800;
+    border: 1.5px solid #E2E8F0;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    transition: all 0.15s ease;
+}
+
+.sp-btn-confirm-submit:hover {
+    background: #F8FAFC;
+    border-color: #CBD5E1;
+}
+
+.sp-btn-close-warning {
+    padding: 10px 28px;
+    border-radius: 12px;
+    background: #5B4BF5;
+    color: #FFFFFF;
+    font-size: 14px;
+    font-weight: 800;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.sp-btn-close-warning:hover {
+    background: #4A3AD4;
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN
+   ========================================================================== */
+@media (max-width: 1023.98px) {
+    .sp-vp-main-layout,
+    .sp-vp-main-layout.with-explanation {
+        grid-template-columns: 1fr;
+    }
+
+    .sp-setup-count-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .sp-vp-header {
+        padding: 0 14px;
+    }
+
+    .sp-vp-main-layout {
+        padding: 8px 12px 24px;
+    }
+
+    .sp-setup-modal {
+        padding: 24px 20px 28px;
+    }
+}

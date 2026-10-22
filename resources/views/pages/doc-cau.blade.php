@@ -9,7 +9,7 @@
 
     {{-- 1. Header: Nút quay lại & Tiêu đề "Read Aloud" với icon sách mở --}}
     <div class="ra-header">
-        <a href="{{ url('/luyen-tap/doc') }}" class="ra-back-btn" title="Quay lại luyện kỹ năng Đọc" aria-label="Quay lại">
+        <a href="{{ url('/luyen-tap/noi') }}" class="ra-back-btn" title="Quay lại luyện kỹ năng Nói" aria-label="Quay lại">
             <svg viewBox="0 0 24 24" fill="none">
                 <path d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>

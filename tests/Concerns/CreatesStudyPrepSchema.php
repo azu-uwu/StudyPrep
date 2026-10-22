@@ -46,6 +46,15 @@ trait CreatesStudyPrepSchema
             $table->string('response_mode', 20);
         });
 
+        Schema::create('question_set', function (Blueprint $table): void {
+            $table->id('question_set_id');
+            $table->string('title', 255);
+            $table->text('stimulus_text')->nullable();
+            $table->string('media_url', 500)->nullable();
+            $table->string('media_type', 20)->nullable();
+            $table->text('transcript')->nullable();
+        });
+
         Schema::create('questions', function (Blueprint $table): void {
             $table->id('question_id');
             $table->unsignedBigInteger('section_id');
@@ -57,6 +66,14 @@ trait CreatesStudyPrepSchema
             $table->decimal('points', 6, 2)->default(1);
             $table->string('status', 20)->default('DRAFT');
             $table->timestamp('created_at')->useCurrent();
+        });
+
+        Schema::create('answer_option', function (Blueprint $table): void {
+            $table->id('option_id');
+            $table->unsignedBigInteger('question_id');
+            $table->string('label', 10);
+            $table->text('content');
+            $table->boolean('is_correct')->default(false);
         });
 
         Schema::create('test_blueprint', function (Blueprint $table): void {

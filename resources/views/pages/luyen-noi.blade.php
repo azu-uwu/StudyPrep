@@ -26,7 +26,7 @@
                 <img class="sp-speaking-logo" src="{{ asset('images/logo.svg') }}" alt="StudyPrep">
             </a>
 
-            <a href="{{ url('/luyen-tap/doc') }}" class="sp-speaking-close-btn" title="Thoát bài luyện nói" aria-label="Đóng bài luyện nói">
+            <a href="{{ url('/luyen-tap/noi') }}" class="sp-speaking-close-btn" title="Thoát bài luyện nói" aria-label="Đóng bài luyện nói">
                 <svg viewBox="0 0 24 24" fill="none">
                     <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>

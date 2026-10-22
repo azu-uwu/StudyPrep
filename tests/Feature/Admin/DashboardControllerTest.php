@@ -152,4 +152,54 @@ class DashboardControllerTest extends TestCase
         $response->assertSee('PART5');
         $response->assertSee('Reading');
     }
+
+    public function test_admin_dashboard_renders_shared_sidebar_and_ui_mockup_elements(): void
+    {
+        $admin = User::factory()->admin()->create(['full_name' => 'Nguyễn Admin']);
+
+        $response = $this->actingAs($admin)->get(route('admin.dashboard'));
+
+        $response->assertOk();
+        // Check sidebar branding & badge
+        $response->assertSee('Study');
+        $response->assertSee('PREP');
+        $response->assertSee('ADMIN');
+        $response->assertSee('PORTAL');
+
+        // Check sidebar navigation groups & items
+        $response->assertSee('TỔNG QUAN');
+        $response->assertSee('Dashboard');
+        $response->assertSee('QUẢN LÝ ĐÀO TẠO');
+        $response->assertSee('Đề thi');
+        $response->assertSee('Ngân hàng câu hỏi');
+        $response->assertSee('Từ vựng & Flashcards', false);
+        $response->assertSee('QUẢN TRỊ HỆ THỐNG');
+        $response->assertSee('Quản lý người dùng');
+        $response->assertSee('Phân quyền & Vai trò', false);
+        $response->assertSee('Báo cáo & Thống kê', false);
+        $response->assertSee('Cài đặt hệ thống');
+
+        // Check profile card
+        $response->assertSee('Nguyễn Admin');
+        $response->assertSee('Super Admin');
+
+        // Check header topbar
+        $response->assertSee('StudyPREP Global');
+
+        // Check KPI cards
+        $response->assertSee('HỌC VIÊN HOẠT ĐỘNG');
+        $response->assertSee('LƯỢT LÀM BÀI HÔM NAY');
+
+        // Check Chart Section
+        $response->assertSee('Xu hướng luyện thi & Lượt nộp bài', false);
+        $response->assertSee('Listening & Reading', false);
+        $response->assertSee('Writing & Speaking AI', false);
+        $response->assertSee('Cập nhật 5 phút trước');
+
+        // Check Review Queue Section
+        $response->assertSee('Hàng đợi kiểm duyệt & Chấm bài', false);
+        $response->assertSee('Phản ánh câu hỏi #Q-4402 (Part 5 Incomplete Sentences)');
+        $response->assertSee('Cần duyệt');
+        $response->assertSee('Xem câu hỏi');
+    }
 }
