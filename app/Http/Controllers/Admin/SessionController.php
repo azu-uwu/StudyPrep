@@ -7,13 +7,12 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
-use Illuminate\View\View;
 
 class SessionController extends Controller
 {
-    public function create(): View
+    public function create(): RedirectResponse
     {
-        return view('admin.auth.login');
+        return redirect()->route('login');
     }
 
     public function store(Request $request): RedirectResponse
@@ -62,6 +61,6 @@ class SessionController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('admin.login');
+        return redirect()->route('login');
     }
 }

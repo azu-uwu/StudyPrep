@@ -75,15 +75,11 @@ Route::view('/cai-dat', 'pages.cai-dat')->name('cai-dat');
 
 // Trang demo component của nhóm (giữ nguyên không làm ảnh hưởng)
 Route::view('/component-demo', 'components.component-demo');
-
-Route::redirect('/login', '/admin/login')->name('login');
+Route::view('/register', 'auth.register')->name('register');
+Route::view('/login', 'auth.login')->name('login');
+Route::redirect('/admin/login', '/login')->name('admin.login');
 
 Route::prefix('admin')->name('admin.')->group(function (): void {
-    Route::middleware('guest')->group(function (): void {
-        Route::get('/login', [SessionController::class, 'create'])->name('login');
-        Route::post('/login', [SessionController::class, 'store'])->name('login.store');
-    });
-
     Route::middleware(['auth', 'admin'])->group(function (): void {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::post('/logout', [SessionController::class, 'destroy'])->name('logout');
