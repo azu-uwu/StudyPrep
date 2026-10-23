@@ -261,6 +261,39 @@ class VocabularyController extends Controller
     }
 
     /**
+     * Cập nhật thông tin bộ thẻ Flashcards.
+     */
+    public function updateTopic(Request $request, Topic $topic): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'description' => ['nullable', 'string'],
+        ]);
+
+        $topic->update([
+            'name' => trim($validated['name']),
+            'description' => trim((string) ($validated['description'] ?? '')),
+        ]);
+
+        return redirect()->route('admin.vocabularies.index')->with('info', 'Đã cập nhật bộ thẻ Flashcards "' . $topic->name . '" thành công!');
+    }
+
+    /**
+     * Xóa bộ thẻ Flashcards.
+     */
+    public function destroyTopic(Topic $topic): RedirectResponse
+    {
+        $name = $topic->name;
+        $defaultTopic = Topic::where('topic_id', '!=', $topic->topic_id)->first();
+        if ($defaultTopic) {
+            Vocabulary::where('topic_id', $topic->topic_id)->update(['topic_id' => $defaultTopic->topic_id]);
+        }
+        $topic->delete();
+
+        return redirect()->route('admin.vocabularies.index')->with('info', 'Đã xóa bộ thẻ Flashcards "' . $name . '" thành công!');
+    }
+
+    /**
      * Xuất dữ liệu từ vựng ra file CSV chuẩn UTF-8.
      */
     public function export(Request $request): StreamedResponse

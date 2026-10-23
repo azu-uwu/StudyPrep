@@ -67,8 +67,8 @@ class SkillPracticeFlowTest extends TestCase
     {
         $response = $this->get(route('luyen-tap.doc.hoan-thanh-cau'));
         $response->assertStatus(200);
-        $response->assertSee('voca');
-        $response->assertSee('PREP');
+        $response->assertSee('images/logo.svg');
+        $response->assertSee('alt="StudyPrep"', false);
         $response->assertSee('Amon Donates to Music School in Grenel City');
         $response->assertSee('Giải thích');
     }
@@ -142,12 +142,11 @@ class SkillPracticeFlowTest extends TestCase
         $response->assertSee('Part 4: Bài nói chuyện ngắn');
         $response->assertSee('Chưa bắt đầu');
         $response->assertSee('Bắt đầu');
-        $response->assertSee(route('luyen-tap.nghe.mo-ta-hinh'));
     }
 
     public function test_listening_part1_setup_page_renders_matching_sample_image(): void
     {
-        $response = $this->get(route('luyen-tap.nghe.mo-ta-hinh'));
+        $response = $this->get('/luyen-tap/nghe?part=1');
 
         $response->assertStatus(200);
         $response->assertSee('PART 1 · NGHE');
@@ -159,7 +158,7 @@ class SkillPracticeFlowTest extends TestCase
         $response->assertSee('VỪA');
         $response->assertSee('KỸ');
         $response->assertSee('TÙY CHỌN');
-        $response->assertSee('BẮT ĐẦU 5 CÂU');
+        $response->assertSee('BẮT ĐẦU');
         $response->assertSee(route('luyen-tap.nghe'));
     }
 
@@ -180,7 +179,7 @@ class SkillPracticeFlowTest extends TestCase
         $response->assertSee('She is selecting a flowerpot.');
     }
 
-    public function test_listening_submit_preserves_answers_and_redirects_to_review(): void
+    public function test_listening_submit_calculates_result_and_shows_answer_review(): void
     {
         $postData = [
             'answers' => [
@@ -188,24 +187,42 @@ class SkillPracticeFlowTest extends TestCase
                 '7' => 'C',
             ],
             'time_spent' => 45,
-            'count' => 5,
+            'total_count' => 5,
         ];
 
         $response = $this->post(route('luyen-tap.nghe.nop-bai'), $postData);
 
-        $response->assertRedirect(route('luyen-tap.nghe.xem-dap-an'));
+        $response->assertRedirect(route('luyen-tap.nghe.ket-qua'));
 
-        // Follow redirect to review page
-        $reviewResponse = $this->get(route('luyen-tap.nghe.xem-dap-an'));
-        $reviewResponse->assertStatus(200);
-        $reviewResponse->assertSee('is-review-mode');
-        // Marked wrong answer A
-        $reviewResponse->assertSee('is-review-wrong');
-        // Marked correct answer B
-        $reviewResponse->assertSee('is-review-correct');
-        $reviewResponse->assertSee('Đáp án chính xác');
-        // Explanation box
-        $reviewResponse->assertSee('là đáp án đúng vì trong hình người phụ nữ đang cầm và lựa chọn');
+        $resultResponse = $this->get(route('luyen-tap.nghe.ket-qua'));
+        $resultResponse->assertStatus(200);
+        $resultResponse->assertSee('KẾT QUẢ BÀI LUYỆN');
+        $resultResponse->assertSee('Luyện nghe TOEIC');
+        $resultResponse->assertSee('45 giây');
+        $resultResponse->assertSee('Xem đáp án');
+        $resultResponse->assertSee('Đáp án đúng');
+        $resultResponse->assertSee('là đáp án đúng vì trong hình người phụ nữ đang cầm và lựa chọn');
+        $resultResponse->assertSee('Transcript');
+        $resultResponse->assertSee('Dịch nghĩa');
+    }
+
+    public function test_listening_result_page_is_available_directly_and_through_legacy_route(): void
+    {
+        $resultResponse = $this->get(route('luyen-tap.nghe.ket-qua'));
+        $resultResponse->assertOk();
+        $resultResponse->assertSee('KẾT QUẢ BÀI LUYỆN');
+        $resultResponse->assertSee('Chi tiết câu trả lời');
+
+        $legacyResponse = $this->get(route('luyen-tap.nghe.xem-dap-an'));
+        $legacyResponse->assertOk();
+        $legacyResponse->assertSee('KẾT QUẢ BÀI LUYỆN');
+    }
+
+    public function test_listening_skill_part_icons_match_reading_icon_size(): void
+    {
+        $response = $this->get(route('luyen-tap.nghe'));
+
+        $response->assertOk();
+        $response->assertSee('svg width="58" height="58" viewBox="0 0 34 34"', false);
     }
 }
-

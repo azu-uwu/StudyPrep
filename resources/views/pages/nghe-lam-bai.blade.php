@@ -189,6 +189,7 @@
         <form id="listeningExamForm" action="{{ route('luyen-tap.nghe.nop-bai') }}" method="POST" style="display: none;">
             @csrf
             <input type="hidden" name="total_count" value="{{ count($questions) }}">
+            <input type="hidden" name="time_spent" id="timeSpentInput" value="0">
         </form>
 
     </main>
@@ -199,6 +200,7 @@
         const isReviewMode = @json($isReview);
         const initialUserAnswers = {!! json_encode($userAnswers, JSON_UNESCAPED_UNICODE) !!};
 
+        const practiceStartedAt = Date.now();
         let currentIndex = 0;
         let userAnswers = Object.assign({}, initialUserAnswers);
         let currentTranscriptTab = 'transcript';
@@ -386,6 +388,7 @@
 
         function submitExam() {
             pauseAudio();
+            document.getElementById('timeSpentInput').value = Math.floor((Date.now() - practiceStartedAt) / 1000);
             document.getElementById('listeningExamForm').submit();
         }
 

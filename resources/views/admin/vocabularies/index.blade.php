@@ -47,6 +47,15 @@
                 <span>Nhập file (Excel/Anki)</span>
             </a>
 
+            {{-- Quản lý bộ thẻ Flashcard (Sửa / Xóa) --}}
+            <button type="button" class="vcb-btn-secondary" onclick="openModal('modal-manage-topics')" title="Quản lý, chỉnh sửa, xóa các bộ thẻ Flashcards">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                </svg>
+                <span>Quản lý bộ thẻ</span>
+            </button>
+
             {{-- Tạo bộ thẻ mới --}}
             <button type="button" class="vcb-btn-deck" onclick="openModal('modal-new-topic')">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -202,6 +211,7 @@
                                     <th style="text-align: center;">ẢNH</th>
                                     <th>NGỮ CẢNH TOEIC & VÍ DỤ</th>
                                     <th>BỘ THẺ FLASHCARD</th>
+                                    <th style="text-align: right; padding-right: 18px;">THAO TÁC</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -227,6 +237,18 @@
                                             'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="50" viewBox="0 0 60 50"><rect width="60" height="50" fill="%23e0e7ff"/><rect x="12" y="14" width="36" height="24" rx="4" fill="%234338ca"/><circle cx="22" cy="38" r="3" fill="%231e1b4b"/><circle cx="38" cy="38" r="3" fill="%231e1b4b"/><rect x="16" y="18" width="10" height="8" rx="1" fill="%23bfdbfe"/><rect x="34" y="18" width="10" height="8" rx="1" fill="%23bfdbfe"/></svg>',
                                         ];
                                         $rowThumb = $thumbSVGs[$thumbIndex];
+                                        $itemData = [
+                                            'id' => $item->vocabulary_id,
+                                            'word' => $item->word,
+                                            'pronunciation' => $item->pronunciation ?? '',
+                                            'pos' => $item->clean_pos,
+                                            'level' => $item->target_level,
+                                            'topic_id' => $item->topic_id ?? ($topics->first()->topic_id ?? 1),
+                                            'meaning_vi' => $item->clean_meaning_vi,
+                                            'definition_en' => $item->clean_definition_en,
+                                            'example_en' => $item->example_en ?? '',
+                                            'example_vi' => $item->example_vi ?? ''
+                                        ];
                                     @endphp
                                     <tr class="vcb-row-item {{ $isSelected ? 'vcb-row-selected' : '' }}"
                                         onclick="selectVocabItem({{ $item->vocabulary_id }}, '{{ addslashes($item->word) }}', '{{ addslashes($item->pronunciation ?? '') }}', '{{ addslashes($item->clean_pos) }}', '{{ addslashes($item->target_level) }}', '{{ addslashes($item->clean_meaning_vi) }}', '{{ addslashes($item->clean_definition_en) }}', '{{ addslashes($item->example_en ?? '') }}', '{{ addslashes($item->example_vi ?? '') }}', '{{ $rowThumb }}', this)">
@@ -280,10 +302,77 @@
                                         <td class="vcb-deck-col">
                                             <span class="vcb-deck-badge">{{ $item->topic?->name ?? 'Bộ thẻ chung' }}</span>
                                         </td>
+
+                                        {{-- THAO TÁC --}}
+                                        <td class="vcb-actions-col" onclick="event.stopPropagation()">
+                                            <div class="vcb-actions-wrap">
+                                                {{-- Nút xem trước (Eye icon) --}}
+                                                <button type="button" class="vcb-action-btn" title="Xem trước Flashcard" onclick="selectVocabItem({{ $item->vocabulary_id }}, '{{ addslashes($item->word) }}', '{{ addslashes($item->pronunciation ?? '') }}', '{{ addslashes($item->clean_pos) }}', '{{ addslashes($item->target_level) }}', '{{ addslashes($item->clean_meaning_vi) }}', '{{ addslashes($item->clean_definition_en) }}', '{{ addslashes($item->example_en ?? '') }}', '{{ addslashes($item->example_vi ?? '') }}', '{{ $rowThumb }}', this.closest('tr'))">
+                                                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                        <circle cx="12" cy="12" r="3"></circle>
+                                                    </svg>
+                                                </button>
+
+                                                {{-- Nút Chỉnh sửa (Pen icon) --}}
+                                                <button type="button" class="vcb-action-btn" title="Chỉnh sửa từ vựng" onclick='openEditVocabModal(@json($itemData))'>
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M12 20h9"></path>
+                                                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                                                    </svg>
+                                                </button>
+
+                                                {{-- Option menu (3-dots dropdown) --}}
+                                                <div class="vcb-dropdown">
+                                                    <button type="button" class="vcb-action-btn vcb-dropdown-trigger" title="Thao tác khác" onclick="toggleVcbDropdown(this, event)">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                                            <circle cx="12" cy="12" r="1.5"></circle>
+                                                            <circle cx="12" cy="5" r="1.5"></circle>
+                                                            <circle cx="12" cy="19" r="1.5"></circle>
+                                                        </svg>
+                                                    </button>
+                                                    <div class="vcb-dropdown-menu">
+                                                        <button type="button" class="vcb-dropdown-item" onclick="openModal('modal-new-vocab')">
+                                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                <circle cx="12" cy="12" r="10"></circle>
+                                                                <line x1="12" y1="8" x2="12" y2="16"></line>
+                                                                <line x1="8" y1="12" x2="16" y2="12"></line>
+                                                            </svg>
+                                                            <span>Thêm từ vựng mới</span>
+                                                        </button>
+                                                        <button type="button" class="vcb-dropdown-item" onclick='openEditVocabModal(@json($itemData))'>
+                                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                                            </svg>
+                                                            <span>Chỉnh sửa thông tin</span>
+                                                        </button>
+                                                        <button type="button" class="vcb-dropdown-item" onclick="quickAssignSingle({{ $item->vocabulary_id }})">
+                                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                                                            </svg>
+                                                            <span>Đổi bộ thẻ (Topic)</span>
+                                                        </button>
+                                                        <div class="vcb-dropdown-divider"></div>
+                                                        <form method="POST" action="{{ route('admin.vocabularies.destroy', $item->vocabulary_id) }}" style="margin: 0;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa từ vựng &quot;{{ addslashes($item->word) }}&quot; khỏi hệ thống?')">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="vcb-dropdown-item text-danger">
+                                                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                                                </svg>
+                                                                <span>Xóa từ vựng</span>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" style="text-align: center; padding: 40px; color: #64748b;">
+                                        <td colspan="7" style="text-align: center; padding: 40px; color: #64748b;">
                                             Không tìm thấy từ vựng phù hợp với bộ lọc hiện tại.
                                         </td>
                                     </tr>
@@ -606,6 +695,202 @@
     </div>
 </div>
 
+{{-- MODAL 5: CHỈNH SỬA TỪ VỰNG --}}
+<div id="modal-edit-vocab" class="vcb-modal-overlay">
+    <div class="vcb-modal-dialog">
+        <div class="vcb-modal-head">
+            <h3 class="vcb-modal-title">Chỉnh sửa từ vựng</h3>
+            <button type="button" class="vcb-modal-close" onclick="closeModal('modal-edit-vocab')">&times;</button>
+        </div>
+        <form id="form-edit-vocab" method="POST" action="">
+            @csrf
+            @method('PUT')
+            <div class="vcb-modal-body">
+                <div class="vcb-form-row-2">
+                    <div class="vcb-form-group">
+                        <label class="vcb-form-label">Từ vựng (Word) <span style="color: #ef4444;">*</span></label>
+                        <input type="text" id="edit_vocab_word" name="word" class="vcb-form-control" required placeholder="Ví dụ: extraordinary">
+                    </div>
+                    <div class="vcb-form-group">
+                        <label class="vcb-form-label">Phiên âm IPA</label>
+                        <input type="text" id="edit_vocab_ipa" name="pronunciation" class="vcb-form-control" placeholder="Ví dụ: /ɪkˈstrɔːr.dən.er.i/">
+                    </div>
+                </div>
+
+                <div class="vcb-form-row-2">
+                    <div class="vcb-form-group">
+                        <label class="vcb-form-label">Từ loại (POS)</label>
+                        <select id="edit_vocab_pos" name="part_of_speech" class="vcb-form-control">
+                            <option value="Noun">Danh từ (Noun)</option>
+                            <option value="Verb">Động từ (Verb)</option>
+                            <option value="Adj">Tính từ (Adj)</option>
+                            <option value="Adv">Phó từ (Adv)</option>
+                            <option value="Collocation">Collocation</option>
+                            <option value="Noun Phrase">Noun Phrase</option>
+                        </select>
+                    </div>
+                    <div class="vcb-form-group">
+                        <label class="vcb-form-label">Mục tiêu (Level)</label>
+                        <select id="edit_vocab_level" name="level" class="vcb-form-control">
+                            <option value="450+">450+</option>
+                            <option value="550+">550+</option>
+                            <option value="650+">650+</option>
+                            <option value="750+">750+</option>
+                            <option value="800+">800+</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="vcb-form-group">
+                    <label class="vcb-form-label">Bộ thẻ Flashcard (Topic) <span style="color: #ef4444;">*</span></label>
+                    <select id="edit_vocab_topic" name="topic_id" class="vcb-form-control" required>
+                        @foreach ($topics as $t)
+                            <option value="{{ $t->topic_id }}">{{ $t->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="vcb-form-group">
+                    <label class="vcb-form-label">Nghĩa tiếng Việt <span style="color: #ef4444;">*</span></label>
+                    <input type="text" id="edit_vocab_meaning_vi" name="meaning_vi" class="vcb-form-control" required placeholder="Ví dụ: Đặc biệt, phi thường">
+                </div>
+
+                <div class="vcb-form-group">
+                    <label class="vcb-form-label">Định nghĩa tiếng Anh (English Definition)</label>
+                    <input type="text" id="edit_vocab_def_en" name="definition_en" class="vcb-form-control" placeholder="Ví dụ: To a very unusual or remarkable degree">
+                </div>
+
+                <div class="vcb-form-group">
+                    <label class="vcb-form-label">Ví dụ ngữ cảnh TOEIC (Tiếng Anh)</label>
+                    <textarea id="edit_vocab_example_en" name="example_en" rows="2" class="vcb-form-control" placeholder="Ví dụ: The quarter report demonstrated an extraordinarily high return on investment."></textarea>
+                </div>
+
+                <div class="vcb-form-group">
+                    <label class="vcb-form-label">Dịch ví dụ (Tiếng Việt)</label>
+                    <textarea id="edit_vocab_example_vi" name="example_vi" rows="2" class="vcb-form-control" placeholder="Ví dụ: Báo cáo quý cho thấy tỷ suất sinh lời đặc biệt cao."></textarea>
+                </div>
+            </div>
+            <div class="vcb-modal-footer">
+                <button type="button" class="vcb-btn-secondary" onclick="closeModal('modal-edit-vocab')">Hủy bỏ</button>
+                <button type="submit" class="vcb-btn-primary">Lưu cập nhật</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- MODAL 6: QUẢN LÝ BỘ THẺ FLASHCARD (SỬA / XÓA TOPIC) --}}
+<div id="modal-manage-topics" class="vcb-modal-overlay">
+    <div class="vcb-modal-dialog" style="max-width: 650px;">
+        <div class="vcb-modal-head">
+            <h3 class="vcb-modal-title">Quản lý các bộ thẻ Flashcards</h3>
+            <button type="button" class="vcb-modal-close" onclick="closeModal('modal-manage-topics')">&times;</button>
+        </div>
+        <div class="vcb-modal-body" style="max-height: 480px; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                <span style="font-size: 13.5px; color: #64748b; font-weight: 600;">Tổng cộng: {{ $topics->count() }} bộ thẻ</span>
+                <button type="button" class="vcb-btn-primary" style="padding: 6px 12px; font-size: 12.5px;" onclick="closeModal('modal-manage-topics'); openModal('modal-new-topic');">
+                    + Thêm bộ thẻ mới
+                </button>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                @foreach ($topics as $tp)
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; gap: 12px;">
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: 700; color: #1e1b4b; font-size: 14px; margin-bottom: 2px;">
+                                {{ $tp->name }}
+                            </div>
+                            <div style="font-size: 12px; color: #64748b; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                                {{ $tp->description ?: 'Chưa có mô tả' }}
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                            {{-- Nút sửa topic --}}
+                            <button type="button" class="vcb-action-btn" title="Chỉnh sửa bộ thẻ" onclick='openEditTopicModal({{ $tp->topic_id }}, "{{ addslashes($tp->name) }}", "{{ addslashes($tp->description ?? '') }}")'>
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 20h9"></path>
+                                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                                </svg>
+                            </button>
+                            {{-- Nút xóa topic --}}
+                            <form method="POST" action="{{ route('admin.vocabularies.topics.destroy', $tp->topic_id) }}" style="margin: 0;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa bộ thẻ &quot;{{ addslashes($tp->name) }}&quot;?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="vcb-action-btn" style="color: #ef4444;" title="Xóa bộ thẻ này">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+        <div class="vcb-modal-footer">
+            <button type="button" class="vcb-btn-secondary" onclick="closeModal('modal-manage-topics')">Đóng</button>
+        </div>
+    </div>
+</div>
+
+{{-- MODAL 7: SỬA TÊN BỘ THẺ --}}
+<div id="modal-edit-topic" class="vcb-modal-overlay">
+    <div class="vcb-modal-dialog">
+        <div class="vcb-modal-head">
+            <h3 class="vcb-modal-title">Cập nhật bộ thẻ Flashcard</h3>
+            <button type="button" class="vcb-modal-close" onclick="closeModal('modal-edit-topic')">&times;</button>
+        </div>
+        <form id="form-edit-topic" method="POST" action="">
+            @csrf
+            @method('PUT')
+            <div class="vcb-modal-body">
+                <div class="vcb-form-group">
+                    <label class="vcb-form-label">Tên bộ thẻ Flashcard <span style="color: #ef4444;">*</span></label>
+                    <input type="text" id="edit_topic_name" name="name" class="vcb-form-control" required>
+                </div>
+                <div class="vcb-form-group">
+                    <label class="vcb-form-label">Mô tả bộ thẻ</label>
+                    <textarea id="edit_topic_description" name="description" rows="3" class="vcb-form-control"></textarea>
+                </div>
+            </div>
+            <div class="vcb-modal-footer">
+                <button type="button" class="vcb-btn-secondary" onclick="closeModal('modal-edit-topic')">Hủy bỏ</button>
+                <button type="submit" class="vcb-btn-primary">Lưu thay đổi</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- MODAL 8: ĐỔI BỘ THẺ CHO 1 TỪ VỰNG --}}
+<div id="modal-single-assign" class="vcb-modal-overlay">
+    <div class="vcb-modal-dialog">
+        <div class="vcb-modal-head">
+            <h3 class="vcb-modal-title">Đổi bộ thẻ cho từ vựng</h3>
+            <button type="button" class="vcb-modal-close" onclick="closeModal('modal-single-assign')">&times;</button>
+        </div>
+        <form id="form-single-assign" method="POST" action="{{ route('admin.vocabularies.bulk-action') }}">
+            @csrf
+            <input type="hidden" name="action" value="assign_topic">
+            <input type="hidden" name="selected_ids[]" id="singleAssignVocabId" value="">
+            <div class="vcb-modal-body">
+                <div class="vcb-form-group">
+                    <label class="vcb-form-label">Chọn bộ thẻ đích</label>
+                    <select name="target_topic_id" class="vcb-form-control">
+                        @foreach ($topics as $t)
+                            <option value="{{ $t->topic_id }}">{{ $t->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+            <div class="vcb-modal-footer">
+                <button type="button" class="vcb-btn-secondary" onclick="closeModal('modal-single-assign')">Hủy</button>
+                <button type="submit" class="vcb-btn-primary">Lưu bộ thẻ</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @push('scripts')
 <script>
     // Play pronunciation using Web Speech Synthesis API
@@ -667,6 +952,76 @@
         showCardFace(false);
     }
 
+    // Toggle 3-dots dropdown menu
+    function toggleVcbDropdown(btn, event) {
+        if (event) event.stopPropagation();
+        var parentDropdown = btn.closest('.vcb-dropdown');
+        var wasOpen = parentDropdown.classList.contains('open');
+
+        // Close all other open dropdowns first
+        document.querySelectorAll('.vcb-dropdown.open').forEach(function(d) {
+            d.classList.remove('open');
+        });
+
+        if (!wasOpen) {
+            parentDropdown.classList.add('open');
+        }
+    }
+
+    // Open Edit Vocab Modal and fill data
+    function openEditVocabModal(item) {
+        var form = document.getElementById('form-edit-vocab');
+        form.action = '/admin/vocabularies/' + item.id;
+
+        document.getElementById('edit_vocab_word').value = item.word || '';
+        document.getElementById('edit_vocab_ipa').value = item.pronunciation || '';
+        document.getElementById('edit_vocab_meaning_vi').value = item.meaning_vi || '';
+        document.getElementById('edit_vocab_def_en').value = item.definition_en || '';
+        document.getElementById('edit_vocab_example_en').value = item.example_en || '';
+        document.getElementById('edit_vocab_example_vi').value = item.example_vi || '';
+
+        var posSelect = document.getElementById('edit_vocab_pos');
+        if (posSelect && item.pos) {
+            posSelect.value = item.pos;
+        }
+
+        var lvlSelect = document.getElementById('edit_vocab_level');
+        if (lvlSelect && item.level) {
+            lvlSelect.value = item.level;
+        }
+
+        var topicSelect = document.getElementById('edit_vocab_topic');
+        if (topicSelect && item.topic_id) {
+            topicSelect.value = item.topic_id;
+        }
+
+        // Close dropdown if opened
+        document.querySelectorAll('.vcb-dropdown.open').forEach(function(d) {
+            d.classList.remove('open');
+        });
+
+        openModal('modal-edit-vocab');
+    }
+
+    // Open Edit Topic Modal
+    function openEditTopicModal(topicId, name, desc) {
+        var form = document.getElementById('form-edit-topic');
+        form.action = '/admin/vocabularies/topics/' + topicId;
+        document.getElementById('edit_topic_name').value = name || '';
+        document.getElementById('edit_topic_description').value = desc || '';
+        closeModal('modal-manage-topics');
+        openModal('modal-edit-topic');
+    }
+
+    // Quick assign single word to topic
+    function quickAssignSingle(vocabId) {
+        document.getElementById('singleAssignVocabId').value = vocabId;
+        document.querySelectorAll('.vcb-dropdown.open').forEach(function(d) {
+            d.classList.remove('open');
+        });
+        openModal('modal-single-assign');
+    }
+
     // SM-2 Spaced repetition rating mock response
     function rateSM2(days, ratingText) {
         var word = document.getElementById('simWord').innerText;
@@ -726,9 +1081,16 @@
         if (m) m.classList.remove('open');
     }
 
+    // Global Click Listener: close modals when clicking backdrop & close open dropdowns
     window.addEventListener('click', function(e) {
         if (e.target.classList.contains('vcb-modal-overlay')) {
             e.target.classList.remove('open');
+        }
+
+        if (!e.target.closest('.vcb-dropdown')) {
+            document.querySelectorAll('.vcb-dropdown.open').forEach(function(d) {
+                d.classList.remove('open');
+            });
         }
     });
 </script>

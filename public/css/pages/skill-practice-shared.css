@@ -1,0 +1,769 @@
+/**
+ * StudyPrep - Shared Skill Practice Styles (Đọc & Nghe)
+ * Tái sử dụng chung 100% khung container, header, tabs và in-page setup card.
+ * Khớp 100% Hình 1 tham chiếu:
+ * - In-page setup view (không dùng modal/popup overlay, không backdrop)
+ * - Container cố định khung theo main content layout gốc, không lệch width
+ */
+
+/* ===== 1. FIXED/STICKY CONTAINER CHUNG ===== */
+.sp-skill-card-wrapper {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    padding: 6px 0 40px;
+    box-sizing: border-box;
+}
+
+.sp-skill-card {
+    width: 100%;
+    max-width: 880px;
+    background: #FFFFFF;
+    border: 1px solid var(--sp-border, #EEF1F7);
+    border-radius: 24px;
+    box-shadow: 0 4px 20px rgba(17, 28, 45, 0.04);
+    padding: 32px 36px 44px;
+    box-sizing: border-box;
+    position: relative;
+    margin: 0 auto;
+    min-height: 520px;
+    transition: box-shadow 0.2s ease;
+}
+
+/* ===== 2. HEADER: NÚT QUAY LẠI & TIÊU ĐỀ ===== */
+.sp-skill-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.sp-skill-back-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--sp-text-main, #111C2D);
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.1s ease;
+    flex: none;
+}
+
+.sp-skill-back-btn:hover {
+    background: #F1F5F9;
+}
+
+.sp-skill-back-btn:active {
+    transform: scale(0.92);
+}
+
+.sp-skill-back-btn svg {
+    width: 22px;
+    height: 22px;
+    display: block;
+}
+
+.sp-skill-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--sp-text-main, #111C2D);
+    margin: 0;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+}
+
+/* ===== 3. SKILL TABS NAV BAR ===== */
+.sp-skill-tabs {
+    display: flex;
+    align-items: center;
+    gap: 36px;
+    border-bottom: 1.5px solid #F1F5F9;
+    margin-bottom: 28px;
+    padding-bottom: 0;
+    position: relative;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.sp-skill-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.sp-skill-tab-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 4px 16px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: #1E293B;
+    position: relative;
+    white-space: nowrap;
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.sp-skill-tab-item:hover {
+    color: var(--sp-primary, #0076FE);
+}
+
+.sp-skill-tab-item.is-active {
+    color: var(--sp-primary, #0076FE);
+}
+
+.sp-skill-tab-item.is-active::after {
+    content: '';
+    position: absolute;
+    bottom: -1.5px;
+    left: 0;
+    right: 0;
+    height: 2.5px;
+    background: var(--sp-primary, #0076FE);
+    border-radius: 2px 2px 0 0;
+}
+
+.sp-skill-tab-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    transition: transform 0.2s ease;
+}
+
+.sp-skill-tab-icon--nghe {
+    background: #8B5CF6;
+}
+
+.sp-skill-tab-icon--doc {
+    background: #06B6D4;
+}
+
+.sp-skill-tab-icon--noi {
+    background: #F43F5E;
+}
+
+.sp-skill-tab-icon--viet {
+    background: #F59E0B;
+}
+
+.sp-skill-tab-icon svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+}
+
+/* ===== 4. REVIEW BANNER (ÔN TẬP CÂU SAI) ===== */
+.sp-review-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #FEF3C7;
+    border: 1px solid #FDE68A;
+    border-radius: 18px;
+    padding: 18px 24px;
+    margin-bottom: 28px;
+    box-sizing: border-box;
+}
+
+.sp-review-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.sp-review-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: #F59E0B;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+}
+
+.sp-review-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.sp-review-tag {
+    font-size: 11px;
+    font-weight: 800;
+    color: #B45309;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+}
+
+.sp-review-title {
+    font-size: 17px;
+    font-weight: 800;
+    color: #92400E;
+    margin: 0 0 2px;
+    line-height: 1.25;
+}
+
+.sp-review-desc {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #B45309;
+    margin: 0;
+}
+
+.sp-review-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 20px;
+    background: #F59E0B;
+    color: #FFFFFF;
+    font-size: 14px;
+    font-weight: 800;
+    border-radius: 20px;
+    text-decoration: none;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+    transition: background-color 0.15s ease, transform 0.15s ease;
+    white-space: nowrap;
+}
+
+.sp-review-btn:hover {
+    background: #D97706;
+    transform: translateY(-1px);
+}
+
+/* ===== 5. SECTION HEADING ===== */
+.sp-section-heading-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.sp-section-heading-bars {
+    display: flex;
+    align-items: center;
+}
+
+.sp-section-heading-title {
+    font-size: 17px;
+    font-weight: 800;
+    color: #111C2D;
+    margin: 0;
+}
+
+/* ===== 6. PART CARDS LIST ===== */
+.sp-parts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.sp-part-item-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #FFFFFF;
+    border: 1.5px solid #F1F5F9;
+    border-radius: 18px;
+    padding: 18px 24px;
+    box-shadow: 0 1px 4px rgba(17, 28, 45, 0.02);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.sp-part-item-card:hover {
+    border-color: #CBD5E1;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(17, 28, 45, 0.05);
+}
+
+.sp-part-item-left {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex: 1;
+    min-width: 0;
+}
+
+.sp-part-item-icon {
+    width: 58px;
+    height: 58px;
+    border-radius: 16px;
+    background: #F8FAFC;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+}
+
+.sp-part-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.sp-part-item-title {
+    font-size: 16.5px;
+    font-weight: 800;
+    color: #111C2D;
+    margin: 0 0 4px;
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+
+.sp-part-item-title:hover {
+    color: #0076FE;
+}
+
+.sp-part-item-badge {
+    display: inline-block;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #059669;
+    background: #E8FDF3;
+    padding: 2px 8px;
+    border-radius: 6px;
+    margin-bottom: 4px;
+}
+
+.sp-part-item-sub {
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748B;
+    margin: 0 0 6px;
+}
+
+.sp-part-item-progress {
+    width: 140px;
+    max-width: 100%;
+    height: 6px;
+    background: #F1F5F9;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.sp-part-item-progress-fill {
+    height: 100%;
+    background: #0076FE;
+    border-radius: 999px;
+}
+
+.sp-part-item-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    flex: none;
+}
+
+.sp-part-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 22px;
+    font-size: 14px;
+    font-weight: 700;
+    border-radius: 20px;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.sp-part-btn--start {
+    background: #2EB400;
+    color: #FFFFFF;
+    box-shadow: 0 3px 10px rgba(46, 180, 0, 0.28);
+}
+
+.sp-part-btn--start:hover {
+    background: #279B00;
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgba(46, 180, 0, 0.35);
+}
+
+.sp-part-btn--continue {
+    background: #5B4BF5;
+    color: #FFFFFF;
+    box-shadow: 0 3px 10px rgba(91, 75, 245, 0.28);
+}
+
+.sp-part-btn--continue:hover {
+    background: #4A38E8;
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgba(91, 75, 245, 0.35);
+}
+
+.sp-part-btn--result {
+    background: #FFFFFF;
+    color: #475569;
+    border: 1.5px solid #CBD5E1;
+}
+
+.sp-part-btn--result:hover {
+    background: #F8FAFC;
+    border-color: #94A3B8;
+    color: #1E293B;
+}
+
+/* ==========================================================================
+   7. IN-PAGE SETUP VIEW (KHỚP 100% HÌNH 1 THAM CHIẾU)
+   - Nằm trực tiếp trong luồng trang chính, KHÔNG có modal/popup overlay
+   - Cố định khung container theo main content layout gốc
+   ========================================================================== */
+.sp-setup-inpage {
+    position: relative;
+    width: 100%;
+    animation: spSetupFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes spSetupFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Nút X đóng ở góc trên bên trái giống Hình 1 */
+.sp-setup-inpage__close-btn {
+    position: absolute;
+    top: -6px;
+    left: -4px;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: #475569;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+    z-index: 5;
+}
+
+.sp-setup-inpage__close-btn:hover {
+    background: #F1F5F9;
+    color: #0F172A;
+}
+
+.sp-setup-inpage__close-btn:active {
+    transform: scale(0.92);
+}
+
+/* Khối nội dung trung tâm setup */
+.sp-setup-inpage__inner {
+    max-width: 560px;
+    margin: 0 auto;
+    padding-top: 10px;
+    box-sizing: border-box;
+}
+
+/* Icon khối bo tròn */
+.sp-setup-inpage__icon-wrap {
+    width: 68px;
+    height: 68px;
+    border-radius: 18px;
+    background: #EEF2FF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 14px;
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.12);
+}
+
+/* Tag & Tiêu đề */
+.sp-setup-inpage__tag {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 800;
+    color: #64748B;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+.sp-setup-inpage__title {
+    text-align: center;
+    font-size: 24px;
+    font-weight: 800;
+    color: #111C2D;
+    margin: 0 0 20px;
+    line-height: 1.3;
+}
+
+/* Thẻ hiển thị tiến độ */
+.sp-setup-inpage__progress-card {
+    background: #FFFFFF;
+    border: 1.5px solid #EEF1F7;
+    border-radius: 16px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    box-sizing: border-box;
+}
+
+.sp-setup-inpage__progress-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.sp-setup-inpage__progress-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.sp-setup-inpage__progress-pct {
+    font-size: 14px;
+    font-weight: 800;
+    color: #5B4BF5;
+}
+
+.sp-setup-inpage__progress-track {
+    width: 100%;
+    height: 9px;
+    background: #F1F5F9;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.sp-setup-inpage__progress-fill {
+    height: 100%;
+    background: #5B4BF5;
+    border-radius: 999px;
+    transition: width 0.3s ease;
+}
+
+/* Tiêu đề mục: "Chọn số câu luyện tập" */
+.sp-setup-inpage__section-label {
+    font-size: 15px;
+    font-weight: 800;
+    color: #111C2D;
+    margin-bottom: 12px;
+    text-align: left;
+}
+
+/* Lưới 4 thẻ đếm số câu (5, 10, 20, Tùy chọn) */
+.sp-setup-inpage__count-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.sp-setup-inpage__count-card {
+    border: 1.5px solid #EEF1F7;
+    border-radius: 16px;
+    padding: 16px 8px;
+    text-align: center;
+    cursor: pointer;
+    background: #FFFFFF;
+    transition: all 0.18s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 92px;
+    box-sizing: border-box;
+}
+
+.sp-setup-inpage__count-card:hover {
+    border-color: #CBD5E1;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(17, 28, 45, 0.05);
+}
+
+.sp-setup-inpage__count-card.is-active {
+    border-color: #5B4BF5;
+    border-width: 2px;
+    background: #F5F3FF;
+    box-shadow: 0 0 0 1px #5B4BF5;
+}
+
+.sp-setup-inpage__card-num {
+    font-size: 24px;
+    font-weight: 800;
+    color: #111C2D;
+    line-height: 1;
+}
+
+.sp-setup-inpage__count-card.is-active .sp-setup-inpage__card-num {
+    color: #5B4BF5;
+}
+
+.sp-setup-inpage__card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748B;
+    margin-bottom: 2px;
+}
+
+.sp-setup-inpage__count-card.is-active .sp-setup-inpage__card-icon {
+    color: #5B4BF5;
+}
+
+.sp-setup-inpage__card-label {
+    font-size: 11px;
+    font-weight: 800;
+    color: #64748B;
+    margin-top: 6px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.sp-setup-inpage__count-card.is-active .sp-setup-inpage__card-label {
+    color: #5B4BF5;
+}
+
+.sp-setup-inpage__card-sub {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #94A3B8;
+    margin-top: 3px;
+}
+
+/* Dropdown chọn số câu */
+.sp-setup-inpage__dropdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 18px 0 24px;
+}
+
+.sp-setup-inpage__dropdown-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #334155;
+}
+
+.sp-setup-inpage__select {
+    padding: 8px 16px;
+    border: 1.5px solid #E2E8F0;
+    border-radius: 10px;
+    background: #FFFFFF;
+    font-size: 14px;
+    font-weight: 700;
+    color: #111C2D;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.sp-setup-inpage__select:focus {
+    border-color: #5B4BF5;
+}
+
+/* Nút BẮT ĐẦU */
+.sp-setup-inpage__start-btn {
+    width: 100%;
+    height: 50px;
+    background: #5B4BF5;
+    border: none;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 800;
+    color: #FFFFFF;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(91, 75, 245, 0.3);
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    letter-spacing: 0.3px;
+}
+
+.sp-setup-inpage__start-btn:hover {
+    background: #4A38E8;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(91, 75, 245, 0.4);
+}
+
+.sp-setup-inpage__start-btn:active {
+    transform: translateY(0);
+}
+
+/* Link phụ xem kết quả gần nhất */
+.sp-setup-inpage__sub-link-wrap {
+    margin-top: 16px;
+    text-align: center;
+}
+
+.sp-setup-inpage__sub-link {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #64748B;
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.sp-setup-inpage__sub-link:hover {
+    color: #5B4BF5;
+    text-decoration: underline;
+}
+
+/* ===== 8. RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .sp-skill-card {
+        padding: 24px 18px 32px;
+        border-radius: 18px;
+    }
+
+    .sp-skill-tabs {
+        gap: 20px;
+    }
+
+    .sp-setup-inpage__close-btn {
+        top: -8px;
+        left: -8px;
+    }
+
+    .sp-setup-inpage__count-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .sp-review-banner {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 14px;
+    }
+
+    .sp-review-btn {
+        align-self: flex-start;
+    }
+
+    .sp-part-item-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 14px;
+    }
+
+    .sp-part-item-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}

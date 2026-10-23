@@ -191,6 +191,7 @@ class ListeningPracticeController extends Controller
     {
         $submittedAnswers = $request->input('answers', []);
         $count = (int) $request->input('total_count', 5);
+        $timeSpentSeconds = max(0, (int) $request->input('time_spent', 0));
 
         $bank = $this->getQuestionBank();
         $questions = array_slice($bank, 0, min($count, count($bank)));
@@ -215,69 +216,108 @@ class ListeningPracticeController extends Controller
                 $incorrectCount++;
             }
 
-            $details[$qid] = [
+            $details[] = array_merge($q, [
                 'user_answer' => $userPick,
+                'correct_answer' => $q['correct'],
                 'status' => $status,
-            ];
+            ]);
         }
 
+        $total = count($questions);
+        $minutes = intdiv($timeSpentSeconds, 60);
+        $seconds = $timeSpentSeconds % 60;
         $resultData = [
-            'total' => count($questions),
+            'part_name' => 'Luyện nghe TOEIC',
+            'total' => $total,
             'correct_count' => $correctCount,
             'incorrect_count' => $incorrectCount,
             'unanswered_count' => $unansweredCount,
+            'score_percent' => $total > 0 ? (int) round(($correctCount / $total) * 100) : 0,
+            'time_spent_seconds' => $timeSpentSeconds,
+            'time_spent_formatted' => sprintf('%02d:%02d', $minutes, $seconds),
+            'time_spent_text' => $minutes > 0 ? $minutes . ' phút' : $seconds . ' giây',
+            'previous_percent' => '0%',
+            'submitted_at' => now()->format('H:i • d/m/Y'),
             'answers' => $submittedAnswers,
             'details' => $details,
         ];
 
         session(['listening_practice_result' => $resultData]);
 
-        return redirect()->route('luyen-tap.nghe.xem-dap-an');
+        return redirect()->route('luyen-tap.nghe.ket-qua');
     }
 
     /**
-     * Màn hình xem đáp án & lời giải (Matching ảnh mẫu 1 & 2)
+     * Màn hình tổng kết kết quả và xem đáp án luyện nghe
      */
-    public function review(Request $request): View
+    public function result(Request $request): View
     {
         $result = session('listening_practice_result');
-        $allQuestions = $this->getQuestionBank();
+        $firstDetail = $result && ! empty($result['details']) ? reset($result['details']) : null;
 
-        // Nếu truy cập trực tiếp hoặc chưa có session, tạo dữ liệu thực tế mẫu:
-        // Câu 6: Người dùng chọn A (sai), đáp án đúng là B (khớp 100% ảnh mẫu 1 & 2)
-        if (! $result) {
-            $userAnswers = [
-                '1' => 'A', // đúng
-                '2' => 'A', // đúng
-                '3' => 'B', // đúng
-                '4' => 'B', // đúng
-                '6' => 'A', // sai (đáp án đúng là B)
-            ];
+        if (! is_array($firstDetail) || ! isset($firstDetail['options'])) {
+            $bank = $this->getQuestionBank();
+            $count = min(max(1, (int) ($result['total'] ?? count($bank))), count($bank));
+            $questions = array_slice($bank, 0, $count);
+            $answers = $result['answers'] ?? [];
 
+            if (! $result) {
+                foreach ($questions as $index => $question) {
+                    $wrongOptions = array_values(array_diff(array_keys($question['options']), [$question['correct']]));
+                    $answers[$question['id']] = $index === 0
+                        ? ($wrongOptions[0] ?? null)
+                        : $question['correct'];
+                }
+            }
+
+            $details = [];
+            $correctCount = 0;
+            $incorrectCount = 0;
+            $unansweredCount = 0;
+
+            foreach ($questions as $question) {
+                $userPick = $answers[$question['id']] ?? null;
+                if (empty($userPick)) {
+                    $status = 'unanswered';
+                    $unansweredCount++;
+                } elseif ($userPick === $question['correct']) {
+                    $status = 'correct';
+                    $correctCount++;
+                } else {
+                    $status = 'incorrect';
+                    $incorrectCount++;
+                }
+
+                $details[] = array_merge($question, [
+                    'user_answer' => $userPick,
+                    'correct_answer' => $question['correct'],
+                    'status' => $status,
+                ]);
+            }
+
+            $total = count($details);
+            $timeSpentSeconds = max(0, (int) ($result['time_spent_seconds'] ?? 0));
+            $minutes = intdiv($timeSpentSeconds, 60);
+            $seconds = $timeSpentSeconds % 60;
             $result = [
-                'total' => count($allQuestions),
-                'correct_count' => 4,
-                'incorrect_count' => 1,
-                'unanswered_count' => 0,
-                'answers' => $userAnswers,
-                'details' => [
-                    '6' => ['user_answer' => 'A', 'status' => 'incorrect'],
-                ],
+                'part_name' => 'Luyện nghe TOEIC',
+                'total' => $total,
+                'correct_count' => $correctCount,
+                'incorrect_count' => $incorrectCount,
+                'unanswered_count' => $unansweredCount,
+                'score_percent' => $total > 0 ? (int) round(($correctCount / $total) * 100) : 0,
+                'time_spent_seconds' => $timeSpentSeconds,
+                'time_spent_formatted' => sprintf('%02d:%02d', $minutes, $seconds),
+                'time_spent_text' => $minutes > 0 ? $minutes . ' phút' : $seconds . ' giây',
+                'previous_percent' => '0%',
+                'submitted_at' => now()->format('H:i • d/m/Y'),
+                'answers' => $answers,
+                'details' => $details,
             ];
-        } else {
-            $userAnswers = $result['answers'] ?? [];
         }
 
-        $count = $result['total'] ?? 5;
-        $selectedQuestions = array_slice($allQuestions, 0, min($count, count($allQuestions)));
-
-        return view('pages.nghe-lam-bai', [
-            'questions' => $selectedQuestions,
-            'totalCount' => count($selectedQuestions),
-            'targetCount' => $count,
-            'isReview' => true,
+        return view('pages.nghe-ket-qua', [
             'result' => $result,
-            'userAnswers' => $userAnswers,
         ]);
     }
 }

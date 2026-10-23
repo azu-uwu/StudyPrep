@@ -31,10 +31,13 @@ Route::get('/luyen-tap/doc', function () {
 
 // Luồng Luyện kỹ năng Nghe (Listening)
 Route::view('/luyen-tap/nghe', 'pages.luyen-tap-nghe')->name('luyen-tap.nghe');
-Route::view('/luyen-tap/nghe/mo-ta-hinh', 'pages.nghe-mo-ta-hinh')->name('luyen-tap.nghe.mo-ta-hinh');
+Route::get('/luyen-tap/nghe/mo-ta-hinh', function () {
+    return redirect('/luyen-tap/nghe?part=1');
+})->name('luyen-tap.nghe.mo-ta-hinh');
 Route::get('/luyen-tap/nghe/lam-bai', [ListeningPracticeController::class, 'practice'])->name('luyen-tap.nghe.lam-bai');
 Route::post('/luyen-tap/nghe/nop-bai', [ListeningPracticeController::class, 'submit'])->name('luyen-tap.nghe.nop-bai');
-Route::get('/luyen-tap/nghe/xem-dap-an', [ListeningPracticeController::class, 'review'])->name('luyen-tap.nghe.xem-dap-an');
+Route::get('/luyen-tap/nghe/ket-qua', [ListeningPracticeController::class, 'result'])->name('luyen-tap.nghe.ket-qua');
+Route::get('/luyen-tap/nghe/xem-dap-an', [ListeningPracticeController::class, 'result'])->name('luyen-tap.nghe.xem-dap-an');
 
 // Luồng Luyện kỹ năng Đọc (Part 5: Hoàn thành câu & Kết quả)
 Route::get('/luyen-tap/doc/hoan-thanh-cau', [ReadingPracticeController::class, 'practice'])->name('luyen-tap.doc.hoan-thanh-cau');
@@ -122,6 +125,8 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::post('/vocabularies/import', [VocabularyController::class, 'import'])->name('vocabularies.import');
         Route::post('/vocabularies/import-confirm', [VocabularyController::class, 'confirmImport'])->name('vocabularies.import-confirm');
         Route::post('/vocabularies/topics', [VocabularyController::class, 'storeTopic'])->name('vocabularies.topics.store');
+        Route::put('/vocabularies/topics/{topic}', [VocabularyController::class, 'updateTopic'])->name('vocabularies.topics.update');
+        Route::delete('/vocabularies/topics/{topic}', [VocabularyController::class, 'destroyTopic'])->name('vocabularies.topics.destroy');
         Route::redirect('/nhap-tu-vung-hang-loat', '/admin/vocabularies/import');
         Route::redirect('/tu-vung-flashcard', '/admin/vocabularies');
     });

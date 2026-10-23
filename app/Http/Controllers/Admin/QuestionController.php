@@ -9,6 +9,8 @@ use App\Models\Question;
 use App\Models\QuestionSet;
 use App\Models\QuestionType;
 use App\Models\Skill;
+use App\Services\TextToSpeechService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -580,5 +582,66 @@ class QuestionController extends Controller
             : "Đã xuất bản thành công nhóm câu hỏi #GRP-{$qSet->question_set_id} ({$qSet->title}) vào Ngân hàng câu hỏi!";
 
         return redirect()->route('admin.questions.index')->with('success', $msg);
+    }
+
+    /**
+     * API Endpoint: Sinh file audio MP3 tự động từ văn bản/transcript cho TOEIC Listening
+     * POST /api/admin/questions/generate-tts
+     */
+    public function generateTts(Request $request, TextToSpeechService $ttsService): JsonResponse
+    {
+        $validated = $request->validate([
+            'question_id' => 'nullable|integer',
+            'question_set_id' => 'nullable|integer',
+            'text' => 'nullable|string',
+            'transcript' => 'nullable|string',
+            'part_number' => 'nullable|integer|min:1|max:4',
+            'custom_filename' => 'nullable|string|max:100',
+            'lang' => 'nullable|string|max:10',
+        ]);
+
+        $text = $validated['text'] ?? $validated['transcript'] ?? null;
+        $questionId = !empty($validated['question_id']) ? (int) $validated['question_id'] : null;
+        $questionSetId = !empty($validated['question_set_id']) ? (int) $validated['question_set_id'] : null;
+        $partNumber = !empty($validated['part_number']) ? (int) $validated['part_number'] : null;
+        $customFilename = $validated['custom_filename'] ?? null;
+        $lang = $validated['lang'] ?? 'en';
+
+        if (!$text && !$questionId && !$questionSetId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cần cung cấp ít nhất một trong các trường: question_id, question_set_id, hoặc text/transcript.',
+            ], 422);
+        }
+
+        try {
+            if ($questionId || $questionSetId) {
+                $result = $ttsService->generateAndSaveToDatabase($questionId, $questionSetId, $text, $partNumber);
+            } else {
+                $result = $ttsService->generateAudio($text, $partNumber ?? 1, $customFilename, $lang);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sinh file audio MP3 thành công.',
+                'audio_url' => $result['audio_url'],
+                'file_path' => $result['file_path'],
+                'file_size' => $result['file_size'],
+                'duration_estimate' => $result['duration_estimate'] ?? 0,
+                'part_number' => $result['part_number'] ?? $partNumber ?? 1,
+                'question_id' => $result['question_id'] ?? $questionId,
+                'question_set_id' => $result['question_set_id'] ?? $questionSetId,
+            ], 200);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi sinh audio: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }

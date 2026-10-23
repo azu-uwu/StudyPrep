@@ -277,6 +277,11 @@
     letter-spacing: -0.02em;
 }
 
+.sp-vp-logo-img {
+    height: 32px;
+    display: block;
+}
+
 .sp-vp-logo span {
     color: #F59E0B;
 }
@@ -743,4 +748,34 @@
     .sp-setup-modal {
         padding: 24px 20px 28px;
     }
+}
+
+/* ==== Stem câu hỏi Part 6 / Part 7 ở Cột 3 ==== */
+.sp-vp-question-stem {
+    background: #F8FAFC;
+    border: 1.5px solid #E2E8F0;
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 14px;
+}
+
+.sp-vp-qnum-label {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    color: #5B4BF5;
+    background: #EDE9FE;
+    border-radius: 30px;
+    padding: 2px 10px;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.sp-vp-stem-text {
+    font-size: 14.5px;
+    font-weight: 600;
+    color: #1E293B;
+    line-height: 1.65;
+    margin: 0;
 }

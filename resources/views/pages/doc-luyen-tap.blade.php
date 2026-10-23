@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>StudyPrep - Luyện tập Part 5 & 6 (Hoàn thành câu)</title>
+    <title>StudyPrep - Luyện tập Part {{ $part ?? 5 }} · TOEIC Reading</title>
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
 
     {{-- Fonts --}}
@@ -19,8 +19,8 @@
     {{-- 1. HEADER THANH TRÊN CÙNG (KHỚP ẢNH MẪU 4) --}}
     <header class="sp-vp-header">
         <div class="sp-vp-header-left">
-            <a href="{{ url('/luyen-tap/doc') }}" class="sp-vp-logo" title="StudyPrep Reading">
-                voca<span>PREP</span>
+            <a href="{{ url('/luyen-tap/doc') }}" class="sp-vp-logo" title="StudyPrep">
+                <img src="{{ asset('images/logo.svg') }}" alt="StudyPrep" class="sp-vp-logo-img">
             </a>
             <a href="{{ url('/luyen-tap/doc') }}" class="sp-vp-close-btn" title="Thoát bài luyện tập" onclick="return confirmExit(event)">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -78,6 +78,7 @@
     {{-- 3. FORM GỬI BÀI LÀM LÊN SERVER --}}
     <form id="practiceExamForm" action="{{ route('luyen-tap.doc.nop-bai') }}" method="POST">
         @csrf
+        <input type="hidden" name="part" value="{{ $part ?? 5 }}">
         <input type="hidden" name="total_count" value="{{ count($questions) }}">
         <input type="hidden" name="time_spent" id="timeSpentInput" value="0">
 
@@ -168,16 +169,18 @@
 
             // Cập nhật Cột 1: Passage / Context
             if (q.passage) {
-                document.getElementById('passageRange').textContent = q.question_range || ('Part ' + q.part);
+                // Part 6 & 7: Hiển thị đoạn văn/passage
+                document.getElementById('passageRange').textContent = q.question_range || q.part;
                 document.getElementById('passageTitle').style.display = q.passage_title ? 'block' : 'none';
                 document.getElementById('passageTitle').textContent = q.passage_title || '';
                 document.getElementById('passageContent').innerHTML = q.passage;
-            } else if (q.part === 'Part 5') {
-                document.getElementById('passageRange').textContent = 'Part 5 • Hoàn thành câu';
-                document.getElementById('passageTitle').style.display = 'block';
-                document.getElementById('passageTitle').textContent = 'Câu hỏi ngữ pháp & từ vựng';
+            } else {
+                // Part 5: Hiển thị câu hỏi trong Cột 1
+                document.getElementById('passageRange').textContent = 'PART 5 · Hoàn thành câu';
+                document.getElementById('passageTitle').style.display = 'none';
                 document.getElementById('passageContent').innerHTML = `
-                    <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: 14px; padding: 18px; font-size: 15px; font-weight: 700; color: #1E293B; line-height: 1.6;">
+                    <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: 14px; padding: 20px; font-size: 16px; font-weight: 700; color: #1E293B; line-height: 1.7;">
+                        <div style="font-size:12px;font-weight:600;color:#64748B;margin-bottom:10px;letter-spacing:0.8px;">CÂU HỎI ${q.question_number}</div>
                         ${q.stem}
                     </div>
                 `;
@@ -191,11 +194,23 @@
                 Phân tích: ${q.explanation}
             `;
 
-            // Cập nhật Cột 3: Lựa chọn đáp án
-            let questionsHtml = `
-                <div class="sp-vp-question-block">
-                    <div class="sp-vp-qnum">${q.question_number}.</div>
-            `;
+            // Cập nhật Cột 3: Stem + Lựa chọn đáp án
+            // Nếu là Part 6/7 (có passage), hiển thị stem câu hỏi trước các đáp án
+            let stemHtml = '';
+            if (q.passage && q.stem) {
+                stemHtml = `
+                    <div class="sp-vp-question-stem">
+                        <span class="sp-vp-qnum-label">Câu ${q.question_number}</span>
+                        <p class="sp-vp-stem-text">${q.stem}</p>
+                    </div>
+                `;
+            }
+
+            let questionsHtml = `<div class="sp-vp-question-block">`;
+            if (!q.passage) {
+                // Part 5: chỉ hiển thị số câu
+                questionsHtml += `<div class="sp-vp-qnum" style="margin-bottom:16px;">Câu ${q.question_number}</div>`;
+            }
 
             const opts = q.options;
             for (const [letter, text] of Object.entries(opts)) {
@@ -207,20 +222,16 @@
                     </div>
                 `;
             }
-
             questionsHtml += `</div>`;
-            document.getElementById('questionsContainer').innerHTML = questionsHtml;
+
+            document.getElementById('questionsContainer').innerHTML = stemHtml + questionsHtml;
 
             // Cập nhật tiến độ thanh ngang
             updateProgress();
 
             // Cập nhật nút Flag
             const flagBtn = document.getElementById('flagBtn');
-            if (flaggedQuestions[q.id]) {
-                flagBtn.style.color = '#F59E0B';
-            } else {
-                flagBtn.style.color = '#64748B';
-            }
+            flagBtn.style.color = flaggedQuestions[q.id] ? '#F59E0B' : '#64748B';
 
             // Cập nhật trạng thái nút Trước / Sau
             document.getElementById('prevBtn').disabled = (currentIndex === 0);
