@@ -26,6 +26,7 @@ Route::get('/luyen-tap/doc', function () {
     if (request('skill') === 'viet') {
         return redirect('/luyen-tap/viet');
     }
+
     return view('pages.luyen-tap-doc');
 })->name('luyen-tap.doc');
 
@@ -77,6 +78,8 @@ Route::view('/cai-dat', 'pages.cai-dat')->name('cai-dat');
 Route::view('/component-demo', 'components.component-demo');
 Route::view('/register', 'auth.register')->name('register');
 Route::view('/login', 'auth.login')->name('login');
+Route::view('/forgot-password', 'auth.forgot-password')->name('password.request');
+Route::redirect('/quen-mat-khau', '/forgot-password');
 Route::redirect('/admin/login', '/login')->name('admin.login');
 
 Route::prefix('admin')->name('admin.')->group(function (): void {
