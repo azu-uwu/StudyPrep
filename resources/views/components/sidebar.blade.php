@@ -20,6 +20,7 @@
                 ['key' => 'phan-tich', 'label' => 'Phân tích', 'href' => url('/phan-tich')],
                 ['key' => 'lich-su', 'label' => 'Lịch sử', 'href' => url('/lich-su')],
                 ['key' => 'cai-thien', 'label' => 'Cải thiện', 'href' => url('/cai-thien')],
+                ['key' => 'muc-tieu', 'label' => 'Mục tiêu', 'href' => url('/muc-tieu-trang-chu')],
             ],
         ],
     ];
@@ -229,6 +230,15 @@
                                                 <path d="M13.4 5.5 7.8 13.2h3.6l-.8 5.3 5.6-7.7h-3.6z" fill="#FFFFFF" />
                                             </svg>
                                         @break
+
+                                        @case('muc-tieu')
+                                            {{-- Mục tiêu: bia ngắm / hồng tâm xanh ngọc --}}
+                                            <svg viewBox="0 0 24 24" fill="none" focusable="false">
+                                                <circle cx="12" cy="12" r="9.4" fill="#10B981" />
+                                                <circle cx="12" cy="12" r="6" stroke="#FFFFFF" stroke-width="1.8" />
+                                                <circle cx="12" cy="12" r="2.2" fill="#FFFFFF" />
+                                            </svg>
+                                        @break
                                     @endswitch
                                 </span>
 
@@ -241,12 +251,18 @@
         @endforeach
     </nav>
 
-    {{-- ===== Chân sidebar: Hồ sơ ===== --}}
+    {{-- ===== Chân sidebar: Hồ sơ & Đăng xuất ===== --}}
     <div class="sp-sidebar__footer">
         <nav aria-label="Tài khoản">
             <ul class="sp-sidebar__list">
                 <li>
-                    <a href="#" class="sp-sidebar__link" title="Hồ sơ" aria-label="Hồ sơ">
+                    <a
+                        href="{{ url('/ho-so') }}"
+                        class="sp-sidebar__link{{ $active === 'ho-so' ? ' is-active' : '' }}"
+                        title="Hồ sơ"
+                        aria-label="Hồ sơ"
+                        @if ($active === 'ho-so') aria-current="page" @endif
+                    >
                         <span class="sp-sidebar__icon sp-sidebar__icon--sm" aria-hidden="true">
                             <svg viewBox="0 0 24 24" fill="none" focusable="false">
                                 <circle cx="12" cy="8.2" r="3.7" fill="#8B5CF6" />
@@ -256,6 +272,39 @@
 
                         <span class="sp-sidebar__label">Hồ sơ</span>
                     </a>
+                </li>
+                <li>
+                    @if (Route::has('logout'))
+                        <form method="POST" action="{{ route('logout') }}" class="sp-sidebar__logout-form">
+                            @csrf
+                            <button type="submit" class="sp-sidebar__link sp-sidebar__link--logout" title="Đăng xuất" aria-label="Đăng xuất">
+                                <span class="sp-sidebar__icon sp-sidebar__icon--sm" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                                        <polyline points="16 17 21 12 16 7" />
+                                        <line x1="21" y1="12" x2="9" y2="12" />
+                                    </svg>
+                                </span>
+
+                                <span class="sp-sidebar__label">Đăng xuất</span>
+                            </button>
+                        </form>
+                    @else
+                        <form method="POST" action="{{ Route::has('admin.logout') ? route('admin.logout') : url('/logout') }}" class="sp-sidebar__logout-form" onsubmit="if(!this.action.includes('admin/logout')){ event.preventDefault(); window.location.href='{{ url('/login') }}'; }">
+                            @csrf
+                            <button type="submit" class="sp-sidebar__link sp-sidebar__link--logout" title="Đăng xuất" aria-label="Đăng xuất">
+                                <span class="sp-sidebar__icon sp-sidebar__icon--sm" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                                        <polyline points="16 17 21 12 16 7" />
+                                        <line x1="21" y1="12" x2="9" y2="12" />
+                                    </svg>
+                                </span>
+
+                                <span class="sp-sidebar__label">Đăng xuất</span>
+                            </button>
+                        </form>
+                    @endif
                 </li>
             </ul>
         </nav>

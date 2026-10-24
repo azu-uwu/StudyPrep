@@ -71,6 +71,7 @@ Route::view('/cai-thien', 'pages.cai-thien')->name('cai-thien');
 // Các màn hình quản lý trong Header (Hồ sơ & Cài đặt)
 Route::view('/ho-so', 'pages.ho-so')->name('ho-so');
 Route::view('/ho-so/muc-tieu-thiet-lap', 'pages.muc-tieu-thiet-lap')->name('ho-so.muc-tieu-thiet-lap');
+Route::view('/muc-tieu-trang-chu', 'pages.muc-tieu-trang-chu')->name('muc-tieu-trang-chu');
 
 Route::view('/cai-dat', 'pages.cai-dat')->name('cai-dat');
 

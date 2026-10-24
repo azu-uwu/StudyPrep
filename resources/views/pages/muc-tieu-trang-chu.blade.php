@@ -1,4 +1,4 @@
-<x-layouts.app active="ho-so" title="StudyPrep - Hồ sơ học viên">
+<x-layouts.app active="muc-tieu" title="StudyPrep - Mục tiêu học tập">
 @push('styles')
 <style>
     * { box-sizing: border-box; }

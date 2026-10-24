@@ -155,6 +155,29 @@
     outline-offset: 2px;
 }
 
+/* ===== Button menu item (Đăng xuất) ===== */
+button.sp-sidebar__link {
+    width: 100%;
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+}
+
+.sp-sidebar__logout-form {
+    margin: 0;
+    padding: 0;
+}
+
+.sp-sidebar__link--logout {
+    color: #ef4444;
+}
+
+.sp-sidebar__link--logout:hover {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
 /* ===== Icons ===== */
 .sp-sidebar__icon {
     flex: none;
@@ -318,7 +341,8 @@
     }
 
     /* Moi menu item tro thanh o icon 46x46 canh giua */
-    .sp-sidebar__link {
+    .sp-sidebar__link,
+    button.sp-sidebar__link {
         position: relative;
         width: 46px;
         margin: 0 auto;
