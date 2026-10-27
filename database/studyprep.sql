@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Oct 05, 2026 at 06:45 AM
+-- Generation Time: Oct 27, 2026 at 10:16 AM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -20,6 +20,20 @@ SET time_zone = "+00:00";
 --
 -- Database: `studyprep`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `activity_log`
+--
+
+CREATE TABLE `activity_log` (
+  `activity_id` bigint NOT NULL,
+  `user_id` bigint NOT NULL,
+  `action` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -115,6 +129,22 @@ CREATE TABLE `exam_section` (
   `name` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
   `sequence_no` smallint NOT NULL,
   `default_time_limit` int DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `feedback`
+--
+
+CREATE TABLE `feedback` (
+  `feedback_id` bigint NOT NULL,
+  `user_id` bigint NOT NULL,
+  `question_id` bigint NOT NULL,
+  `content` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PENDING',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -324,6 +354,13 @@ CREATE TABLE `vocabularies` (
 --
 
 --
+-- Indexes for table `activity_log`
+--
+ALTER TABLE `activity_log`
+  ADD PRIMARY KEY (`activity_id`),
+  ADD KEY `idx_activity_log_user_time` (`user_id`,`created_at`);
+
+--
 -- Indexes for table `ai_analysis`
 --
 ALTER TABLE `ai_analysis`
@@ -369,6 +406,15 @@ ALTER TABLE `blueprint_rule`
 ALTER TABLE `exam_section`
   ADD PRIMARY KEY (`section_id`),
   ADD KEY `FK_ExamSections_Skills` (`skill_id`);
+
+--
+-- Indexes for table `feedback`
+--
+ALTER TABLE `feedback`
+  ADD PRIMARY KEY (`feedback_id`),
+  ADD KEY `idx_feedback_user` (`user_id`),
+  ADD KEY `idx_feedback_question` (`question_id`),
+  ADD KEY `idx_feedback_status` (`status`);
 
 --
 -- Indexes for table `goals`
@@ -467,6 +513,12 @@ ALTER TABLE `vocabularies`
 --
 
 --
+-- AUTO_INCREMENT for table `activity_log`
+--
+ALTER TABLE `activity_log`
+  MODIFY `activity_id` bigint NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `ai_analysis`
 --
 ALTER TABLE `ai_analysis`
@@ -501,6 +553,12 @@ ALTER TABLE `blueprint_rule`
 --
 ALTER TABLE `exam_section`
   MODIFY `section_id` bigint NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `feedback`
+--
+ALTER TABLE `feedback`
+  MODIFY `feedback_id` bigint NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `goals`
@@ -579,6 +637,12 @@ ALTER TABLE `vocabularies`
 --
 
 --
+-- Constraints for table `activity_log`
+--
+ALTER TABLE `activity_log`
+  ADD CONSTRAINT `fk_activity_log_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
 -- Constraints for table `ai_analysis`
 --
 ALTER TABLE `ai_analysis`
@@ -618,6 +682,13 @@ ALTER TABLE `blueprint_rule`
 --
 ALTER TABLE `exam_section`
   ADD CONSTRAINT `FK_ExamSections_Skills` FOREIGN KEY (`skill_id`) REFERENCES `skills` (`skill_id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+--
+-- Constraints for table `feedback`
+--
+ALTER TABLE `feedback`
+  ADD CONSTRAINT `fk_feedback_questions` FOREIGN KEY (`question_id`) REFERENCES `questions` (`question_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_feedback_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `goals`

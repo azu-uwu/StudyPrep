@@ -446,3 +446,61 @@ RENAME TABLE
     testformquestions   TO test_form_question,
     testforms           TO test_form,
     uservocabularies    TO user_vocabulary;
+
+============ CẬP NHẬT THÊM BẢNG ============
+-- Bảng activity_log: Lưu hoạt động của người dùng
+CREATE TABLE activity_log (
+    activity_id BIGINT NOT NULL AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    action VARCHAR(50) NOT NULL,
+    description TEXT DEFAULT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (activity_id),
+    KEY idx_activity_log_user_time (user_id, created_at),
+
+    CONSTRAINT fk_activity_log_users
+        FOREIGN KEY (user_id)
+        REFERENCES users (user_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+
+-- Thêm vai trò teacher cho người dùng
+-- Set role teacher là dược vì hiện tại đang lưu varchar(20)
+-- UPDATE users SET role = 'teacher' WHERE user_id = 1;
+
+
+-- Bảng feedback: Lưu phản hồi của học viên về câu hỏi
+CREATE TABLE feedback (
+    feedback_id BIGINT NOT NULL AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    question_id BIGINT NOT NULL,
+    content TEXT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (feedback_id),
+    KEY idx_feedback_user (user_id),
+    KEY idx_feedback_question (question_id),
+    KEY idx_feedback_status (status),
+
+    CONSTRAINT fk_feedback_users
+        FOREIGN KEY (user_id)
+        REFERENCES users (user_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    CONSTRAINT fk_feedback_questions
+        FOREIGN KEY (question_id)
+        REFERENCES questions (question_id)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
