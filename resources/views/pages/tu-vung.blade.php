@@ -1,137 +1,213 @@
-<x-layouts.app active="tu-vung" title="StudyPrep - Học từ vựng & Flashcard hồi lượt thi">
-    {{-- Header tiêu đề trang --}}
-    <div class="sp-page-header">
-        <h1 class="sp-page-title">Học từ vựng TOEIC &amp; Flashcard</h1>
-        <p class="sp-page-desc">Ghi nhớ từ vựng trọng tâm theo chủ đề. Hoàn thành bài học để hồi thêm lượt thi thử!</p>
-    </div>
+<x-layouts.app active="tu-vung" title="StudyPrep - Từ vựng">
 
-    {{-- Banner hồi lượt thi --}}
-    <div class="sp-banner sp-banner--purple sp-flex-between">
-        <div style="display: flex; align-items: center; gap: 16px;">
-            <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(255, 255, 255, 0.2); display: flex; align-items: center; justify-content: center; font-size: 26px; flex: none;">
-                ⚡
+@push('styles')
+    {{-- Tái sử dụng CSS chuẩn từ Mục tiêu và Luyện tập --}}
+    <link rel="stylesheet" href="{{ asset('css/pages/muc-tieu.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/pages/luyen-tap.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/pages/tu-vung.css') }}">
+@endpush
+
+{{-- ===== TIÊU ĐỀ TRANG (Đồng bộ chuẩn từ trang Mục tiêu) ===== --}}
+<div class="mt-page-header">
+    <h1 class="mt-page-title">Từ vựng</h1>
+    <p class="mt-page-desc">Ghi nhớ từ vựng trọng tâm theo chủ đề. Hoàn thành bài học để hồi thêm lượt thi thử</p>
+</div>
+
+{{-- ===== THỐNG KÊ TỔNG QUAN ===== --}}
+<div class="tv-stats-grid">
+    {{-- Card lớn bên trái: Đã học / Nắm vững / Dễ quên --}}
+    <div class="tv-stat-card-left-wrap">
+        <div class="tv-stat-card-main">
+            <div class="tv-stat-main-top">
+                {{-- Icon 3 cuốn sách xếp nghiêng màu xanh --}}
+                <div class="tv-book-stack-icon">
+                    <svg width="44" height="42" viewBox="0 0 44 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Cuốn 1: Xanh nhạt nghiêng -->
+                        <g transform="rotate(10 11 22)">
+                            <rect x="6" y="7" width="8" height="26" rx="2" fill="#38BDF8" />
+                            <rect x="6" y="11" width="8" height="2.2" fill="#FFFFFF" fill-opacity="0.85" />
+                            <rect x="6" y="15" width="8" height="2.2" fill="#FFFFFF" fill-opacity="0.85" />
+                        </g>
+                        <!-- Cuốn 2: Xanh dương giữa -->
+                        <g transform="rotate(10 21 22)">
+                            <rect x="16" y="5" width="8" height="28" rx="2" fill="#0284C7" />
+                            <rect x="16" y="10" width="8" height="2.2" fill="#FFFFFF" fill-opacity="0.85" />
+                            <rect x="16" y="14" width="8" height="2.2" fill="#FFFFFF" fill-opacity="0.85" />
+                        </g>
+                        <!-- Cuốn 3: Xanh đậm phải -->
+                        <g transform="rotate(10 31 22)">
+                            <rect x="26" y="8" width="8" height="26" rx="2" fill="#0076FE" />
+                            <rect x="26" y="12" width="8" height="2.2" fill="#FFFFFF" fill-opacity="0.85" />
+                            <rect x="26" y="16" width="8" height="2.2" fill="#FFFFFF" fill-opacity="0.85" />
+                        </g>
+                    </svg>
+                </div>
+
+                <div class="tv-stat-main-number-wrap">
+                    <span class="tv-stat-main-number" id="statLearnedCount">4</span>
+                    <span class="tv-stat-main-label">ĐÃ HỌC</span>
+                </div>
             </div>
-            <div>
-                <h3 style="font-size: 17px; font-weight: 800; margin: 0 0 4px;">Cơ chế hồi lượt thi (Recovery Rule)</h3>
-                <p style="font-size: 13px; font-weight: 500; opacity: 0.9; margin: 0;">Hoàn thành ôn tập 10 thẻ Flashcard dưới đây để được <strong>cộng +1 Lượt thi thử</strong> (tối đa 5 lượt).</p>
-            </div>
-        </div>
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 13px; font-weight: 700; background: rgba(255, 255, 255, 0.15); padding: 6px 14px; border-radius: 999px;">Tiến độ hôm nay: 8/10 thẻ</span>
-        </div>
-    </div>
 
-    {{-- Khung Flashcard tương tác (Interactive 3D Flip Flashcard) --}}
-    <div style="background: #FFFFFF; border: 1px solid #EEF1F7; border-radius: 20px; padding: 32px; margin-bottom: 32px; box-shadow: 0 4px 16px rgba(17, 28, 45, 0.03);">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-            <span class="sp-badge sp-badge--primary">Thẻ Flashcard 1 / 10 • Chủ đề: Contracts</span>
-            <span style="font-size: 13px; font-weight: 700; color: #64748B;">Click thẻ để lật xem nghĩa</span>
-        </div>
+            <div class="tv-stat-main-divider"></div>
 
-        {{-- Flip card container --}}
-        <div id="spFlashcard" class="sp-flashcard" onclick="toggleFlip()">
-            {{-- Mặt trước: Tiếng Anh + IPA --}}
-            <div class="sp-flashcard__face sp-flashcard__face--front">
-                <span class="sp-badge sp-badge--neutral" style="margin-bottom: 16px;">noun / danh từ</span>
-                <h2 style="font-size: 38px; font-weight: 800; color: #111C2D; margin: 0 0 8px;">negotiation</h2>
-                <p style="font-size: 17px; font-weight: 600; color: #0076FE; margin: 0 0 20px;">/nɪˌɡoʊ.ʃiˈeɪ.ʃən/</p>
-                <p style="font-size: 14px; font-weight: 600; color: #64748B; margin: 0;">(Nhấn vào đây để xem nghĩa &amp; ví dụ câu)</p>
-            </div>
+            <div class="tv-stat-main-bottom">
+                <div class="tv-stat-sub-col">
+                    <span class="tv-stat-sub-label tv-stat-sub-label--green">NẮM VỮNG</span>
+                    <span class="tv-stat-sub-value--green" id="statMasteredCount">3</span>
+                </div>
 
-            {{-- Mặt sau: Tiếng Việt + Ví dụ --}}
-            <div class="sp-flashcard__face sp-flashcard__face--back">
-                <span class="sp-badge sp-badge--success" style="margin-bottom: 12px;">Định nghĩa tiếng Việt</span>
-                <h3 style="font-size: 26px; font-weight: 800; color: #059669; margin: 0 0 14px;">Sự đàm phán, thương lượng</h3>
-                <div style="background: #F8FAFC; border-radius: 12px; padding: 14px 18px; text-align: left; max-width: 520px; margin: 0 auto; width: 100%;">
-                    <p style="font-size: 14px; font-weight: 700; color: #1E293B; margin: 0 0 6px;">
-                        "The contract is still under <u>negotiation</u> between both parties."
-                    </p>
-                    <p style="font-size: 13px; font-weight: 500; color: #64748B; margin: 0;">
-                        → Hợp đồng vẫn đang trong quá trình thương lượng giữa hai bên.
-                    </p>
+                <div class="tv-stat-v-divider"></div>
+
+                <div class="tv-stat-sub-col">
+                    <span class="tv-stat-sub-label tv-stat-sub-label--red">DỄ QUÊN</span>
+                    <span class="tv-stat-sub-value--red" id="statForgottenCount">1</span>
                 </div>
             </div>
         </div>
 
-        {{-- Nút hành động đánh giá thẻ --}}
-        <div class="sp-flashcard-actions">
-            <x-button variant="danger" size="medium" onclick="nextCard(false)">❌ Chưa thuộc</x-button>
-            <x-button variant="neutral" size="medium" onclick="toggleFlip()">🔄 Lật thẻ</x-button>
-            <x-button variant="success" size="medium" onclick="nextCard(true)">✅ Đã nhớ (+1 Tiến độ)</x-button>
+        {{-- Link Xem chi tiết bên dưới card trái --}}
+        <div class="tv-detail-link-wrap">
+            <a href="javascript:void(0)" class="tv-detail-link">
+                XEM CHI TIẾT <span class="tv-arrow">→</span>
+            </a>
         </div>
     </div>
 
-    {{-- Bộ tìm kiếm và danh mục từ vựng --}}
-    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;">
-        <div style="flex: 1; min-width: 280px; max-width: 480px;">
-            <x-input label="Tìm kiếm từ vựng" name="search_vocab" type="search" placeholder="Gõ từ khóa tiếng Anh hoặc nghĩa tiếng Việt..." />
+    {{-- 2 Card nhỏ xếp dọc bên phải --}}
+    <div class="tv-stat-right-col">
+        {{-- Card trên: 0 KIỂM TRA --}}
+        <div class="tv-stat-card-small">
+            <div class="tv-stat-small-icon">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    <circle cx="19" cy="5" r="2.5" fill="#94A3B8" stroke="none" />
+                </svg>
+            </div>
+            <div class="tv-stat-small-content">
+                <span class="tv-stat-small-number">0</span>
+                <span class="tv-stat-small-label">KIỂM TRA</span>
+            </div>
         </div>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <span class="sp-badge sp-badge--primary" style="cursor: pointer;">Tất cả</span>
-            <span class="sp-badge sp-badge--neutral" style="cursor: pointer;">Hợp đồng (Contracts)</span>
-            <span class="sp-badge sp-badge--neutral" style="cursor: pointer;">Tiếp thị (Marketing)</span>
-            <span class="sp-badge sp-badge--neutral" style="cursor: pointer;">Tài chính (Finance)</span>
-            <span class="sp-badge sp-badge--neutral" style="cursor: pointer;">Nhân sự (HR)</span>
+
+        {{-- Card dưới: 4.4 ĐỘ THÀNH THẠO --}}
+        <div class="tv-stat-card-small">
+            <div class="tv-stat-small-icon">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                    <rect x="2" y="18" width="3.5" height="8" rx="1.75" fill="#F59E0B" />
+                    <rect x="7.5" y="14" width="3.5" height="12" rx="1.75" fill="#F59E0B" />
+                    <rect x="13" y="10" width="3.5" height="16" rx="1.75" fill="#F59E0B" />
+                    <rect x="18.5" y="6" width="3.5" height="20" rx="1.75" fill="#0076FE" />
+                    <rect x="24" y="2" width="3.5" height="24" rx="1.75" fill="#0076FE" />
+                </svg>
+            </div>
+            <div class="tv-stat-small-content">
+                <span class="tv-stat-small-number tv-stat-small-number--blue" id="statMasteryScore">4.4</span>
+                <span class="tv-stat-small-label">ĐỘ THÀNH THẠO</span>
+            </div>
         </div>
     </div>
+</div>
 
-    {{-- Bảng danh sách từ vựng chi tiết --}}
-    <div class="sp-table-wrapper">
-        <table class="sp-table">
-            <thead>
-                <tr style="background: #F8FAFC; border-bottom: 1px solid #E2E8F0; color: #475569; font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px;">
-                    <th style="padding: 16px 20px;">Từ vựng</th>
-                    <th style="padding: 16px 20px;">Từ loại &amp; IPA</th>
-                    <th style="padding: 16px 20px;">Nghĩa tiếng Việt</th>
-                    <th style="padding: 16px 20px;">Ví dụ minh họa</th>
-                    <th style="padding: 16px 20px; text-align: center;">Trạng thái</th>
-                </tr>
-            </thead>
-            <tbody style="font-weight: 600; color: #1E293B;">
-                <tr style="border-bottom: 1px solid #F1F5F9;">
-                    <td style="padding: 16px 20px; font-weight: 800; color: #0076FE; font-size: 16px;">abide by</td>
-                    <td style="padding: 16px 20px;"><span class="sp-badge sp-badge--neutral">verb</span> <span style="color:#64748B; margin-left:4px;">/əˈbaɪd baɪ/</span></td>
-                    <td style="padding: 16px 20px;">Tuân theo, làm theo thỏa thuận</td>
-                    <td style="padding: 16px 20px; font-size: 13px; color: #475569;">Both parties must abide by the terms of the agreement.</td>
-                    <td style="padding: 16px 20px; text-align: center;"><span class="sp-badge sp-badge--success">Đã thuộc</span></td>
-                </tr>
-                <tr style="border-bottom: 1px solid #F1F5F9;">
-                    <td style="padding: 16px 20px; font-weight: 800; color: #0076FE; font-size: 16px;">agreement</td>
-                    <td style="padding: 16px 20px;"><span class="sp-badge sp-badge--neutral">noun</span> <span style="color:#64748B; margin-left:4px;">/əˈɡriː.mənt/</span></td>
-                    <td style="padding: 16px 20px;">Hợp đồng, hiệp định, thỏa thuận</td>
-                    <td style="padding: 16px 20px; font-size: 13px; color: #475569;">They have signed an agreement to cooperate on the project.</td>
-                    <td style="padding: 16px 20px; text-align: center;"><span class="sp-badge sp-badge--success">Đã thuộc</span></td>
-                </tr>
-                <tr style="border-bottom: 1px solid #F1F5F9;">
-                    <td style="padding: 16px 20px; font-weight: 800; color: #0076FE; font-size: 16px;">assurance</td>
-                    <td style="padding: 16px 20px;"><span class="sp-badge sp-badge--neutral">noun</span> <span style="color:#64748B; margin-left:4px;">/əˈʃʊr.əns/</span></td>
-                    <td style="padding: 16px 20px;">Sự bảo đảm, cam đoan chắc chắn</td>
-                    <td style="padding: 16px 20px; font-size: 13px; color: #475569;">He gave an assurance that the work would be completed on time.</td>
-                    <td style="padding: 16px 20px; text-align: center;"><span class="sp-badge sp-badge--warning">Đang học</span></td>
-                </tr>
-                <tr>
-                    <td style="padding: 16px 20px; font-weight: 800; color: #0076FE; font-size: 16px;">cancellation</td>
-                    <td style="padding: 16px 20px;"><span class="sp-badge sp-badge--neutral">noun</span> <span style="color:#64748B; margin-left:4px;">/ˌkæn.səlˈeɪ.ʃən/</span></td>
-                    <td style="padding: 16px 20px;">Sự hủy bỏ, bãi bỏ hợp đồng</td>
-                    <td style="padding: 16px 20px; font-size: 13px; color: #475569;">The cancellation clause requires 30 days prior notice.</td>
-                    <td style="padding: 16px 20px; text-align: center;"><span class="sp-badge sp-badge--danger">Chưa học</span></td>
-                </tr>
-            </tbody>
-        </table>
+{{-- ===== BANNER XANH DA TRỜI: ÔN LẠI TỪ VỰNG DỄ QUÊN ===== --}}
+<div class="tv-review-banner">
+    <div class="tv-review-brain-wrap">
+        {{-- Icon não hồng kèm dây cắm điện --}}
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 12C15.8 12 14 13.8 14 16C12.3 16 11 17.3 11 19C11 19.5 11.1 20 11.3 20.4C9.9 21.3 9 22.8 9 24.5C9 26.4 10.1 28 11.7 28.7C11.3 29.5 11 30.5 11 31.5C11 34 13 36 15.5 36C16.4 36 17.2 35.7 17.9 35.2C18.8 36.9 20.6 38 22.6 38C25.4 38 27.6 35.9 27.9 33.2C28.6 33.7 29.5 34 30.5 34C32.4 34 34 32.4 34 30.5C34 29.8 33.8 29.1 33.4 28.6C34.9 27.7 36 26 36 24C36 21.8 34.6 20 32.6 19.3C32.9 18.6 33 17.8 33 17C33 14.2 30.8 12 28 12C26.9 12 25.8 12.4 25 13.1C24.1 12.4 23 12 21.8 12C20.6 12 19.5 12.4 18.6 13.1C18.4 12.5 18 12 18 12Z" fill="#F43F5E" />
+            <path d="M16 22C18 20 21 21 21 23C21 26 17 26 17 28C17 30 20 31 22 30" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.9" />
+            <path d="M28 20C26 21 25 23 26 25C27 27 30 26 30 28" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.9" />
+            <path d="M24 38V42C24 43.1 24.9 44 26 44H34C35.1 44 36 43.1 36 42V39" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="33" y="34" width="6" height="5" rx="1.5" fill="#E0F2FE" stroke="#FFFFFF" stroke-width="1.5" />
+            <line x1="34.5" y1="34" x2="34.5" y2="31" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" />
+            <line x1="37.5" y1="34" x2="37.5" y2="31" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" />
+        </svg>
     </div>
 
-    <script>
-        function toggleFlip() {
-            var card = document.getElementById('spFlashcard');
-            card.classList.toggle('is-flipped');
-        }
+    <div class="tv-review-body">
+        <h3 class="tv-review-title">Ôn lại 1 từ vựng dễ quên</h3>
+        <x-button variant="neutral" size="small" style="color: #0284C7; font-weight: 800;">
+            → BẮT ĐẦU
+        </x-button>
+    </div>
+</div>
 
-        function nextCard(known) {
-            var card = document.getElementById('spFlashcard');
-            card.classList.remove('is-flipped');
-            if (known) {
-                alert('Tuyệt vời! Bạn đã hoàn thành 9/10 thẻ. Chỉ cần 1 thẻ nữa để được hồi +1 Lượt thi!');
-            }
-        }
-    </script>
+{{-- ===== SECTION 1: CHỦ ĐỀ CỦA TÔI (Đồng bộ cấu trúc .lt-section chuẩn) ===== --}}
+<div class="lt-section">
+    <div class="lt-section-header">
+        <h2 class="lt-section-title">Chủ đề của tôi</h2>
+        <a href="javascript:void(0)" class="lt-link-all">
+            Xem tất cả
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+    </div>
+
+    {{-- Trạng thái rỗng --}}
+    <div class="tv-empty-box" id="myTopicsEmptyBox">
+        <div class="tv-empty-icon">
+            <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="8" y="10" width="4.5" height="24" rx="2.25" fill="#0EA5E9" />
+                <rect x="15" y="12" width="4.5" height="22" rx="2.25" fill="#38BDF8" />
+                <rect x="22" y="8" width="4.5" height="26" rx="2.25" fill="#0EA5E9" />
+                <rect x="29" y="14" width="4.5" height="20" rx="2.25" fill="#0284C7" transform="rotate(12 29 14)" />
+            </svg>
+        </div>
+        <p class="tv-empty-text">Bạn chưa có chủ đề nào</p>
+        <x-button variant="primary" size="medium">
+            + Tạo chủ đề
+        </x-button>
+    </div>
+
+    {{-- Danh sách chủ đề đã tạo của tôi (ẩn khi rỗng, hiển thị khi thêm mới) --}}
+    <div class="tv-my-topics-grid" id="myTopicsGrid" style="display: none;"></div>
+</div>
+
+{{-- ===== SECTION 2: CHỦ ĐỀ PHỔ BIẾN (Tái sử dụng .lt-vocab-grid từ Luyện tập) ===== --}}
+<div class="lt-section">
+    <div class="lt-section-header">
+        <h2 class="lt-section-title">Chủ đề phổ biến</h2>
+        <a href="javascript:void(0)" class="lt-link-all">
+            Xem tất cả
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+    </div>
+
+    {{-- 3 Card chủ đề phổ biến (Tactile 3D Button Interaction) --}}
+    <div class="lt-vocab-grid">
+        {{-- Thẻ 1: 800 Từ vựng TOEIC LC 2026 --}}
+        <div class="lt-vocab-card tv-tactile-card" tabindex="0" role="button" aria-label="800 Từ vựng TOEIC LC 2026">
+            <div class="lt-vocab-cover-wrap">
+                <img src="{{ asset('images/vocab/vocab-toeic-2026-lc.png') }}"
+                     alt="800 Từ vựng TOEIC LC 2026"
+                     class="lt-vocab-cover"
+                     loading="lazy">
+            </div>
+            <span class="lt-vocab-name">800 Từ vựng TOEIC LC<br>2026</span>
+        </div>
+
+        {{-- Thẻ 2: 800 Từ vựng TOEIC RC 2026 --}}
+        <div class="lt-vocab-card tv-tactile-card" tabindex="0" role="button" aria-label="800 Từ vựng TOEIC RC 2026">
+            <div class="lt-vocab-cover-wrap">
+                <img src="{{ asset('images/vocab/vocab-toeic-2026-rc.png') }}"
+                         alt="800 Từ vựng TOEIC RC 2026"
+                         class="lt-vocab-cover"
+                         loading="lazy">
+            </div>
+            <span class="lt-vocab-name">800 Từ vựng TOEIC RC<br>2026</span>
+        </div>
+
+        {{-- Thẻ 3: 800 Từ vựng TOEIC LC 2025 --}}
+        <div class="lt-vocab-card tv-tactile-card" tabindex="0" role="button" aria-label="800 Từ vựng TOEIC LC 2025">
+            <div class="lt-vocab-cover-wrap">
+                <img src="{{ asset('images/vocab/vocab-toeic-2025-lc.png') }}"
+                         alt="800 Từ vựng TOEIC LC 2025"
+                         class="lt-vocab-cover"
+                         loading="lazy">
+            </div>
+            <span class="lt-vocab-name">800 Từ vựng TOEIC LC<br>2025</span>
+        </div>
+    </div>
+</div>
+
 </x-layouts.app>
