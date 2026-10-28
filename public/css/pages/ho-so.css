@@ -1,0 +1,783 @@
+/**
+ * StudyPrep - Styles for Trang Hồ sơ học viên (ho-so.blade.php)
+ * Đồng bộ hệ thống visual & layout chuẩn theo trang Luyện tập (luyen-tap.css) và Design System (studyprep-core.css).
+ */
+
+/* ===== PAGE HEADER ===== */
+.hs-page-header {
+    margin-bottom: 24px;
+}
+
+.hs-page-title {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--sp-text-main, #111C2D);
+    margin: 0 0 6px;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+}
+
+.hs-page-desc {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--sp-text-muted, #64748B);
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* ===== CARD BASE (Đồng bộ với .lt-section của Luyện tập) ===== */
+.hs-card {
+    background: #FFFFFF;
+    border: 1px solid var(--sp-border, #EEF1F7);
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 12px rgba(17, 28, 45, 0.04);
+    box-sizing: border-box;
+}
+
+/* ===== SECTION HEADER TRONG CARD ===== */
+.hs-section-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.hs-section-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--sp-text-main, #111C2D);
+    margin: 0;
+    line-height: 1.35;
+}
+
+.hs-section-sub {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--sp-text-light, #94A3B8);
+    margin: 4px 0 0;
+    line-height: 1.4;
+}
+
+/* ===== CARD 1: PROFILE SUMMARY ===== */
+.hs-profile-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.hs-profile-main {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    min-width: 0;
+    flex: 1 1 360px;
+}
+
+.hs-avatar-wrap {
+    position: relative;
+    flex: 0 0 auto;
+}
+
+.hs-avatar {
+    display: grid;
+    place-items: center;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    color: var(--sp-primary, #0076FE);
+    background: var(--sp-primary-light, #EBF4FF);
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 12px rgba(0, 118, 254, 0.12);
+}
+
+.hs-avatar-edit {
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border: 2.5px solid #FFFFFF;
+    border-radius: 50%;
+    color: #FFFFFF;
+    background: var(--sp-primary, #0076FE);
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.hs-profile-identity {
+    min-width: 0;
+    flex: 1;
+}
+
+.hs-name-line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+}
+
+.hs-name-line h2 {
+    font-size: 19px;
+    font-weight: 800;
+    color: var(--sp-text-main, #111C2D);
+    margin: 0;
+    line-height: 1.3;
+}
+
+.hs-status-pill {
+    display: inline-flex;
+    align-items: center;
+    background: var(--sp-success-light, #E8FDF3);
+    color: var(--sp-success, #059669);
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.hs-email-line {
+    color: var(--sp-text-muted, #64748B);
+    margin: 0 0 8px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.hs-profile-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    color: var(--sp-text-muted, #64748B);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.hs-course-pill {
+    color: var(--sp-primary, #0076FE);
+    background: var(--sp-primary-light, #EBF4FF);
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+}
+
+.hs-dot {
+    color: var(--sp-text-light, #94A3B8);
+}
+
+/* ===== CARD 2: FORM THÔNG TIN CÁ NHÂN ===== */
+.hs-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px 20px;
+    margin-bottom: 22px;
+}
+
+.hs-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+}
+
+.hs-label {
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    color: var(--sp-text-main, #111C2D);
+}
+
+.hs-control {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    min-height: 44px;
+    box-sizing: border-box;
+    background: #FFFFFF;
+    box-shadow: 0 0 0 1.5px #E2E8F0;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: box-shadow .15s ease, background-color .15s ease;
+}
+
+.hs-control:hover {
+    box-shadow: 0 0 0 1.5px #CBD5E1;
+}
+
+.hs-control:focus-within {
+    box-shadow: 0 0 0 2px #0057BF, 0 0 0 5px rgba(0, 118, 254, 0.15);
+    background: #FFFFFF;
+}
+
+.hs-input,
+.hs-select {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 16px;
+    border: 0;
+    outline: none;
+    background: transparent;
+    box-sizing: border-box;
+    color: var(--sp-text-main, #111C2D);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.hs-select {
+    appearance: auto;
+    cursor: pointer;
+}
+
+.hs-form-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding-top: 6px;
+}
+
+.hs-muted-note {
+    color: var(--sp-text-muted, #64748B);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+/* ===== CARD 3: MỤC TIÊU CỦA BẠN ===== */
+.hs-inline-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.hs-tiny-icon-btn {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 8px;
+    background: #F1F5F9;
+    color: var(--sp-primary, #0076FE);
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.hs-tiny-icon-btn:hover {
+    background: #E2E8F0;
+}
+
+.hs-goal-score {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.hs-goal-score strong {
+    color: var(--sp-primary, #0076FE);
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1;
+}
+
+.hs-goal-score span {
+    color: var(--sp-text-muted, #64748B);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.hs-goal-details p {
+    margin: 8px 0;
+    color: var(--sp-text-body, #334155);
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.hs-mini-icon {
+    display: inline-block;
+    color: var(--sp-text-light, #94A3B8);
+}
+
+.hs-goal-divider {
+    height: 1px;
+    background: var(--sp-border, #EEF1F7);
+    margin: 16px 0 14px;
+}
+
+.hs-text-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0;
+    border: 0;
+    color: var(--sp-primary, #0076FE);
+    background: transparent;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    transition: opacity 0.15s ease;
+}
+
+.hs-text-link:hover {
+    text-decoration: underline;
+    opacity: 0.85;
+}
+
+/* ===== CARD 4: TIẾN ĐỘ HỌC TẬP ===== */
+.hs-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 22px;
+}
+
+.hs-stat-box {
+    background: #F8FAFC;
+    border: 1px solid var(--sp-border-subtle, #F1F5F9);
+    border-radius: 14px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.hs-stat-icon {
+    color: var(--sp-primary, #0076FE);
+    font-size: 16px;
+}
+
+.hs-stat-box strong {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--sp-text-main, #111C2D);
+    line-height: 1.2;
+}
+
+.hs-stat-box span {
+    color: var(--sp-text-muted, #64748B);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.hs-course-progress-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.hs-course-progress-heading strong:first-child {
+    color: var(--sp-text-main, #111C2D);
+}
+
+.hs-progress-percent {
+    color: var(--sp-primary, #0076FE);
+    font-weight: 800;
+}
+
+.hs-progress-track {
+    height: 8px;
+    border-radius: 999px;
+    background: #EEF1F7;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.hs-progress-fill {
+    width: 64%;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #0076FE, #3B9EFF);
+}
+
+.hs-progress-caption {
+    margin: 0 0 18px;
+    color: var(--sp-text-muted, #64748B);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.hs-streak-box {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    border-radius: 14px;
+    background: var(--sp-primary-subtle, #F0F7FF);
+    border: 1px solid #D5E8FE;
+    margin-bottom: 16px;
+}
+
+.hs-flame {
+    color: var(--sp-primary, #0076FE);
+    font-size: 24px;
+    line-height: 1;
+}
+
+.hs-streak-box strong {
+    color: var(--sp-text-main, #111C2D);
+    font-size: 14px;
+    font-weight: 700;
+    display: block;
+}
+
+.hs-streak-box p {
+    color: var(--sp-text-muted, #64748B);
+    font-size: 13px;
+    margin: 2px 0 0;
+    line-height: 1.4;
+}
+
+/* ===== CARD 5: CÀI ĐẶT TÀI KHOẢN ===== */
+.hs-setting-row {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 14px;
+    text-align: left;
+    padding: 16px 0;
+    border: 0;
+    border-bottom: 1px solid var(--sp-border-subtle, #F1F5F9);
+    background: transparent;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.hs-setting-icon {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    color: var(--sp-text-muted, #64748B);
+    background: #F1F5F9;
+    font-size: 16px;
+    flex: none;
+}
+
+.hs-setting-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+}
+
+.hs-setting-copy strong {
+    color: var(--sp-text-main, #111C2D);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.hs-setting-copy small {
+    color: var(--sp-text-muted, #64748B);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.hs-setting-action {
+    color: var(--sp-primary, #0076FE);
+    font-size: 13px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.hs-setting-action b {
+    font-size: 18px;
+    line-height: 1;
+}
+
+/* Switch toggle */
+.hs-switch {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    flex: 0 0 auto;
+}
+
+.hs-switch input {
+    width: 0;
+    height: 0;
+    opacity: 0;
+}
+
+.hs-slider {
+    position: absolute;
+    inset: 0;
+    background: #CBD5E1;
+    border-radius: 20px;
+    transition: .2s ease;
+    cursor: pointer;
+}
+
+.hs-slider::before {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    left: 3px;
+    top: 3px;
+    border-radius: 50%;
+    background: #FFFFFF;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    transition: .2s ease;
+}
+
+.hs-switch input:checked + .hs-slider {
+    background: var(--sp-primary, #0076FE);
+}
+
+.hs-switch input:checked + .hs-slider::before {
+    transform: translateX(18px);
+}
+
+.hs-settings-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding-top: 16px;
+    color: var(--sp-text-muted, #64748B);
+    font-size: 13px;
+    flex-wrap: wrap;
+}
+
+.hs-logout-button {
+    border: 0;
+    background: transparent;
+    color: var(--sp-danger, #DC2626);
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background-color 0.15s ease;
+}
+
+.hs-logout-button:hover {
+    background: var(--sp-danger-light, #FEECEB);
+}
+
+/* ===== FOOTER ===== */
+.hs-footer {
+    text-align: center;
+    color: var(--sp-text-light, #94A3B8);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 12px 0 24px;
+}
+
+/* ===== TOAST NOTIFICATION ===== */
+.toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translate(-50%, 20px);
+    opacity: 0;
+    pointer-events: none;
+    background: #1E293B;
+    color: #FFFFFF;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    z-index: 99999;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+/* ===== MODAL ĐỔI MẬT KHẨU ===== */
+.password-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(17, 28, 45, 0.45);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.password-modal.show {
+    display: flex !important;
+}
+
+.password-modal .popup {
+    position: relative;
+    width: 100%;
+    max-width: 440px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: #FFFFFF;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(17, 28, 45, 0.2);
+    padding: 28px;
+    box-sizing: border-box;
+}
+
+.password-modal .close {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 32px;
+    height: 32px;
+    border: 0;
+    background: #F1F5F9;
+    color: var(--sp-text-muted, #64748B);
+    border-radius: 50%;
+    font-size: 20px;
+    line-height: 1;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.password-modal .close:hover {
+    background: #E2E8F0;
+    color: var(--sp-text-main, #111C2D);
+}
+
+.password-modal .popup-title {
+    margin: 0 0 6px;
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--sp-text-main, #111C2D);
+}
+
+.password-modal .description {
+    margin: 0 0 20px;
+    color: var(--sp-text-muted, #64748B);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.password-modal .fields {
+    display: grid;
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.password-modal .field-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    border: 1.5px solid #E2E8F0;
+    border-radius: 12px;
+    background: #FFFFFF;
+    padding: 0 14px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.password-modal .field-wrap:focus-within {
+    border-color: #0057BF;
+    box-shadow: 0 0 0 2px #0057BF, 0 0 0 5px rgba(0, 118, 254, 0.15);
+}
+
+.password-modal .field-wrap input {
+    flex: 1;
+    height: 44px;
+    border: 0;
+    outline: none;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--sp-text-main, #111C2D);
+    background: transparent;
+}
+
+.password-modal .toggle {
+    border: 0;
+    background: transparent;
+    color: var(--sp-text-muted, #64748B);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px;
+}
+
+.password-modal .notice {
+    margin: 12px 0 0;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+/* ===== RESPONSIVE BREAKPOINTS (Đồng bộ với luyen-tap.css) ===== */
+@media (max-width: 1023.98px) {
+    .hs-card {
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .hs-page-header {
+        margin-bottom: 18px;
+    }
+
+    .hs-page-title {
+        font-size: 22px;
+        margin-bottom: 4px;
+    }
+
+    .hs-page-desc {
+        font-size: 13px;
+    }
+
+    .hs-card {
+        padding: 18px 16px;
+        border-radius: 16px;
+        margin-bottom: 16px;
+    }
+
+    .hs-form-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .hs-stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .hs-profile-summary {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+}
