@@ -41,9 +41,9 @@
         </div>
     </div>
 
-    <a href="{{ route('ho-so.muc-tieu-thiet-lap') }}" class="mt-btn-primary" id="editGoalBtn">
+    <x-button variant="primary" size="medium" href="{{ route('ho-so.muc-tieu-thiet-lap') }}" id="editGoalBtn" style="width: 100%;">
         Chỉnh sửa mục tiêu
-    </a>
+    </x-button>
 </section>
 
 {{-- ===== MỤC TIÊU THEO KỸ NĂNG ===== --}}
