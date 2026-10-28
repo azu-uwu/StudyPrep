@@ -83,7 +83,7 @@ class DashboardController extends Controller
                     'Thứ Năm',
                     'Thứ Sáu',
                     'Thứ Bảy',
-                    'Chủ Nhật (Hôm nay)'
+                    'Chủ Nhật (Hôm nay)',
                 ],
                 'started' => [25, 45, 62, 86, 85, 87, 88],
                 'submitted' => [16, 25, 34, 43, 49, 54, 58],

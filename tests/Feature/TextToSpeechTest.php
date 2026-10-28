@@ -10,8 +10,8 @@ class TextToSpeechTest extends TestCase
 {
     public function test_tts_service_generates_mp3_file(): void
     {
-        $service = new TextToSpeechService();
-        $sampleText = "Look at the picture marked No. 1 in your test book. She is eating in a picnic area.";
+        $service = new TextToSpeechService;
+        $sampleText = 'Look at the picture marked No. 1 in your test book. She is eating in a picnic area.';
 
         $result = $service->generateAudio($sampleText, 1, 'test_part1_q1');
 

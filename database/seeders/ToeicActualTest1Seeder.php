@@ -50,7 +50,7 @@ class ToeicActualTest1Seeder extends Seeder
                         ['label' => 'B', 'content' => 'She’s waiting in line at a food truck. (Cô ấy đang chờ trong hàng tại một xe bán đồ ăn.)', 'is_correct' => false],
                         ['label' => 'C', 'content' => 'She’s wiping off a bench. (Cô ấy đang lau chùi một chiếc ghế dài.)', 'is_correct' => false],
                         ['label' => 'D', 'content' => 'She’s throwing away a plate. (Cô ấy đang vứt đi một cái đĩa.)', 'is_correct' => false],
-                    ]
+                    ],
                 ],
                 [
                     'q_num' => 2,
@@ -61,7 +61,7 @@ class ToeicActualTest1Seeder extends Seeder
                         ['label' => 'B', 'content' => 'The man is standing in the snow beside a car. (Người đàn ông đứng trong tuyết bên cạnh một chiếc ô tô.)', 'is_correct' => true],
                         ['label' => 'C', 'content' => 'The man is shoveling snow from a walkway. (Người đàn ông đang xúc tuyết trên lối đi.)', 'is_correct' => false],
                         ['label' => 'D', 'content' => 'The man is running through the snow. (Người đàn ông chạy qua tuyết.)', 'is_correct' => false],
-                    ]
+                    ],
                 ],
                 [
                     'q_num' => 3,
@@ -72,7 +72,7 @@ class ToeicActualTest1Seeder extends Seeder
                         ['label' => 'B', 'content' => 'Two of the people are having a conversation. (Hai người trong số họ đang trò chuyện.)', 'is_correct' => true],
                         ['label' => 'C', 'content' => 'One of the men is rearranging cushions on a sofa. (Một người đàn ông đang sắp xếp lại những chiếc đệm trên ghế sofa.)', 'is_correct' => false],
                         ['label' => 'D', 'content' => 'One of the men is painting a picture. (Một người đàn ông đang vẽ một bức tranh.)', 'is_correct' => false],
-                    ]
+                    ],
                 ],
                 [
                     'q_num' => 4,
@@ -83,7 +83,7 @@ class ToeicActualTest1Seeder extends Seeder
                         ['label' => 'B', 'content' => 'Clothes hangers are scattered on the floor. (Những chiếc móc áo rơi vãi trên sàn.)', 'is_correct' => false],
                         ['label' => 'C', 'content' => 'Empty racks are lined up next to a building. (Các giá đỡ trống được xếp cạnh một tòa nhà.)', 'is_correct' => false],
                         ['label' => 'D', 'content' => 'Clothing is being displayed under a tent. (Quần áo đang được trưng bày dưới lều.)', 'is_correct' => true],
-                    ]
+                    ],
                 ],
                 [
                     'q_num' => 5,
@@ -94,7 +94,7 @@ class ToeicActualTest1Seeder extends Seeder
                         ['label' => 'B', 'content' => 'Chairs have been stacked in front of an entryway. (Ghế đã được xếp trước lối vào.)', 'is_correct' => false],
                         ['label' => 'C', 'content' => 'A computer station has been set up on a desk. (Một máy tính đã được sắp xếp trên bàn.)', 'is_correct' => true],
                         ['label' => 'D', 'content' => 'A rug has been rolled up against a wall. (Một tấm thảm đã được cuộn lên tường.)', 'is_correct' => false],
-                    ]
+                    ],
                 ],
                 [
                     'q_num' => 6,
@@ -105,16 +105,16 @@ class ToeicActualTest1Seeder extends Seeder
                         ['label' => 'B', 'content' => 'One of the men is replacing some flooring. (Một người đàn ông đang thay thế lót sàn.)', 'is_correct' => false],
                         ['label' => 'C', 'content' => 'A door has been taken off its frame. (Một cánh cửa đã bị tháo ra khỏi khung.)', 'is_correct' => true],
                         ['label' => 'D', 'content' => 'A light fixture has been left on the ground. (Một chiếc đèn đã được bỏ lại trên mặt đất.)', 'is_correct' => false],
-                    ]
+                    ],
                 ],
             ];
 
             foreach ($part1Data as $p1) {
-                $audioUrl = '/storage/audio/listening/test1/part1_q' . $p1['q_num'] . '.mp3';
+                $audioUrl = '/storage/audio/listening/test1/part1_q'.$p1['q_num'].'.mp3';
 
                 $setId = DB::table($setTable)->insertGetId([
-                    'title' => 'ACTUAL TEST 1 - TOEIC Part 1 - Question ' . $p1['q_num'],
-                    'stimulus_text' => 'Part 1: Question ' . $p1['q_num'],
+                    'title' => 'ACTUAL TEST 1 - TOEIC Part 1 - Question '.$p1['q_num'],
+                    'stimulus_text' => 'Part 1: Question '.$p1['q_num'],
                     'media_url' => $audioUrl,
                     'media_type' => 'AUDIO',
                     'transcript' => $p1['stem'],
@@ -187,11 +187,11 @@ class ToeicActualTest1Seeder extends Seeder
             ];
 
             foreach ($part2Data as $qNum => $item) {
-                $audioUrl = '/storage/audio/listening/test1/part2_q' . $qNum . '.mp3';
+                $audioUrl = '/storage/audio/listening/test1/part2_q'.$qNum.'.mp3';
 
                 $setId = DB::table($setTable)->insertGetId([
-                    'title' => 'ACTUAL TEST 1 - TOEIC Part 2 - Question ' . $qNum,
-                    'stimulus_text' => 'Part 2: Question ' . $qNum,
+                    'title' => 'ACTUAL TEST 1 - TOEIC Part 2 - Question '.$qNum,
+                    'stimulus_text' => 'Part 2: Question '.$qNum,
                     'media_url' => $audioUrl,
                     'media_type' => 'AUDIO',
                     'transcript' => $item['q'],
@@ -200,7 +200,7 @@ class ToeicActualTest1Seeder extends Seeder
                 $qData = [
                     'question_set_id' => $setId,
                     'content' => $item['q'],
-                    'explanation' => 'Đáp án đúng là (' . $item['correct'] . ').',
+                    'explanation' => 'Đáp án đúng là ('.$item['correct'].').',
                     'difficulty' => 'MEDIUM',
                     'points' => 5.0,
                     'status' => 'ACTIVE',
@@ -246,23 +246,23 @@ class ToeicActualTest1Seeder extends Seeder
                             'content' => 'What event does the woman mention? (Người phụ nữ nhắc đến sự kiện gì?)',
                             'correct' => 'D',
                             'exp' => 'Đáp án đúng là (D). Dựa vào lời thoại: "Thank you so much for organizing the annual company picnic".',
-                            'options' => ['A' => 'A job fair', 'B' => 'A cooking class', 'C' => 'A fund-raiser', 'D' => 'A company picnic']
+                            'options' => ['A' => 'A job fair', 'B' => 'A cooking class', 'C' => 'A fund-raiser', 'D' => 'A company picnic'],
                         ],
                         [
                             'q_num' => 33,
                             'content' => 'What does the woman ask for? (Người phụ nữ yêu cầu điều gì?)',
                             'correct' => 'B',
                             'exp' => 'Đáp án đúng là (B). Dựa vào lời thoại: "Would you mind sharing the recipe?".',
-                            'options' => ['A' => 'A guest list', 'B' => 'A dessert recipe', 'C' => 'A business card', 'D' => 'A promotional code']
+                            'options' => ['A' => 'A guest list', 'B' => 'A dessert recipe', 'C' => 'A business card', 'D' => 'A promotional code'],
                         ],
                         [
                             'q_num' => 34,
                             'content' => 'What does the man recommend doing? (Người đàn ông khuyên bạn nên làm gì?)',
                             'correct' => 'B',
                             'exp' => 'Đáp án đúng là (B). Dựa vào lời thoại: "There\'s a really helpful video... I recommend you watch it first".',
-                            'options' => ['A' => 'Returning some merchandise', 'B' => 'Watching a video', 'C' => 'Creating an account', 'D' => 'Reading a review']
+                            'options' => ['A' => 'Returning some merchandise', 'B' => 'Watching a video', 'C' => 'Creating an account', 'D' => 'Reading a review'],
                         ],
-                    ]
+                    ],
                 ],
                 [
                     'range' => '35-37',
@@ -274,23 +274,23 @@ class ToeicActualTest1Seeder extends Seeder
                             'content' => 'What department do the speakers most likely work in?',
                             'correct' => 'A',
                             'exp' => 'Đáp án đúng là (A). Người nói thảo luận về "expense reports" và "reimbursement forms" nên họ thuộc bộ phận Kế toán (Accounting).',
-                            'options' => ['A' => 'Accounting', 'B' => 'Research and development', 'C' => 'Maintenance', 'D' => 'Marketing']
+                            'options' => ['A' => 'Accounting', 'B' => 'Research and development', 'C' => 'Maintenance', 'D' => 'Marketing'],
                         ],
                         [
                             'q_num' => 36,
                             'content' => 'What problem does the woman mention?',
                             'correct' => 'C',
                             'exp' => 'Đáp án đúng là (C). Khách sạn không nằm trong danh sách phê duyệt ("policy has not been followed").',
-                            'options' => ['A' => 'A report has not been submitted.', 'B' => 'An invoice is not accurate.', 'C' => 'A policy has not been followed.', 'D' => 'An order has not been delivered']
+                            'options' => ['A' => 'A report has not been submitted.', 'B' => 'An invoice is not accurate.', 'C' => 'A policy has not been followed.', 'D' => 'An order has not been delivered'],
                         ],
                         [
                             'q_num' => 37,
                             'content' => 'What does the man say he will do?',
                             'correct' => 'B',
                             'exp' => 'Đáp án đúng là (B). Người đàn ông nói "I can approve the expense this one time" (Phê duyệt hoàn tiền).',
-                            'options' => ['A' => 'Delete an electronic file', 'B' => 'Authorize a reimbursement', 'C' => 'Set up a sales meeting', 'D' => 'Review a spreadsheet']
+                            'options' => ['A' => 'Delete an electronic file', 'B' => 'Authorize a reimbursement', 'C' => 'Set up a sales meeting', 'D' => 'Review a spreadsheet'],
                         ],
-                    ]
+                    ],
                 ],
                 [
                     'range' => '38-40',
@@ -302,33 +302,33 @@ class ToeicActualTest1Seeder extends Seeder
                             'content' => 'What industry do the speakers most likely work in?',
                             'correct' => 'A',
                             'exp' => 'Đáp án đúng là (A). Các từ khóa "cargo ship", "deck", "harbor" thuộc ngành Vận tải biển (Shipping).',
-                            'options' => ['A' => 'Shipping', 'B' => 'Manufacturing', 'C' => 'Hospitality', 'D' => 'Meteorology']
+                            'options' => ['A' => 'Shipping', 'B' => 'Manufacturing', 'C' => 'Hospitality', 'D' => 'Meteorology'],
                         ],
                         [
                             'q_num' => 39,
                             'content' => 'What is the reason for a delay?',
                             'correct' => 'C',
                             'exp' => 'Đáp án đúng là (C). Do sương mù ("fog over the harbor") -> "Weather conditions are poor".',
-                            'options' => ['A' => 'A schedule was written incorrectly.', 'B' => 'Some equipment is not properly set up.', 'C' => 'Weather conditions are poor.', 'D' => 'Several staff members are absent.']
+                            'options' => ['A' => 'A schedule was written incorrectly.', 'B' => 'Some equipment is not properly set up.', 'C' => 'Weather conditions are poor.', 'D' => 'Several staff members are absent.'],
                         ],
                         [
                             'q_num' => 40,
                             'content' => 'What does the man say he will do?',
                             'correct' => 'D',
                             'exp' => 'Đáp án đúng là (D). Người đàn ông nói "I\'ll be sure to call the port authority soon" -> Place a call.',
-                            'options' => ['A' => 'Update a shift schedule', 'B' => 'Clear a work space', 'C' => 'Complete a checklist', 'D' => 'Place a call']
+                            'options' => ['A' => 'Update a shift schedule', 'B' => 'Clear a work space', 'C' => 'Complete a checklist', 'D' => 'Place a call'],
                         ],
-                    ]
+                    ],
                 ],
             ];
 
             foreach ($part3Groups as $group) {
                 $firstQ = $group['questions'][0]['q_num'];
-                $audioUrl = '/storage/audio/listening/test1/part3_q' . $firstQ . '.mp3';
+                $audioUrl = '/storage/audio/listening/test1/part3_q'.$firstQ.'.mp3';
 
                 $setId = DB::table($setTable)->insertGetId([
-                    'title' => 'ACTUAL TEST 1 - TOEIC Part 3 - Questions ' . $group['range'],
-                    'stimulus_text' => 'Questions ' . $group['range'] . ' refer to the following conversation.',
+                    'title' => 'ACTUAL TEST 1 - TOEIC Part 3 - Questions '.$group['range'],
+                    'stimulus_text' => 'Questions '.$group['range'].' refer to the following conversation.',
                     'media_url' => $audioUrl,
                     'media_type' => 'AUDIO',
                     'transcript' => $group['transcript'],
@@ -385,23 +385,23 @@ class ToeicActualTest1Seeder extends Seeder
                             'content' => 'Who has recorded the message?',
                             'correct' => 'D',
                             'exp' => 'Đáp án đúng là (D). Lời nhắn từ "Cranbury Apartments management office" (Văn phòng quản lý tòa nhà).',
-                            'options' => ['A' => 'A city mayor’s office', 'B' => 'A maintenance department', 'C' => 'An automobile dealership', 'D' => 'A building management office']
+                            'options' => ['A' => 'A city mayor’s office', 'B' => 'A maintenance department', 'C' => 'An automobile dealership', 'D' => 'A building management office'],
                         ],
                         [
                             'q_num' => 72,
                             'content' => 'What are the listeners asked to do?',
                             'correct' => 'A',
                             'exp' => 'Đáp án đúng là (A). Lời thoại: "All Cranbury residents should move their vehicles".',
-                            'options' => ['A' => 'Move their vehicles', 'B' => 'Pay their parking fines', 'C' => 'Use an alternate entrance', 'D' => 'Participate in a meeting']
+                            'options' => ['A' => 'Move their vehicles', 'B' => 'Pay their parking fines', 'C' => 'Use an alternate entrance', 'D' => 'Participate in a meeting'],
                         ],
                         [
                             'q_num' => 73,
                             'content' => 'What does the speaker say was mailed last week?',
                             'correct' => 'C',
                             'exp' => 'Đáp án đúng là (C). Lời thoại: "A map of alternate parking sites was mailed to residents last week".',
-                            'options' => ['A' => 'An election ballot', 'B' => 'A maintenance plan', 'C' => 'A map', 'D' => 'A coupon']
+                            'options' => ['A' => 'An election ballot', 'B' => 'A maintenance plan', 'C' => 'A map', 'D' => 'A coupon'],
                         ],
-                    ]
+                    ],
                 ],
                 [
                     'range' => '74-76',
@@ -413,33 +413,33 @@ class ToeicActualTest1Seeder extends Seeder
                             'content' => 'What is the topic of the episode?',
                             'correct' => 'C',
                             'exp' => 'Đáp án đúng là (C). Bài nói về "maintain and make minor repairs to the roof of your home" (Bảo trì mái nhà).',
-                            'options' => ['A' => 'Garden landscaping', 'B' => 'Window installation', 'C' => 'Roof maintenance', 'D' => 'Kitchen renovations']
+                            'options' => ['A' => 'Garden landscaping', 'B' => 'Window installation', 'C' => 'Roof maintenance', 'D' => 'Kitchen renovations'],
                         ],
                         [
                             'q_num' => 75,
                             'content' => 'What does the speaker emphasize about some tools?',
                             'correct' => 'B',
                             'exp' => 'Đáp án đúng là (B). Lời thoại: "It\'s important to choose some that are high quality".',
-                            'options' => ['A' => 'They should be cleaned regularly', 'B' => 'They should be of high quality', 'C' => 'They were recently invented', 'D' => 'They can be easily stored']
+                            'options' => ['A' => 'They should be cleaned regularly', 'B' => 'They should be of high quality', 'C' => 'They were recently invented', 'D' => 'They can be easily stored'],
                         ],
                         [
                             'q_num' => 76,
                             'content' => 'What does the speaker recommend doing every year?',
                             'correct' => 'C',
                             'exp' => 'Đáp án đúng là (C). Lời thoại: "I highly recommend you take photos of your roof every year".',
-                            'options' => ['A' => 'Treating some wood', 'B' => 'Consulting an electrician', 'C' => 'Taking some photos', 'D' => 'Draining some water']
+                            'options' => ['A' => 'Treating some wood', 'B' => 'Consulting an electrician', 'C' => 'Taking some photos', 'D' => 'Draining some water'],
                         ],
-                    ]
-                ]
+                    ],
+                ],
             ];
 
             foreach ($part4Groups as $group) {
                 $firstQ = $group['questions'][0]['q_num'];
-                $audioUrl = '/storage/audio/listening/test1/part4_q' . $firstQ . '.mp3';
+                $audioUrl = '/storage/audio/listening/test1/part4_q'.$firstQ.'.mp3';
 
                 $setId = DB::table($setTable)->insertGetId([
-                    'title' => 'ACTUAL TEST 1 - TOEIC Part 4 - Questions ' . $group['range'],
-                    'stimulus_text' => 'Questions ' . $group['range'] . ' refer to the following talk.',
+                    'title' => 'ACTUAL TEST 1 - TOEIC Part 4 - Questions '.$group['range'],
+                    'stimulus_text' => 'Questions '.$group['range'].' refer to the following talk.',
                     'media_url' => $audioUrl,
                     'media_type' => 'AUDIO',
                     'transcript' => $group['transcript'],

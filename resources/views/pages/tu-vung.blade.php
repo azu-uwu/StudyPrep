@@ -173,41 +173,53 @@
         </a>
     </div>
 
-    {{-- 3 Card chủ đề phổ biến (Tactile 3D Button Interaction) --}}
+    {{-- Danh sách chủ đề phổ biến (Render từ mock data, Tactile 3D Button Interaction) --}}
+    @php
+        $popularList = $popularTopics ?? \App\Services\VocabularyMockData::getPopularTopics();
+    @endphp
     <div class="lt-vocab-grid">
-        {{-- Thẻ 1: 800 Từ vựng TOEIC LC 2026 --}}
-        <div class="lt-vocab-card tv-tactile-card" tabindex="0" role="button" aria-label="800 Từ vựng TOEIC LC 2026">
-            <div class="lt-vocab-cover-wrap">
-                <img src="{{ asset('images/vocab/vocab-toeic-2026-lc.png') }}"
-                     alt="800 Từ vựng TOEIC LC 2026"
-                     class="lt-vocab-cover"
-                     loading="lazy">
-            </div>
-            <span class="lt-vocab-name">800 Từ vựng TOEIC LC<br>2026</span>
-        </div>
-
-        {{-- Thẻ 2: 800 Từ vựng TOEIC RC 2026 --}}
-        <div class="lt-vocab-card tv-tactile-card" tabindex="0" role="button" aria-label="800 Từ vựng TOEIC RC 2026">
-            <div class="lt-vocab-cover-wrap">
-                <img src="{{ asset('images/vocab/vocab-toeic-2026-rc.png') }}"
-                         alt="800 Từ vựng TOEIC RC 2026"
-                         class="lt-vocab-cover"
-                         loading="lazy">
-            </div>
-            <span class="lt-vocab-name">800 Từ vựng TOEIC RC<br>2026</span>
-        </div>
-
-        {{-- Thẻ 3: 800 Từ vựng TOEIC LC 2025 --}}
-        <div class="lt-vocab-card tv-tactile-card" tabindex="0" role="button" aria-label="800 Từ vựng TOEIC LC 2025">
-            <div class="lt-vocab-cover-wrap">
-                <img src="{{ asset('images/vocab/vocab-toeic-2025-lc.png') }}"
-                         alt="800 Từ vựng TOEIC LC 2025"
-                         class="lt-vocab-cover"
-                         loading="lazy">
-            </div>
-            <span class="lt-vocab-name">800 Từ vựng TOEIC LC<br>2025</span>
-        </div>
+        @foreach($popularList as $topic)
+            <a href="{{ route('tu-vung.show', $topic['topic_id']) }}"
+               class="lt-vocab-card tv-tactile-card"
+               tabindex="0"
+               role="button"
+               aria-label="{{ $topic['name'] }}">
+                <div class="lt-vocab-cover-wrap">
+                    @if(!empty($topic['thumbnail']))
+                        <img src="{{ asset($topic['thumbnail']) }}"
+                             alt="{{ $topic['name'] }}"
+                             class="lt-vocab-cover"
+                             loading="lazy">
+                    @else
+                        <div class="tv-default-badge-cover">
+                            <span class="tv-badge-cover-title">{{ $topic['thumbnail_label'] ?? 'TOEIC' }}</span>
+                        </div>
+                    @endif
+                </div>
+                <span class="lt-vocab-name">{!! nl2br(e($topic['display_name'] ?? $topic['name'])) !!}</span>
+            </a>
+        @endforeach
     </div>
 </div>
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Giữ hiệu ứng Tactile 3D: khi click card lún xuống 1 nhịp ngắn trước khi chuyển trang
+            document.querySelectorAll('.tv-tactile-card').forEach(function (card) {
+                card.addEventListener('click', function (e) {
+                    const targetUrl = this.getAttribute('href');
+                    if (targetUrl && targetUrl !== 'javascript:void(0)' && !targetUrl.startsWith('#')) {
+                        e.preventDefault();
+                        this.classList.add('is-pressed');
+                        setTimeout(function () {
+                            window.location.href = targetUrl;
+                        }, 120);
+                    }
+                });
+            });
+        });
+    </script>
+@endpush
 
 </x-layouts.app>

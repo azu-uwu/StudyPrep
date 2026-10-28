@@ -485,13 +485,15 @@ a.lt-link-all:hover {
     transform: none !important; /* Không phóng to/scale làm đổi layout */
 }
 
-/* Khi nhấn (:active): Card dịch xuống 3.5px và đáy shadow xẹp còn 1px (chuẩn sp-btn:active) */
-.tv-tactile-card:active {
+/* Khi nhấn (:active hoặc .is-pressed): Card dịch xuống 3.5px và đáy shadow xẹp còn 1px (chuẩn sp-btn:active) */
+.tv-tactile-card:active,
+.tv-tactile-card.is-pressed {
     transform: translateY(3.5px) !important;
     filter: brightness(0.99);
 }
 
-.tv-tactile-card:active .lt-vocab-cover-wrap {
+.tv-tactile-card:active .lt-vocab-cover-wrap,
+.tv-tactile-card.is-pressed .lt-vocab-cover-wrap {
     box-shadow: 0 1px 0 #CBD5E1 !important;
 }
 

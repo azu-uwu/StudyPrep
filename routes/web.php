@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VocabularyController;
 use App\Http\Controllers\ListeningPracticeController;
 use App\Http\Controllers\ReadingPracticeController;
+use App\Http\Controllers\VocabularyPracticeController;
 use Illuminate\Support\Facades\Route;
 
 // Trang chủ mặc định chuyển hướng đến màn hình chính: Luyện tập
@@ -59,7 +60,8 @@ Route::view('/thi-thu/gioi-thieu-de', 'pages.thi-thu-gioi-thieu-de')->name('thi-
 Route::view('/thi-thu/giao-dien-thi', 'pages.thi-thu-giao-dien-thi')->name('thi-thu-giao-dien-thi');
 Route::view('/thi-thu/ket-qua', 'pages.thi-thu-ket-qua')->name('thi-thu-ket-qua');
 
-Route::view('/tu-vung', 'pages.tu-vung')->name('tu-vung');
+Route::get('/tu-vung', [VocabularyPracticeController::class, 'index'])->name('tu-vung');
+Route::get('/tu-vung/{topicId}', [VocabularyPracticeController::class, 'show'])->name('tu-vung.show');
 
 Route::view('/phan-tich', 'pages.phan-tich-tong-quan')->name('phan-tich');
 Route::view('/phan-tich/chi-tiet', 'pages.phan-tich')->name('phan-tich.chi-tiet');

@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -36,8 +35,8 @@ class UserController extends Controller
             $cleanId = preg_replace('/[^0-9]/', '', $search);
             $query->where(function ($q) use ($search, $cleanId) {
                 $q->where('full_name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('user_name', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('user_name', 'like', "%{$search}%");
 
                 if ($cleanId !== '') {
                     $q->orWhere('user_id', (int) $cleanId);
@@ -53,20 +52,20 @@ class UserController extends Controller
         // 3. Lọc theo Trạng thái
         if ($status === 'ACTIVE') {
             $query->where('status', 'ACTIVE')
-                  ->where(function ($q) {
-                      $q->whereNull('locked_until')->orWhere('locked_until', '<=', now());
-                  });
+                ->where(function ($q) {
+                    $q->whereNull('locked_until')->orWhere('locked_until', '<=', now());
+                });
         } elseif ($status === 'PENDING') {
             $query->where(function ($q) {
                 $q->where('status', 'PENDING')
-                  ->orWhereNull('email_verified_at');
+                    ->orWhereNull('email_verified_at');
             });
         } elseif ($status === 'LOCKED') {
             $query->where(function ($q) {
                 $q->where('status', 'LOCKED')
-                  ->orWhere(function ($sub) {
-                      $sub->whereNotNull('locked_until')->where('locked_until', '>', now());
-                  });
+                    ->orWhere(function ($sub) {
+                        $sub->whereNotNull('locked_until')->where('locked_until', '>', now());
+                    });
             });
         }
 
@@ -81,7 +80,7 @@ class UserController extends Controller
 
         // Sắp xếp ưu tiên: admin, teacher, các tài khoản mới nhất
         $query->orderByRaw("CASE WHEN role = 'admin' THEN 1 WHEN role = 'teacher' THEN 2 ELSE 3 END")
-              ->orderByDesc('user_id');
+            ->orderByDesc('user_id');
 
         $users = $query->paginate($perPage)->withQueryString();
 
@@ -133,7 +132,7 @@ class UserController extends Controller
             'password.min' => 'Mật khẩu phải chứa ít nhất 6 ký tự.',
         ]);
 
-        $userName = !empty($validated['user_name'])
+        $userName = ! empty($validated['user_name'])
             ? Str::slug($validated['user_name'])
             : Str::slug(explode('@', $validated['email'])[0]);
 
@@ -141,13 +140,13 @@ class UserController extends Controller
         $baseUserName = $userName;
         $counter = 1;
         while (User::where('user_name', $userName)->exists()) {
-            $userName = $baseUserName . $counter;
+            $userName = $baseUserName.$counter;
             $counter++;
         }
 
         $isLocked = $validated['status'] === 'LOCKED';
 
-        $user = new User();
+        $user = new User;
         $user->full_name = $validated['full_name'];
         $user->email = $validated['email'];
         $user->user_name = $userName;
@@ -207,12 +206,12 @@ class UserController extends Controller
         } else {
             $user->locked_until = null;
             $user->failed_login_attempts = 0;
-            if ($validated['status'] === 'ACTIVE' && !$user->email_verified_at) {
+            if ($validated['status'] === 'ACTIVE' && ! $user->email_verified_at) {
                 $user->email_verified_at = now();
             }
         }
 
-        if (!empty($validated['password'])) {
+        if (! empty($validated['password'])) {
             $user->password_hash = Hash::make($validated['password']);
         }
 
@@ -236,6 +235,7 @@ class UserController extends Controller
             $user->locked_until = null;
             $user->failed_login_attempts = 0;
             $user->save();
+
             return redirect()->back()->with('success', "Đã mở khóa thành công tài khoản '{$user->full_name}'.");
         }
 
@@ -251,7 +251,7 @@ class UserController extends Controller
      */
     public function resetPassword(Request $request, User $user): RedirectResponse
     {
-        $newPass = $request->input('new_password', 'StudyPrep@' . date('Y'));
+        $newPass = $request->input('new_password', 'StudyPrep@'.date('Y'));
         $user->password_hash = Hash::make($newPass);
         $user->save();
 
@@ -279,7 +279,7 @@ class UserController extends Controller
      */
     public function export(): StreamedResponse
     {
-        $fileName = 'danh_sach_nguoi_dung_studyprep_' . date('Y_m_d_His') . '.csv';
+        $fileName = 'danh_sach_nguoi_dung_studyprep_'.date('Y_m_d_His').'.csv';
 
         $users = User::orderByDesc('user_id')->get();
 
@@ -351,7 +351,7 @@ class UserController extends Controller
             $name = trim($row[0] ?? 'Học viên');
             $email = trim($row[1] ?? '');
 
-            if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 continue;
             }
 

@@ -42,7 +42,7 @@ class QuestionController extends Controller
             $cleanId = preg_replace('/[^0-9]/', '', $search);
             $query->where(function ($q) use ($search, $cleanId) {
                 $q->where('content', 'like', "%{$search}%")
-                  ->orWhere('explanation', 'like', "%{$search}%");
+                    ->orWhere('explanation', 'like', "%{$search}%");
 
                 if ($cleanId !== '') {
                     $q->orWhere('question_id', (int) $cleanId);
@@ -76,7 +76,7 @@ class QuestionController extends Controller
 
         // Sắp xếp mặc định: Câu báo lỗi / chờ duyệt lên đầu, rồi theo thứ tự ID
         $query->orderByRaw("CASE WHEN status = 'REPORTED' THEN 1 WHEN status = 'PENDING' THEN 2 ELSE 3 END")
-              ->orderBy('question_id');
+            ->orderBy('question_id');
 
         $questions = $query->paginate($perPage)->withQueryString();
 
@@ -159,7 +159,7 @@ class QuestionController extends Controller
         $difficulty = $validated['difficulty'] ?? 'MEDIUM';
         $correctOption = $validated['correct_option'] ?? $validated['correct_opt'] ?? 'B';
 
-        $question = new Question();
+        $question = new Question;
         $question->content = $validated['content'];
         $question->section_id = $validated['section_id'];
         $question->question_type_id = $questionTypeId;
@@ -261,17 +261,19 @@ class QuestionController extends Controller
 
         if ($action === 'approve') {
             Question::whereIn('question_id', $ids)->update(['status' => 'ACTIVE']);
-            return redirect()->back()->with('success', 'Đã phê duyệt nhanh thành công ' . count($ids) . ' câu hỏi.');
+
+            return redirect()->back()->with('success', 'Đã phê duyệt nhanh thành công '.count($ids).' câu hỏi.');
         }
 
         if ($action === 'delete') {
             AnswerOption::whereIn('question_id', $ids)->delete();
             Question::whereIn('question_id', $ids)->delete();
-            return redirect()->back()->with('success', 'Đã xóa thành công ' . count($ids) . ' câu hỏi đã chọn.');
+
+            return redirect()->back()->with('success', 'Đã xóa thành công '.count($ids).' câu hỏi đã chọn.');
         }
 
         if ($action === 'assign') {
-            return redirect()->back()->with('success', 'Đã gắn ' . count($ids) . ' câu hỏi vào cấu trúc đề thi thành công.');
+            return redirect()->back()->with('success', 'Đã gắn '.count($ids).' câu hỏi vào cấu trúc đề thi thành công.');
         }
 
         return redirect()->back();
@@ -282,7 +284,7 @@ class QuestionController extends Controller
      */
     public function export(): StreamedResponse
     {
-        $fileName = 'ngan_hang_cau_hoi_studyprep_' . date('Y_m_d_His') . '.csv';
+        $fileName = 'ngan_hang_cau_hoi_studyprep_'.date('Y_m_d_His').'.csv';
         $questions = Question::with(['section.skill', 'options'])->orderBy('question_id')->get();
 
         $headers = [
@@ -403,6 +405,7 @@ class QuestionController extends Controller
             }
 
             $count = $request->input('selected_count', 116);
+
             return redirect()->route('admin.questions.index')
                 ->with('success', "Đã nạp thành công {$count} câu hỏi TOEIC vào Ngân hàng câu hỏi (Bộ đề: ETS TOEIC 2024 - Test 05)!");
         }
@@ -457,15 +460,15 @@ class QuestionController extends Controller
 
         // Ghép ngữ cảnh đoạn văn chung (Stimulus text)
         $stimulusParts = [];
-        if (!empty($validated['passage_1_title']) || !empty($validated['passage_1_content'])) {
-            $stimulusParts[] = "### " . ($validated['passage_1_title'] ?? 'Passage 1') . "\n" . ($validated['passage_1_content'] ?? '');
+        if (! empty($validated['passage_1_title']) || ! empty($validated['passage_1_content'])) {
+            $stimulusParts[] = '### '.($validated['passage_1_title'] ?? 'Passage 1')."\n".($validated['passage_1_content'] ?? '');
         }
-        if (!empty($validated['passage_2_content'])) {
-            $header = "### Email Correspondence";
-            if (!empty($validated['passage_2_from']) || !empty($validated['passage_2_to'])) {
+        if (! empty($validated['passage_2_content'])) {
+            $header = '### Email Correspondence';
+            if (! empty($validated['passage_2_from']) || ! empty($validated['passage_2_to'])) {
                 $header .= " (From: {$validated['passage_2_from']} | To: {$validated['passage_2_to']})";
             }
-            $stimulusParts[] = $header . "\n" . $validated['passage_2_content'];
+            $stimulusParts[] = $header."\n".$validated['passage_2_content'];
         }
 
         $stimulusText = implode("\n\n---\n\n", $stimulusParts);
@@ -474,7 +477,7 @@ class QuestionController extends Controller
         }
 
         // 1. Tạo bản ghi QuestionSet
-        $qSet = new QuestionSet();
+        $qSet = new QuestionSet;
         $qSet->title = $validated['group_title'];
         $qSet->stimulus_text = $stimulusText;
         $qSet->media_type = 'READING_PASSAGE';
@@ -482,7 +485,7 @@ class QuestionController extends Controller
 
         // 2. Tạo 5 câu hỏi con (Sub-questions 191 - 195)
         $subQuestions = $request->input('sub_questions');
-        if (empty($subQuestions) || !is_array($subQuestions)) {
+        if (empty($subQuestions) || ! is_array($subQuestions)) {
             // Dữ liệu mẫu chuẩn 5 câu như trong ảnh
             $subQuestions = [
                 1 => [
@@ -550,7 +553,7 @@ class QuestionController extends Controller
 
         $createdCount = 0;
         foreach ($subQuestions as $idx => $qData) {
-            $q = new Question();
+            $q = new Question;
             $q->section_id = $validated['section_id'];
             $q->question_type_id = 1;
             $q->question_set_id = $qSet->question_set_id;
@@ -601,13 +604,13 @@ class QuestionController extends Controller
         ]);
 
         $text = $validated['text'] ?? $validated['transcript'] ?? null;
-        $questionId = !empty($validated['question_id']) ? (int) $validated['question_id'] : null;
-        $questionSetId = !empty($validated['question_set_id']) ? (int) $validated['question_set_id'] : null;
-        $partNumber = !empty($validated['part_number']) ? (int) $validated['part_number'] : null;
+        $questionId = ! empty($validated['question_id']) ? (int) $validated['question_id'] : null;
+        $questionSetId = ! empty($validated['question_set_id']) ? (int) $validated['question_set_id'] : null;
+        $partNumber = ! empty($validated['part_number']) ? (int) $validated['part_number'] : null;
         $customFilename = $validated['custom_filename'] ?? null;
         $lang = $validated['lang'] ?? 'en';
 
-        if (!$text && !$questionId && !$questionSetId) {
+        if (! $text && ! $questionId && ! $questionSetId) {
             return response()->json([
                 'success' => false,
                 'message' => 'Cần cung cấp ít nhất một trong các trường: question_id, question_set_id, hoặc text/transcript.',
@@ -640,7 +643,7 @@ class QuestionController extends Controller
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Lỗi khi sinh audio: ' . $e->getMessage(),
+                'message' => 'Lỗi khi sinh audio: '.$e->getMessage(),
             ], 500);
         }
     }

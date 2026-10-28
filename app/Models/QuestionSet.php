@@ -11,7 +11,9 @@ class QuestionSet extends Model
     use HasFactory;
 
     protected $table = 'question_set';
+
     protected $primaryKey = 'question_set_id';
+
     public $timestamps = false;
 
     protected $fillable = [
