@@ -316,14 +316,6 @@
             </svg>
         </a>
 
-        {{-- ===== Ho so: lien ket den trang Ho so ===== --}}
-        <a href="{{ url('/ho-so') }}" class="sp-header__icon-btn" title="Hồ sơ" aria-label="Hồ sơ">
-            <svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true">
-                <circle cx="12" cy="8.2" r="3.7" fill="#8B5CF6" />
-                <path d="M4.8 20.4a7.2 7.2 0 0 1 14.4 0c0 .9-.7 1.6-1.6 1.6H6.4a1.6 1.6 0 0 1-1.6-1.6Z" fill="#8B5CF6" />
-            </svg>
-        </a>
-
         {{-- ===== Thong bao: nut icon + dropdown danh sach ===== --}}
         <div class="sp-header__dropdown-wrap">
             <button
