@@ -120,7 +120,7 @@
 
                 {{-- Nút "HỌC TỪ MỚI" sử dụng Button Component có sẵn --}}
                 <div class="tv-progress-cta-wrap">
-                    <x-button variant="primary" size="medium" id="btnLearnNew" class="tv-btn-learn" onclick="handleStartLearn()">
+                    <x-button variant="primary" size="medium" id="btnLearnNew" class="tv-btn-learn" href="{{ route('tu-vung.chon-tu', ['topicId' => $topicId ?? ($topic['topic_id'] ?? 'test-1')]) }}">
                         → HỌC TỪ MỚI
                     </x-button>
                 </div>
@@ -491,7 +491,7 @@
 
     // 6. Xử lý click button "HỌC TỪ MỚI"
     function handleStartLearn() {
-        showToast('Tính năng học từ mới đang được chuẩn bị. Bạn có thể tra cứu và nghe phát âm bên dưới.');
+        window.location.href = "{{ route('tu-vung.chon-tu', ['topicId' => $topicId ?? ($topic['topic_id'] ?? 'test-1')]) }}";
     }
 
     // 7. Toast helper hiển thị thông báo nhẹ nhàng
