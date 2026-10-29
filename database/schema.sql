@@ -504,3 +504,7 @@ CREATE TABLE feedback (
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
+  
+-- Thêm cột ảnh cho từ vựng --
+ALTER TABLE `vocabularies`
+ADD COLUMN `image_url` varchar(500) DEFAULT NULL AFTER `example_vi`;
