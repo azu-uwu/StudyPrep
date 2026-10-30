@@ -119,7 +119,7 @@ class ReadingPracticeController extends Controller
         $minutes = floor($timeSpentSeconds / 60);
         $seconds = $timeSpentSeconds % 60;
         $formattedTime = sprintf('%02d:%02d', $minutes, $seconds);
-        $timeSpentText = max(1, (int) round($timeSpentSeconds / 60)) . ' phút';
+        $timeSpentText = max(1, (int) round($timeSpentSeconds / 60)).' phút';
 
         $resultData = [
             'part' => $part,

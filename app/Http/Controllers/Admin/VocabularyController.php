@@ -33,10 +33,10 @@ class VocabularyController extends Controller
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('word', 'like', "%{$search}%")
-                  ->orWhere('pronunciation', 'like', "%{$search}%")
-                  ->orWhere('meaning_vi', 'like', "%{$search}%")
-                  ->orWhere('example_en', 'like', "%{$search}%")
-                  ->orWhere('example_vi', 'like', "%{$search}%");
+                    ->orWhere('pronunciation', 'like', "%{$search}%")
+                    ->orWhere('meaning_vi', 'like', "%{$search}%")
+                    ->orWhere('example_en', 'like', "%{$search}%")
+                    ->orWhere('example_vi', 'like', "%{$search}%");
             });
         }
 
@@ -68,7 +68,7 @@ class VocabularyController extends Controller
         if ($previewId) {
             $previewVocab = Vocabulary::with('topic')->find($previewId);
         }
-        if (!$previewVocab) {
+        if (! $previewVocab) {
             $previewVocab = $vocabularies->first() ?? Vocabulary::with('topic')->first();
         }
 
@@ -92,6 +92,7 @@ class VocabularyController extends Controller
     public function create(): View
     {
         $topics = Topic::orderBy('name')->get();
+
         return view('admin.vocabularies.create', compact('topics'));
     }
 
@@ -115,7 +116,7 @@ class VocabularyController extends Controller
         ]);
 
         $topicId = $validated['topic_id'] ?? null;
-        if (!empty($validated['new_topic_name'])) {
+        if (! empty($validated['new_topic_name'])) {
             $newTopic = Topic::firstOrCreate(
                 ['name' => trim($validated['new_topic_name'])],
                 [
@@ -132,13 +133,13 @@ class VocabularyController extends Controller
         }
 
         $pos = trim((string) ($validated['part_of_speech'] ?? 'Từ vựng'));
-        if (!empty($validated['level'])) {
-            $pos = $pos . '|' . trim($validated['level']);
+        if (! empty($validated['level'])) {
+            $pos = $pos.'|'.trim($validated['level']);
         }
 
         $meaning = trim($validated['meaning_vi']);
-        if (!empty($validated['definition_en'])) {
-            $meaning = $meaning . ' || ' . trim($validated['definition_en']);
+        if (! empty($validated['definition_en'])) {
+            $meaning = $meaning.' || '.trim($validated['definition_en']);
         }
 
         $vocab = Vocabulary::create([
@@ -153,8 +154,8 @@ class VocabularyController extends Controller
 
         $isDraft = ($request->input('action_type') === 'draft');
         $msg = $isDraft
-            ? 'Đã lưu bản nháp từ vựng "' . $vocab->word . '" thành công!'
-            : 'Đã thêm từ vựng mới "' . $vocab->word . '" và xuất bản vào bộ thẻ thành công!';
+            ? 'Đã lưu bản nháp từ vựng "'.$vocab->word.'" thành công!'
+            : 'Đã thêm từ vựng mới "'.$vocab->word.'" và xuất bản vào bộ thẻ thành công!';
 
         return redirect()->route('admin.vocabularies.index')->with('info', $msg);
     }
@@ -177,13 +178,13 @@ class VocabularyController extends Controller
         ]);
 
         $pos = trim((string) ($validated['part_of_speech'] ?? 'Từ vựng'));
-        if (!empty($validated['level'])) {
-            $pos = $pos . '|' . trim($validated['level']);
+        if (! empty($validated['level'])) {
+            $pos = $pos.'|'.trim($validated['level']);
         }
 
         $meaning = trim($validated['meaning_vi']);
-        if (!empty($validated['definition_en'])) {
-            $meaning = $meaning . ' || ' . trim($validated['definition_en']);
+        if (! empty($validated['definition_en'])) {
+            $meaning = $meaning.' || '.trim($validated['definition_en']);
         }
 
         $vocabulary->update([
@@ -196,7 +197,7 @@ class VocabularyController extends Controller
             'example_vi' => trim((string) ($validated['example_vi'] ?? '')),
         ]);
 
-        return redirect()->route('admin.vocabularies.index')->with('info', 'Đã cập nhật từ vựng "' . $vocabulary->word . '" thành công!');
+        return redirect()->route('admin.vocabularies.index')->with('info', 'Đã cập nhật từ vựng "'.$vocabulary->word.'" thành công!');
     }
 
     /**
@@ -207,7 +208,7 @@ class VocabularyController extends Controller
         $word = $vocabulary->word;
         $vocabulary->delete();
 
-        return redirect()->route('admin.vocabularies.index')->with('info', 'Đã xóa từ vựng "' . $word . '" thành công!');
+        return redirect()->route('admin.vocabularies.index')->with('info', 'Đã xóa từ vựng "'.$word.'" thành công!');
     }
 
     /**
@@ -218,7 +219,7 @@ class VocabularyController extends Controller
         $action = $request->input('action');
         $selectedIds = $request->input('selected_ids', []);
 
-        if (empty($selectedIds) || !is_array($selectedIds)) {
+        if (empty($selectedIds) || ! is_array($selectedIds)) {
             return redirect()->route('admin.vocabularies.index')->with('info', 'Chưa có từ vựng nào được chọn!');
         }
 
@@ -226,6 +227,7 @@ class VocabularyController extends Controller
 
         if ($action === 'delete') {
             $count = Vocabulary::whereIn('vocabulary_id', $validIds)->delete();
+
             return redirect()->route('admin.vocabularies.index')->with('info', "Đã xóa thành công {$count} từ vựng đã chọn!");
         }
 
@@ -234,6 +236,7 @@ class VocabularyController extends Controller
             if ($targetTopicId > 0 && Topic::where('topic_id', $targetTopicId)->exists()) {
                 $count = Vocabulary::whereIn('vocabulary_id', $validIds)->update(['topic_id' => $targetTopicId]);
                 $topic = Topic::find($targetTopicId);
+
                 return redirect()->route('admin.vocabularies.index')->with('info', "Đã gán {$count} từ vựng vào bộ thẻ \"{$topic->name}\" thành công!");
             }
         }
@@ -257,7 +260,7 @@ class VocabularyController extends Controller
             'description' => trim((string) ($validated['description'] ?? '')),
         ]);
 
-        return redirect()->route('admin.vocabularies.index')->with('info', 'Đã tạo bộ thẻ Flashcards "' . $validated['name'] . '" thành công!');
+        return redirect()->route('admin.vocabularies.index')->with('info', 'Đã tạo bộ thẻ Flashcards "'.$validated['name'].'" thành công!');
     }
 
     /**
@@ -275,7 +278,7 @@ class VocabularyController extends Controller
             'description' => trim((string) ($validated['description'] ?? '')),
         ]);
 
-        return redirect()->route('admin.vocabularies.index')->with('info', 'Đã cập nhật bộ thẻ Flashcards "' . $topic->name . '" thành công!');
+        return redirect()->route('admin.vocabularies.index')->with('info', 'Đã cập nhật bộ thẻ Flashcards "'.$topic->name.'" thành công!');
     }
 
     /**
@@ -290,7 +293,7 @@ class VocabularyController extends Controller
         }
         $topic->delete();
 
-        return redirect()->route('admin.vocabularies.index')->with('info', 'Đã xóa bộ thẻ Flashcards "' . $name . '" thành công!');
+        return redirect()->route('admin.vocabularies.index')->with('info', 'Đã xóa bộ thẻ Flashcards "'.$name.'" thành công!');
     }
 
     /**
@@ -298,7 +301,7 @@ class VocabularyController extends Controller
      */
     public function export(Request $request): StreamedResponse
     {
-        $fileName = 'studyprep_vocabularies_' . date('Ymd_His') . '.csv';
+        $fileName = 'studyprep_vocabularies_'.date('Ymd_His').'.csv';
 
         $headers = [
             'Content-Type' => 'text/csv; charset=UTF-8',
@@ -515,12 +518,15 @@ class VocabularyController extends Controller
                 if ($existing) {
                     if ($mode === 'skip') {
                         $skipped++;
+
                         continue;
                     } elseif ($mode === 'overwrite') {
                         $meaning = $meaningVi;
-                        if (!empty($defEn)) $meaning .= ' || ' . $defEn;
+                        if (! empty($defEn)) {
+                            $meaning .= ' || '.$defEn;
+                        }
                         $existing->update([
-                            'part_of_speech' => $pos . '|' . $level,
+                            'part_of_speech' => $pos.'|'.$level,
                             'pronunciation' => $ipa ?: $existing->pronunciation,
                             'meaning_vi' => $meaning ?: $existing->meaning_vi,
                             'example_en' => $exampleEn ?: $existing->example_en,
@@ -528,18 +534,21 @@ class VocabularyController extends Controller
                             'topic_id' => $topicId,
                         ]);
                         $imported++;
+
                         continue;
                     }
                 }
 
                 $meaning = $meaningVi;
-                if (!empty($defEn)) $meaning .= ' || ' . $defEn;
+                if (! empty($defEn)) {
+                    $meaning .= ' || '.$defEn;
+                }
 
                 Vocabulary::create([
                     'topic_id' => $topicId,
                     'word' => $word,
                     'pronunciation' => $ipa,
-                    'part_of_speech' => $pos . '|' . $level,
+                    'part_of_speech' => $pos.'|'.$level,
                     'meaning_vi' => $meaning ?: 'Nghĩa từ vựng',
                     'example_en' => $exampleEn,
                     'example_vi' => $exampleVi,
@@ -604,7 +613,7 @@ class VocabularyController extends Controller
         $imported = 0;
         foreach ($candidates as $cand) {
             $existing = Vocabulary::where('word', $cand['word'])->first();
-            if (!$existing) {
+            if (! $existing) {
                 Vocabulary::create(array_merge($cand, ['topic_id' => $topicId]));
                 $imported++;
             }

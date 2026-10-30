@@ -36,8 +36,10 @@ class Vocabulary extends Model
         $pos = (string) ($this->part_of_speech ?? 'Từ vựng');
         if (str_contains($pos, '|')) {
             $parts = explode('|', $pos);
+
             return trim($parts[0]);
         }
+
         return $pos;
     }
 
@@ -49,12 +51,14 @@ class Vocabulary extends Model
         $pos = (string) ($this->part_of_speech ?? '');
         if (str_contains($pos, '|')) {
             $parts = explode('|', $pos);
+
             return trim($parts[1] ?? '650+');
         }
 
         // Default level mapping based on POS or word length if not specified
         $hash = abs(crc32($this->word ?? '')) % 5;
         $levels = ['450+', '550+', '650+', '750+', '800+'];
+
         return $levels[$hash];
     }
 
@@ -66,12 +70,15 @@ class Vocabulary extends Model
         $meaning = (string) ($this->meaning_vi ?? '');
         if (str_contains($meaning, '||')) {
             $parts = explode('||', $meaning);
+
             return trim($parts[0]);
         }
         if (str_contains($meaning, "\n")) {
             $lines = explode("\n", $meaning);
+
             return trim($lines[0]);
         }
+
         return $meaning;
     }
 
@@ -83,12 +90,15 @@ class Vocabulary extends Model
         $meaning = (string) ($this->meaning_vi ?? '');
         if (str_contains($meaning, '||')) {
             $parts = explode('||', $meaning);
+
             return trim($parts[1] ?? '');
         }
         if (str_contains($meaning, "\n")) {
             $lines = explode("\n", $meaning);
+
             return trim($lines[1] ?? '');
         }
+
         return '';
     }
 }

@@ -126,7 +126,8 @@ class User extends Authenticatable
         if (count($words) === 1) {
             return mb_strtoupper(mb_substr($words[0], 0, 2));
         }
-        return mb_strtoupper(mb_substr($words[0], 0, 1) . mb_substr(end($words), 0, 1));
+
+        return mb_strtoupper(mb_substr($words[0], 0, 1).mb_substr(end($words), 0, 1));
     }
 
     public function getAvatarBgAttribute(): string
@@ -139,6 +140,7 @@ class User extends Authenticatable
             '#dbeafe', // light blue
             '#fef3c7', // light amber
         ];
+
         return $colors[$this->user_id % count($colors)];
     }
 
@@ -152,6 +154,7 @@ class User extends Authenticatable
             '#1d4ed8', // blue
             '#b45309', // amber
         ];
+
         return $colors[$this->user_id % count($colors)];
     }
 
@@ -163,6 +166,7 @@ class User extends Authenticatable
     public function getRoleDisplayAttribute(): string
     {
         $role = Str::lower((string) $this->role);
+
         return match ($role) {
             'teacher', 'instructor', 'giang_vien' => 'Giảng viên TOEIC',
             'admin', 'super_admin' => 'Quản trị viên',
@@ -173,6 +177,7 @@ class User extends Authenticatable
     public function getRoleBadgeClassAttribute(): string
     {
         $role = Str::lower((string) $this->role);
+
         return match ($role) {
             'teacher', 'instructor', 'giang_vien' => 'role-badge-teacher',
             'admin', 'super_admin' => 'role-badge-admin',
@@ -188,6 +193,7 @@ class User extends Authenticatable
         if (Str::upper((string) $this->status) === 'PENDING' || ($this->email_verified_at === null && $this->created_at?->diffInDays() <= 7)) {
             return 'Chờ kích hoạt';
         }
+
         return 'Hoạt động';
     }
 
@@ -199,6 +205,7 @@ class User extends Authenticatable
         if (Str::upper((string) $this->status) === 'PENDING' || ($this->email_verified_at === null && $this->created_at?->diffInDays() <= 7)) {
             return 'status-badge-pending';
         }
+
         return 'status-badge-active';
     }
 
@@ -219,6 +226,7 @@ class User extends Authenticatable
         if (str_contains(Str::lower((string) $this->full_name), 'huy')) {
             return 'TOEIC Cấp tốc 30 ngày';
         }
+
         return 'TOEIC Toàn diện 650+';
     }
 
@@ -239,6 +247,7 @@ class User extends Authenticatable
         if (str_contains(Str::lower((string) $this->full_name), 'huy')) {
             return 'Thi ngày 28/04/2025';
         }
+
         return 'Hạn dùng 12 tháng';
     }
 

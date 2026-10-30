@@ -2,7 +2,14 @@
 
 namespace Database\Seeders;
 
+use App\Models\AnswerOption;
+use App\Models\ExamSection;
+use App\Models\Question;
+use App\Models\QuestionType;
+use App\Models\Skill;
+use App\Models\Topic;
 use App\Models\User;
+use App\Models\Vocabulary;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -102,24 +109,24 @@ class DatabaseSeeder extends Seeder
         );
 
         // 2. Kỹ năng & Phần thi (Skills & Sections)
-        $skillLC = \App\Models\Skill::query()->updateOrCreate(['skill_id' => 1], ['code' => 'LC', 'skill_name' => 'Listening']);
-        $skillRC = \App\Models\Skill::query()->updateOrCreate(['skill_id' => 2], ['code' => 'RC', 'skill_name' => 'Reading']);
-        $skillSW = \App\Models\Skill::query()->updateOrCreate(['skill_id' => 3], ['code' => 'SW', 'skill_name' => 'Speaking & Writing']);
+        $skillLC = Skill::query()->updateOrCreate(['skill_id' => 1], ['code' => 'LC', 'skill_name' => 'Listening']);
+        $skillRC = Skill::query()->updateOrCreate(['skill_id' => 2], ['code' => 'RC', 'skill_name' => 'Reading']);
+        $skillSW = Skill::query()->updateOrCreate(['skill_id' => 3], ['code' => 'SW', 'skill_name' => 'Speaking & Writing']);
 
-        $secPart1 = \App\Models\ExamSection::query()->updateOrCreate(['section_id' => 1], ['skill_id' => 1, 'code' => 'PART1', 'name' => 'Part 1: Photographs', 'sequence_no' => 1]);
-        $secPart3 = \App\Models\ExamSection::query()->updateOrCreate(['section_id' => 3], ['skill_id' => 1, 'code' => 'PART3', 'name' => 'Part 3: Conversations', 'sequence_no' => 3]);
-        $secPart5 = \App\Models\ExamSection::query()->updateOrCreate(['section_id' => 5], ['skill_id' => 2, 'code' => 'PART5', 'name' => 'Part 5: Incomplete Sentences', 'sequence_no' => 5]);
-        $secPart7 = \App\Models\ExamSection::query()->updateOrCreate(['section_id' => 7], ['skill_id' => 2, 'code' => 'PART7', 'name' => 'Part 7: Reading Comprehension', 'sequence_no' => 7]);
-        $secWrite1 = \App\Models\ExamSection::query()->updateOrCreate(['section_id' => 8], ['skill_id' => 3, 'code' => 'WRITING_T1', 'name' => 'Writing Task 1: Write a Sentence', 'sequence_no' => 8]);
-        $secWrite2 = \App\Models\ExamSection::query()->updateOrCreate(['section_id' => 9], ['skill_id' => 3, 'code' => 'WRITING_T2', 'name' => 'Writing Task 2: Respond to Email', 'sequence_no' => 9]);
+        $secPart1 = ExamSection::query()->updateOrCreate(['section_id' => 1], ['skill_id' => 1, 'code' => 'PART1', 'name' => 'Part 1: Photographs', 'sequence_no' => 1]);
+        $secPart3 = ExamSection::query()->updateOrCreate(['section_id' => 3], ['skill_id' => 1, 'code' => 'PART3', 'name' => 'Part 3: Conversations', 'sequence_no' => 3]);
+        $secPart5 = ExamSection::query()->updateOrCreate(['section_id' => 5], ['skill_id' => 2, 'code' => 'PART5', 'name' => 'Part 5: Incomplete Sentences', 'sequence_no' => 5]);
+        $secPart7 = ExamSection::query()->updateOrCreate(['section_id' => 7], ['skill_id' => 2, 'code' => 'PART7', 'name' => 'Part 7: Reading Comprehension', 'sequence_no' => 7]);
+        $secWrite1 = ExamSection::query()->updateOrCreate(['section_id' => 8], ['skill_id' => 3, 'code' => 'WRITING_T1', 'name' => 'Writing Task 1: Write a Sentence', 'sequence_no' => 8]);
+        $secWrite2 = ExamSection::query()->updateOrCreate(['section_id' => 9], ['skill_id' => 3, 'code' => 'WRITING_T2', 'name' => 'Writing Task 2: Respond to Email', 'sequence_no' => 9]);
 
-        $qTypeChoice = \App\Models\QuestionType::query()->updateOrCreate(['question_type_id' => 1], ['name' => 'Multiple Choice', 'response_mode' => 'SINGLE_CHOICE']);
-        $qTypeText = \App\Models\QuestionType::query()->updateOrCreate(['question_type_id' => 2], ['name' => 'Written Response', 'response_mode' => 'TEXT']);
-        $qTypeAudio = \App\Models\QuestionType::query()->updateOrCreate(['question_type_id' => 3], ['name' => 'Audio Listening', 'response_mode' => 'AUDIO']);
+        $qTypeChoice = QuestionType::query()->updateOrCreate(['question_type_id' => 1], ['name' => 'Multiple Choice', 'response_mode' => 'SINGLE_CHOICE']);
+        $qTypeText = QuestionType::query()->updateOrCreate(['question_type_id' => 2], ['name' => 'Written Response', 'response_mode' => 'TEXT']);
+        $qTypeAudio = QuestionType::query()->updateOrCreate(['question_type_id' => 3], ['name' => 'Audio Listening', 'response_mode' => 'AUDIO']);
 
         // 3. Câu hỏi chuẩn hóa (Khớp ảnh mẫu)
         // Q-10892
-        $q1 = \App\Models\Question::query()->updateOrCreate(
+        $q1 = Question::query()->updateOrCreate(
             ['question_id' => 10892],
             [
                 'section_id' => 5,
@@ -132,13 +139,13 @@ class DatabaseSeeder extends Seeder
                 'created_at' => now()->subDays(12),
             ]
         );
-        \App\Models\AnswerOption::query()->updateOrCreate(['question_id' => 10892, 'label' => 'A'], ['content' => 'define', 'is_correct' => false]);
-        \App\Models\AnswerOption::query()->updateOrCreate(['question_id' => 10892, 'label' => 'B'], ['content' => 'inspect', 'is_correct' => false]);
-        \App\Models\AnswerOption::query()->updateOrCreate(['question_id' => 10892, 'label' => 'C'], ['content' => 'expand', 'is_correct' => true]);
-        \App\Models\AnswerOption::query()->updateOrCreate(['question_id' => 10892, 'label' => 'D'], ['content' => 'relieve', 'is_correct' => false]);
+        AnswerOption::query()->updateOrCreate(['question_id' => 10892, 'label' => 'A'], ['content' => 'define', 'is_correct' => false]);
+        AnswerOption::query()->updateOrCreate(['question_id' => 10892, 'label' => 'B'], ['content' => 'inspect', 'is_correct' => false]);
+        AnswerOption::query()->updateOrCreate(['question_id' => 10892, 'label' => 'C'], ['content' => 'expand', 'is_correct' => true]);
+        AnswerOption::query()->updateOrCreate(['question_id' => 10892, 'label' => 'D'], ['content' => 'relieve', 'is_correct' => false]);
 
         // Q-10893
-        $q2 = \App\Models\Question::query()->updateOrCreate(
+        $q2 = Question::query()->updateOrCreate(
             ['question_id' => 10893],
             [
                 'section_id' => 1,
@@ -153,7 +160,7 @@ class DatabaseSeeder extends Seeder
         );
 
         // Q-10894
-        $q3 = \App\Models\Question::query()->updateOrCreate(
+        $q3 = Question::query()->updateOrCreate(
             ['question_id' => 10894],
             [
                 'section_id' => 8,
@@ -168,7 +175,7 @@ class DatabaseSeeder extends Seeder
         );
 
         // Q-10895
-        $q4 = \App\Models\Question::query()->updateOrCreate(
+        $q4 = Question::query()->updateOrCreate(
             ['question_id' => 10895],
             [
                 'section_id' => 7,
@@ -183,7 +190,7 @@ class DatabaseSeeder extends Seeder
         );
 
         // Q-10896 (Reported)
-        $q5 = \App\Models\Question::query()->updateOrCreate(
+        $q5 = Question::query()->updateOrCreate(
             ['question_id' => 10896],
             [
                 'section_id' => 5,
@@ -198,7 +205,7 @@ class DatabaseSeeder extends Seeder
         );
 
         // Q-10897 (Pending)
-        $q6 = \App\Models\Question::query()->updateOrCreate(
+        $q6 = Question::query()->updateOrCreate(
             ['question_id' => 10897],
             [
                 'section_id' => 9,
@@ -213,7 +220,7 @@ class DatabaseSeeder extends Seeder
         );
 
         // Q-10898
-        $q7 = \App\Models\Question::query()->updateOrCreate(
+        $q7 = Question::query()->updateOrCreate(
             ['question_id' => 10898],
             [
                 'section_id' => 3,
@@ -228,16 +235,16 @@ class DatabaseSeeder extends Seeder
         );
 
         // 4. Bộ thẻ & Từ vựng Flashcards (Khớp ảnh mẫu)
-        $adminUser = \App\Models\User::query()->where('role', 'admin')->first() ?? \App\Models\User::first();
+        $adminUser = User::query()->where('role', 'admin')->first() ?? User::first();
         $adminId = $adminUser ? $adminUser->user_id : 1;
 
-        $topicFinance = \App\Models\Topic::query()->updateOrCreate(['name' => 'Finance & Budget'], ['user_id' => $adminId, 'description' => 'Thuật ngữ tài chính và ngân sách doanh nghiệp']);
-        $topicContracts = \App\Models\Topic::query()->updateOrCreate(['name' => 'Contracts & Finance'], ['user_id' => $adminId, 'description' => 'Hợp đồng, điều khoản và chu kỳ kế toán']);
-        $topicWorkplaces = \App\Models\Topic::query()->updateOrCreate(['name' => 'Office & Workplaces'], ['user_id' => $adminId, 'description' => 'Ban quản trị và môi trường công sở']);
-        $topicEssential = \App\Models\Topic::query()->updateOrCreate(['name' => '600 Essential Words'], ['user_id' => $adminId, 'description' => 'Từ vựng cốt lõi cho kỳ thi TOEIC']);
-        $topicFacilities = \App\Models\Topic::query()->updateOrCreate(['name' => 'Office & Facilities'], ['user_id' => $adminId, 'description' => 'Cơ sở hạ tầng, sửa chữa và trùng tu']);
-        $topicEts = \App\Models\Topic::query()->updateOrCreate(['name' => 'ETS 2024 Test 3'], ['user_id' => $adminId, 'description' => 'Bộ đề thi thật ETS 2024 Test 3']);
-        $topicTransport = \App\Models\Topic::query()->updateOrCreate(['name' => 'Transport & Work'], ['user_id' => $adminId, 'description' => 'Giao thông và di chuyển công tác']);
+        $topicFinance = Topic::query()->updateOrCreate(['name' => 'Finance & Budget'], ['user_id' => $adminId, 'description' => 'Thuật ngữ tài chính và ngân sách doanh nghiệp']);
+        $topicContracts = Topic::query()->updateOrCreate(['name' => 'Contracts & Finance'], ['user_id' => $adminId, 'description' => 'Hợp đồng, điều khoản và chu kỳ kế toán']);
+        $topicWorkplaces = Topic::query()->updateOrCreate(['name' => 'Office & Workplaces'], ['user_id' => $adminId, 'description' => 'Ban quản trị và môi trường công sở']);
+        $topicEssential = Topic::query()->updateOrCreate(['name' => '600 Essential Words'], ['user_id' => $adminId, 'description' => 'Từ vựng cốt lõi cho kỳ thi TOEIC']);
+        $topicFacilities = Topic::query()->updateOrCreate(['name' => 'Office & Facilities'], ['user_id' => $adminId, 'description' => 'Cơ sở hạ tầng, sửa chữa và trùng tu']);
+        $topicEts = Topic::query()->updateOrCreate(['name' => 'ETS 2024 Test 3'], ['user_id' => $adminId, 'description' => 'Bộ đề thi thật ETS 2024 Test 3']);
+        $topicTransport = Topic::query()->updateOrCreate(['name' => 'Transport & Work'], ['user_id' => $adminId, 'description' => 'Giao thông và di chuyển công tác']);
 
         $vocabs = [
             [
@@ -245,7 +252,7 @@ class DatabaseSeeder extends Seeder
                 'topic_id' => $topicFinance->topic_id,
                 'part_of_speech' => 'Adv|750+',
                 'pronunciation' => '/ɪkˈstrɔːr.dən.er.əl.i/',
-                'meaning_vi' => "Đặc biệt, phi thường || To a very unusual or remarkable degree",
+                'meaning_vi' => 'Đặc biệt, phi thường || To a very unusual or remarkable degree',
                 'example_en' => 'The quarter report demonstrated an extraordinarily high return on investment.',
                 'example_vi' => 'Báo cáo quý tăng trưởng vượt trội mang lại tỷ suất sinh lời đặc biệt cao.',
             ],
@@ -306,7 +313,7 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($vocabs as $item) {
-            \App\Models\Vocabulary::query()->updateOrCreate(
+            Vocabulary::query()->updateOrCreate(
                 ['word' => $item['word']],
                 $item
             );

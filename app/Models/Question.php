@@ -7,9 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Str;
 
 #[Fillable([
     'section_id',
@@ -110,7 +108,7 @@ class Question extends Model
         if ($this->section?->code) {
             $code = strtoupper((string) $this->section->code);
             if (str_starts_with($code, 'PART')) {
-                return 'Part ' . substr($code, 4);
+                return 'Part '.substr($code, 4);
             }
             if ($code === 'WRITING_T1') {
                 return 'Writing T1';
@@ -118,6 +116,7 @@ class Question extends Model
             if ($code === 'WRITING_T2') {
                 return 'Writing T2';
             }
+
             return $this->section->code;
         }
 
@@ -158,6 +157,7 @@ class Question extends Model
         if (in_array($part, ['Part 1', 'Part 2', 'Part 3', 'Part 4'], true)) {
             return 'Listening';
         }
+
         return 'Reading';
     }
 
@@ -193,6 +193,7 @@ class Question extends Model
     public function getStatusLabelAttribute(): string
     {
         $status = strtoupper((string) $this->status);
+
         return match ($status) {
             'ACTIVE' => 'Hoạt động',
             'REPORTED' => 'Báo lỗi đáp án',
@@ -204,6 +205,7 @@ class Question extends Model
     public function getStatusBadgeClassAttribute(): string
     {
         $status = strtoupper((string) $this->status);
+
         return match ($status) {
             'ACTIVE' => 'status-badge-active',
             'REPORTED' => 'status-badge-error',
@@ -212,9 +214,8 @@ class Question extends Model
         };
     }
 
-    public function questionSet(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function questionSet(): BelongsTo
     {
         return $this->belongsTo(QuestionSet::class, 'question_set_id', 'question_set_id');
     }
 }
-

@@ -26,11 +26,12 @@ class TextToSpeechService
     /**
      * Chuyển văn bản thành file audio MP3 và lưu vào storage theo Part
      *
-     * @param string $text Nội dung cần đọc
-     * @param int $partNumber Part TOEIC (1, 2, 3, 4)
-     * @param string|null $customFilename Tên file tùy chọn (không có đuôi .mp3)
-     * @param string $lang Mã ngôn ngữ (en-US, en, en-GB)
+     * @param  string  $text  Nội dung cần đọc
+     * @param  int  $partNumber  Part TOEIC (1, 2, 3, 4)
+     * @param  string|null  $customFilename  Tên file tùy chọn (không có đuôi .mp3)
+     * @param  string  $lang  Mã ngôn ngữ (en-US, en, en-GB)
      * @return array{audio_url: string, file_path: string, file_size: int, duration_estimate: int}
+     *
      * @throws \RuntimeException
      */
     public function generateAudio(
@@ -61,20 +62,20 @@ class TextToSpeechService
         }
 
         // Thư mục lưu: storage/app/public/audio/listening/part_{part_number}/
-        $folderRelative = 'audio/listening/part_' . $partNumber;
-        $dirPath = storage_path('app/public/' . $folderRelative);
+        $folderRelative = 'audio/listening/part_'.$partNumber;
+        $dirPath = storage_path('app/public/'.$folderRelative);
 
-        if (!File::isDirectory($dirPath)) {
+        if (! File::isDirectory($dirPath)) {
             File::makeDirectory($dirPath, 0755, true, true);
         }
 
-        $filename = ($customFilename ? Str::slug($customFilename, '_') : 'tts_' . $partNumber . '_' . time() . '_' . Str::random(6)) . '.mp3';
-        $fullFilePath = $dirPath . '/' . $filename;
+        $filename = ($customFilename ? Str::slug($customFilename, '_') : 'tts_'.$partNumber.'_'.time().'_'.Str::random(6)).'.mp3';
+        $fullFilePath = $dirPath.'/'.$filename;
 
         File::put($fullFilePath, $combinedMp3Data);
 
         // URL công khai truy cập file audio
-        $audioUrl = '/storage/' . $folderRelative . '/' . $filename;
+        $audioUrl = '/storage/'.$folderRelative.'/'.$filename;
         $fileSize = strlen($combinedMp3Data);
 
         // Ước lượng thời lượng (MP3 ~ 16-24kbps hoặc dựa trên độ dài từ: trung bình 130 từ/phút)
@@ -93,11 +94,10 @@ class TextToSpeechService
     /**
      * Sinh audio và cập nhật trực tiếp vào CSDL cho câu hỏi hoặc nhóm câu hỏi
      *
-     * @param int|null $questionId ID câu hỏi trong bảng questions
-     * @param int|null $questionSetId ID nhóm trong bảng question_set
-     * @param string|null $textText Văn bản cần sinh (nếu null, tự động lấy từ CSDL)
-     * @param int|null $partNumber Part (1, 2, 3, 4)
-     * @return array
+     * @param  int|null  $questionId  ID câu hỏi trong bảng questions
+     * @param  int|null  $questionSetId  ID nhóm trong bảng question_set
+     * @param  string|null  $textText  Văn bản cần sinh (nếu null, tự động lấy từ CSDL)
+     * @param  int|null  $partNumber  Part (1, 2, 3, 4)
      */
     public function generateAndSaveToDatabase(
         ?int $questionId = null,
@@ -114,10 +114,10 @@ class TextToSpeechService
             $question = Question::find($questionId);
             if ($question) {
                 $part = $partNumber ?? $question->part_number ?? $this->detectPartFromSection($question->section_id) ?? 1;
-                if (!$textToRead) {
+                if (! $textToRead) {
                     $textToRead = $question->content;
                 }
-                $filenamePrefix = 'part' . $part . '_q' . $questionId;
+                $filenamePrefix = 'part'.$part.'_q'.$questionId;
             }
         }
 
@@ -125,15 +125,15 @@ class TextToSpeechService
         if ($questionSetId || ($question && $question->question_set_id)) {
             $setId = $questionSetId ?? $question->question_set_id;
             $questionSet = QuestionSet::find($setId);
-            if ($questionSet && !$textToRead) {
+            if ($questionSet && ! $textToRead) {
                 $textToRead = $questionSet->transcript ?: $questionSet->stimulus_text;
             }
-            if ($questionSet && !$filenamePrefix) {
-                $filenamePrefix = 'part' . $part . '_set' . $setId;
+            if ($questionSet && ! $filenamePrefix) {
+                $filenamePrefix = 'part'.$part.'_set'.$setId;
             }
         }
 
-        if (!$textToRead) {
+        if (! $textToRead) {
             throw new \InvalidArgumentException('Không tìm thấy nội dung văn bản/transcript để tạo audio.');
         }
 
@@ -165,7 +165,6 @@ class TextToSpeechService
     /**
      * Tách văn bản dài thành các chunk tự nhiên theo dấu câu
      *
-     * @param string $text
      * @return array<string>
      */
     protected function splitTextIntoChunks(string $text): array
@@ -185,8 +184,8 @@ class TextToSpeechService
                 continue;
             }
 
-            if (mb_strlen($currentChunk . ' ' . $sentence) <= $this->maxChunkLength) {
-                $currentChunk = trim($currentChunk . ' ' . $sentence);
+            if (mb_strlen($currentChunk.' '.$sentence) <= $this->maxChunkLength) {
+                $currentChunk = trim($currentChunk.' '.$sentence);
             } else {
                 if ($currentChunk !== '') {
                     $chunks[] = $currentChunk;
@@ -198,8 +197,8 @@ class TextToSpeechService
                     $words = explode(' ', $sentence);
                     $temp = '';
                     foreach ($words as $w) {
-                        if (mb_strlen($temp . ' ' . $w) <= $this->maxChunkLength) {
-                            $temp = trim($temp . ' ' . $w);
+                        if (mb_strlen($temp.' '.$w) <= $this->maxChunkLength) {
+                            $temp = trim($temp.' '.$w);
                         } else {
                             if ($temp !== '') {
                                 $chunks[] = $temp;
@@ -229,7 +228,7 @@ class TextToSpeechService
     protected function fetchTtsAudioChunk(string $text, string $lang = 'en'): string
     {
         try {
-            $url = $this->googleTtsBaseUrl . '?' . http_build_query([
+            $url = $this->googleTtsBaseUrl.'?'.http_build_query([
                 'ie' => 'UTF-8',
                 'client' => 'tw-ob',
                 'tl' => $lang,
@@ -246,9 +245,9 @@ class TextToSpeechService
                 return $response->body();
             }
 
-            Log::warning('Google TTS error HTTP status: ' . $response->status() . ' for text: ' . mb_substr($text, 0, 30));
+            Log::warning('Google TTS error HTTP status: '.$response->status().' for text: '.mb_substr($text, 0, 30));
         } catch (\Throwable $e) {
-            Log::error('TextToSpeechService Exception: ' . $e->getMessage());
+            Log::error('TextToSpeechService Exception: '.$e->getMessage());
         }
 
         return '';
@@ -296,7 +295,7 @@ class TextToSpeechService
      */
     protected function detectPartFromSection(?int $sectionId): ?int
     {
-        if (!$sectionId) {
+        if (! $sectionId) {
             return null;
         }
 

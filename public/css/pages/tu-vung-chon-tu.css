@@ -1,0 +1,519 @@
+/**
+ * StudyPrep - Styles for Trang Chọn Từ Muốn Học (tu-vung-chon-tu.blade.php)
+ * Kế thừa chuẩn layout, spacing, typography từ Luyện tập & Danh sách từ vựng.
+ */
+
+/* ===== 1. CONTAINER CHÍNH ===== */
+.tv-select-container {
+    width: 100%;
+    max-width: 860px;
+    margin: 0 auto;
+    font-family: var(--sp-font-family, 'Nunito', sans-serif);
+    padding-bottom: 40px;
+}
+
+/* ===== 2. HEADER TRANG ===== */
+.tv-select-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.tv-select-back-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: #FFFFFF;
+    border: 1px solid var(--sp-border, #EEF1F7);
+    color: var(--sp-text-main, #111C2D);
+    text-decoration: none;
+    box-shadow: 0 2px 6px rgba(17, 28, 45, 0.04);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex: none;
+    margin-top: 2px;
+}
+
+.tv-select-back-btn:hover {
+    background: #F8FAFC;
+    color: var(--sp-primary, #0076FE);
+    border-color: #CBD5E1;
+    transform: translateX(-2px);
+}
+
+.tv-select-header-text {
+    flex: 1;
+}
+
+.tv-select-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--sp-text-main, #111C2D);
+    margin: 0 0 6px 0;
+    line-height: 1.25;
+}
+
+.tv-select-subtitle {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--sp-text-muted, #64748B);
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* ===== 3. THANH TOOLBAR: ĐẾM SỐ LƯỢNG & CHỌN TẤT CẢ ===== */
+.tv-select-toolbar {
+    background: #FFFFFF;
+    border: 1px solid var(--sp-border, #EEF1F7);
+    border-radius: 16px;
+    padding: 14px 20px;
+    margin-bottom: 18px;
+    box-shadow: 0 2px 10px rgba(17, 28, 45, 0.03);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.tv-select-counter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--sp-text-main, #111C2D);
+}
+
+.tv-select-counter-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: #EBF4FF;
+    color: var(--sp-primary, #0076FE);
+    font-weight: 800;
+    font-size: 14px;
+    letter-spacing: 0.2px;
+}
+
+.tv-select-all-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--sp-text-main, #111C2D);
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.tv-select-all-btn:hover {
+    background-color: #F1F5F9;
+    color: var(--sp-primary, #0076FE);
+}
+
+.tv-select-all-checkbox {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border: 2px solid #CBD5E1;
+    background: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    flex: none;
+    color: #FFFFFF;
+}
+
+.tv-select-all-btn.is-checked .tv-select-all-checkbox {
+    background: var(--sp-primary, #0076FE);
+    border-color: var(--sp-primary, #0076FE);
+}
+
+.tv-select-all-checkbox svg {
+    opacity: 0;
+    transform: scale(0.6);
+    transition: all 0.15s ease;
+}
+
+.tv-select-all-btn.is-checked .tv-select-all-checkbox svg {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Trạng thái một phần (indeterminate) */
+.tv-select-all-btn.is-indeterminate .tv-select-all-checkbox {
+    background: #FFFFFF;
+    border-color: var(--sp-primary, #0076FE);
+    position: relative;
+}
+
+.tv-select-all-btn.is-indeterminate .tv-select-all-checkbox::after {
+    content: '';
+    width: 10px;
+    height: 2.5px;
+    background: var(--sp-primary, #0076FE);
+    border-radius: 2px;
+    display: block;
+}
+
+.tv-select-all-btn.is-indeterminate .tv-select-all-checkbox svg {
+    display: none;
+}
+
+/* ===== 4. DANH SÁCH THẺ TỪ VỰNG CHỌN ===== */
+.tv-select-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.tv-select-item {
+    background: #FFFFFF;
+    border: 2px solid var(--sp-border, #EEF1F7);
+    border-radius: 16px;
+    padding: 16px 20px;
+    box-shadow: 0 2px 8px rgba(17, 28, 45, 0.03);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+}
+
+.tv-select-item:hover {
+    border-color: #CBD5E1;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(17, 28, 45, 0.06);
+}
+
+/* Trạng thái được chọn (Selected) */
+.tv-select-item.is-selected {
+    border-color: var(--sp-primary, #0076FE);
+    background-color: #F0F7FF;
+    box-shadow: 0 4px 16px rgba(0, 118, 254, 0.1);
+}
+
+/* Custom Checkbox trong Item */
+.tv-select-item-checkbox {
+    width: 22px;
+    height: 22px;
+    border-radius: 7px;
+    border: 2px solid #CBD5E1;
+    background: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    flex: none;
+    color: #FFFFFF;
+}
+
+.tv-select-item:hover .tv-select-item-checkbox {
+    border-color: var(--sp-primary, #0076FE);
+}
+
+.tv-select-item.is-selected .tv-select-item-checkbox {
+    background: var(--sp-primary, #0076FE);
+    border-color: var(--sp-primary, #0076FE);
+}
+
+.tv-select-item-checkbox svg {
+    opacity: 0;
+    transform: scale(0.6);
+    transition: all 0.15s ease;
+}
+
+.tv-select-item.is-selected .tv-select-item-checkbox svg {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Vùng thông tin từ vựng */
+.tv-select-item-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.tv-select-item-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.tv-select-item-word {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--sp-text-main, #111C2D);
+    letter-spacing: -0.2px;
+}
+
+.tv-select-item.is-selected .tv-select-item-word {
+    color: var(--sp-primary, #0076FE);
+}
+
+.tv-select-cefr-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 7px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 800;
+    color: #FFFFFF;
+    letter-spacing: 0.3px;
+    line-height: 1.2;
+}
+
+.tv-select-pos-tag {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--sp-text-muted, #64748B);
+    background: #F1F5F9;
+    padding: 2px 8px;
+    border-radius: 6px;
+}
+
+.tv-select-item.is-selected .tv-select-pos-tag {
+    background: #E0E7FF;
+    color: #4338CA;
+}
+
+.tv-select-phonetic {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--sp-text-muted, #64748B);
+    font-style: italic;
+}
+
+.tv-select-item-meaning {
+    font-size: 15px;
+    font-weight: 700;
+    color: #334155;
+    line-height: 1.35;
+}
+
+/* Nút phát âm nhỏ bên phải */
+.tv-select-audio-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #F8FAFC;
+    border: 1px solid var(--sp-border, #EEF1F7);
+    color: var(--sp-text-muted, #64748B);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex: none;
+    transition: all 0.15s ease;
+}
+
+.tv-select-audio-btn:hover {
+    background: #EBF4FF;
+    color: var(--sp-primary, #0076FE);
+    border-color: #BFDBFE;
+    transform: scale(1.05);
+}
+
+.tv-select-audio-btn.is-playing {
+    background: var(--sp-primary, #0076FE);
+    color: #FFFFFF;
+    border-color: var(--sp-primary, #0076FE);
+    animation: tvSelectPulse 1s infinite;
+}
+
+@keyframes tvSelectPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+}
+
+/* ===== 5. THANH HÀNH ĐỘNG CỐ ĐỊNH / CHÂN TRANG ===== */
+.tv-select-action-card {
+    margin-top: 28px;
+    padding: 20px 24px;
+    background: #FFFFFF;
+    border: 1px solid var(--sp-border, #EEF1F7);
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(17, 28, 45, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    position: sticky;
+    bottom: 24px;
+    z-index: 10;
+}
+
+.tv-select-action-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tv-select-action-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--sp-text-main, #111C2D);
+    margin: 0;
+}
+
+.tv-select-action-hint {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--sp-text-muted, #64748B);
+    margin: 0;
+}
+
+.tv-select-action-btns {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.tv-btn-start-learn {
+    min-width: 200px;
+}
+
+/* Empty State */
+.tv-select-empty-state {
+    background: #FFFFFF;
+    border: 1px dashed #CBD5E1;
+    border-radius: 20px;
+    padding: 48px 24px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.tv-select-empty-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 20px;
+    background: #F1F5F9;
+    color: #64748B;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+}
+
+.tv-select-empty-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--sp-text-main, #111C2D);
+    margin: 0;
+}
+
+.tv-select-empty-desc {
+    font-size: 14px;
+    color: var(--sp-text-muted, #64748B);
+    margin: 0 0 12px 0;
+    max-width: 380px;
+}
+
+/* Toast popup */
+.tv-select-toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: #1E293B;
+    color: #FFFFFF;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.tv-select-toast.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .tv-select-header {
+        gap: 12px;
+    }
+
+    .tv-select-title {
+        font-size: 20px;
+    }
+
+    .tv-select-subtitle {
+        font-size: 13.5px;
+    }
+
+    .tv-select-toolbar {
+        padding: 12px 14px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .tv-select-all-btn {
+        width: 100%;
+        justify-content: flex-start;
+        padding: 6px 0;
+    }
+
+    .tv-select-item {
+        padding: 12px 14px;
+        gap: 12px;
+    }
+
+    .tv-select-item-word {
+        font-size: 16px;
+    }
+
+    .tv-select-item-meaning {
+        font-size: 14px;
+    }
+
+    .tv-select-action-card {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 16px;
+        bottom: 12px;
+    }
+
+    .tv-select-action-btns {
+        flex-direction: column-reverse;
+        width: 100%;
+    }
+
+    .tv-select-action-btns .sp-btn {
+        width: 100%;
+    }
+}
