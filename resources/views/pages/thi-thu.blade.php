@@ -268,7 +268,7 @@
                 <div class="credit-number">+1 <span>lượt thi</span></div>
                 <p class="credit-note">Hoàn thành hoạt động Flashcard để rèn từ vựng và nhận thêm lượt thi.</p>
             </div>
-            <div><a class="credit-link" href="{{ url('/tu-vung') }}">Học Flashcard ngay <span aria-hidden="true">&nbsp;→</span></a></div>
+            <div><a class="credit-link" href="{{ url('/tu-vung') }}" data-require-auth>Học Flashcard ngay <span aria-hidden="true">&nbsp;→</span></a></div>
         </aside>
     </section>
 
@@ -278,7 +278,7 @@
                 <h2 class="list-title" id="exam-list-title">Các loại đề thi</h2>
                 <p class="list-subtitle">Chọn dạng bài thi phù hợp với mục tiêu luyện tập của bạn.</p>
             </div>
-            <div class="exam-sublist-toolbar"><button class="create-exam-btn" type="button" data-create-exam data-exam-type="Kiểm tra đầu vào">＋ Tạo đề mới</button></div>
+            <div class="exam-sublist-toolbar"><button class="create-exam-btn" type="button" data-create-exam data-exam-type="Kiểm tra đầu vào" data-require-auth>＋ Tạo đề mới</button></div>
 
         </div>
 
@@ -302,7 +302,7 @@
                             <span class="exam-subitem-title">Mini Placement Test – Đánh giá năng lực nhanh</span>
                             <span class="exam-subitem-details">50 câu hỏi · 45 phút · Ước lượng trình độ hiện tại</span>
                         </div>
-                        <a  href="{{ url('/thi-thu/gioi-thieu-de') }}">Bắt đầu</a>
+                        <a href="{{ url('/thi-thu/gioi-thieu-de') }}" data-require-auth>Bắt đầu</a>
                         <!-- <x-button variant="warning" size="medium" data-sp-modal-open="confirm-test-modal">Kiểm tra ngay →</x-button> -->
                     </div>
                 </div>
@@ -328,7 +328,7 @@
                             <span class="exam-subitem-details">200 câu hỏi · Part 1–7 · 120 phút · Đề tuyển chọn 2026</span>
                         </div>
                         <!-- <x-button variant="primary" size="medium" data-sp-modal-open="confirm-test-modal">Bắt đầu thi →</x-button> -->
-                        <a  href="{{ url('/thi-thu/gioi-thieu-de') }}">Bắt đầu</a>
+                        <a href="{{ url('/thi-thu/gioi-thieu-de') }}" data-require-auth>Bắt đầu</a>
                     </div>
                     <div class="exam-subitem">
                         <div class="exam-subitem-copy">
@@ -336,7 +336,7 @@
                             <span class="exam-subitem-details">200 câu hỏi · Part 1–7 · 120 phút · Bộ đề ETS</span>
                         </div>
                         <!-- <x-button variant="primary" size="medium" data-sp-modal-open="confirm-test-modal">Bắt đầu thi →</x-button> -->
-                        <a  href="{{ url('/thi-thu/gioi-thieu-de') }}">Bắt đầu</a>
+                        <a href="{{ url('/thi-thu/gioi-thieu-de') }}" data-require-auth>Bắt đầu</a>
                     </div>
                 </div>
             </article>
@@ -361,7 +361,7 @@
                             <span class="exam-subitem-details">19 câu · 11 Speaking + 8 Writing · 80 phút · Chấm điểm AI</span>
                         </div>
                         <!-- <x-button variant="neutral" size="medium" data-sp-modal-open="confirm-test-modal">Bắt đầu thi →</x-button> -->
-                        <a  href="{{ url('/thi-thu/gioi-thieu-de') }}">Bắt đầu</a>
+                        <a href="{{ url('/thi-thu/gioi-thieu-de') }}" data-require-auth>Bắt đầu</a>
                     </div>
                 </div>
             </article>

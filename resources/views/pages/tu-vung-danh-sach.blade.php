@@ -120,7 +120,7 @@
 
                 {{-- Nút "HỌC TỪ MỚI" sử dụng Button Component có sẵn --}}
                 <div class="tv-progress-cta-wrap">
-                    <x-button variant="primary" size="medium" id="btnLearnNew" class="tv-btn-learn" href="{{ route('tu-vung.chon-tu', ['topicId' => $topicId ?? ($topic['topic_id'] ?? 'test-1')]) }}">
+                    <x-button variant="primary" size="medium" id="btnLearnNew" class="tv-btn-learn" href="{{ route('tu-vung.chon-tu', ['topicId' => $topicId ?? ($topic['topic_id'] ?? 'test-1')]) }}" data-require-auth>
                         → HỌC TỪ MỚI
                     </x-button>
                 </div>

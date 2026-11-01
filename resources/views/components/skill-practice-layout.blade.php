@@ -131,13 +131,13 @@
                 </div>
 
                 {{-- Nút Bắt đầu --}}
-                <button type="button" class="sp-setup-inpage__start-btn" id="setupStartBtn" onclick="startInpagePractice()">
+                <button type="button" class="sp-setup-inpage__start-btn" id="setupStartBtn" onclick="startInpagePractice()" data-require-auth>
                     BẮT ĐẦU 20 CÂU &rarr;
                 </button>
 
                 {{-- Link phụ xem lại kết quả --}}
                 <div class="sp-setup-inpage__sub-link-wrap">
-                    <a href="{{ $skill === 'doc' ? route('luyen-tap.doc.ket-qua') : route('luyen-tap.nghe.ket-qua') }}" class="sp-setup-inpage__sub-link" id="setupSubLink">
+                    <a href="{{ $skill === 'doc' ? route('luyen-tap.doc.ket-qua') : route('luyen-tap.nghe.ket-qua') }}" class="sp-setup-inpage__sub-link" id="setupSubLink" data-require-auth>
                         Hoặc xem lại kết quả bài luyện gần nhất &rarr;
                     </a>
                 </div>

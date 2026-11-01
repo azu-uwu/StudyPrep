@@ -68,7 +68,7 @@
 
         {{-- Link Xem chi tiết bên dưới card trái --}}
         <div class="tv-detail-link-wrap">
-            <a href="javascript:void(0)" class="tv-detail-link">
+            <a href="javascript:void(0)" class="tv-detail-link" data-require-auth>
                 XEM CHI TIẾT <span class="tv-arrow">→</span>
             </a>
         </div>
@@ -127,7 +127,7 @@
 
     <div class="tv-review-body">
         <h3 class="tv-review-title">Ôn lại 1 từ vựng dễ quên</h3>
-        <x-button variant="neutral" size="small" style="color: #0284C7; font-weight: 800;">
+        <x-button variant="neutral" size="small" style="color: #0284C7; font-weight: 800;" data-require-auth>
             → BẮT ĐẦU
         </x-button>
     </div>
@@ -137,7 +137,7 @@
 <div class="lt-section">
     <div class="lt-section-header">
         <h2 class="lt-section-title">Chủ đề của tôi</h2>
-        <a href="javascript:void(0)" class="lt-link-all">
+        <a href="javascript:void(0)" class="lt-link-all" data-require-auth>
             Xem tất cả
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </a>
@@ -154,7 +154,7 @@
             </svg>
         </div>
         <p class="tv-empty-text">Bạn chưa có chủ đề nào</p>
-        <x-button variant="primary" size="medium">
+        <x-button variant="primary" size="medium" data-require-auth>
             + Tạo chủ đề
         </x-button>
     </div>

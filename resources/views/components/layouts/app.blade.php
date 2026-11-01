@@ -39,6 +39,7 @@
             </main>
         </div>
     </div>
+    <x-auth-modal />
     @stack('scripts')
 </body>
 </html>

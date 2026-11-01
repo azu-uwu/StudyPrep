@@ -17,10 +17,10 @@
         [
             'label' => 'TIẾN ĐỘ',
             'items' => [
-                ['key' => 'phan-tich', 'label' => 'Phân tích', 'href' => url('/phan-tich')],
-                ['key' => 'lich-su', 'label' => 'Lịch sử', 'href' => url('/lich-su')],
-                ['key' => 'cai-thien', 'label' => 'Cải thiện', 'href' => url('/cai-thien')],
-                ['key' => 'muc-tieu', 'label' => 'Mục tiêu', 'href' => url('/muc-tieu-trang-chu')],
+                ['key' => 'phan-tich', 'label' => 'Phân tích', 'href' => url('/phan-tich'), 'require_auth' => true],
+                ['key' => 'lich-su', 'label' => 'Lịch sử', 'href' => url('/lich-su'), 'require_auth' => true],
+                ['key' => 'cai-thien', 'label' => 'Cải thiện', 'href' => url('/cai-thien'), 'require_auth' => true],
+                ['key' => 'muc-tieu', 'label' => 'Mục tiêu', 'href' => url('/muc-tieu-trang-chu'), 'require_auth' => true],
             ],
         ],
     ];
@@ -169,6 +169,7 @@
                                 title="{{ $item['label'] }}"
                                 aria-label="{{ $item['label'] }}"
                                 @if ($isActive) aria-current="page" @endif
+                                @if (!empty($item['require_auth'])) data-require-auth @endif
                             >
                                 <span class="sp-sidebar__icon" aria-hidden="true">
                                     @switch ($item['key'])
@@ -251,30 +252,30 @@
         @endforeach
     </nav>
 
-    {{-- ===== Chân sidebar: Hồ sơ & Đăng xuất ===== --}}
+    {{-- ===== Chân sidebar: Hồ sơ & Đăng xuất (khi đã đăng nhập) / Đăng nhập (khi chưa đăng nhập) ===== --}}
     <div class="sp-sidebar__footer">
         <nav aria-label="Tài khoản">
             <ul class="sp-sidebar__list">
-                <li>
-                    <a
-                        href="{{ url('/ho-so') }}"
-                        class="sp-sidebar__link{{ $active === 'ho-so' ? ' is-active' : '' }}"
-                        title="Hồ sơ"
-                        aria-label="Hồ sơ"
-                        @if ($active === 'ho-so') aria-current="page" @endif
-                    >
-                        <span class="sp-sidebar__icon sp-sidebar__icon--sm" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" focusable="false">
-                                <circle cx="12" cy="8.2" r="3.7" fill="#8B5CF6" />
-                                <path d="M4.8 20.4a7.2 7.2 0 0 1 14.4 0c0 .9-.7 1.6-1.6 1.6H6.4a1.6 1.6 0 0 1-1.6-1.6Z" fill="#8B5CF6" />
-                            </svg>
-                        </span>
+                @auth
+                    <li>
+                        <a
+                            href="{{ url('/ho-so') }}"
+                            class="sp-sidebar__link{{ $active === 'ho-so' ? ' is-active' : '' }}"
+                            title="Hồ sơ"
+                            aria-label="Hồ sơ"
+                            @if ($active === 'ho-so') aria-current="page" @endif
+                        >
+                            <span class="sp-sidebar__icon sp-sidebar__icon--sm" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" focusable="false">
+                                    <circle cx="12" cy="8.2" r="3.7" fill="#8B5CF6" />
+                                    <path d="M4.8 20.4a7.2 7.2 0 0 1 14.4 0c0 .9-.7 1.6-1.6 1.6H6.4a1.6 1.6 0 0 1-1.6-1.6Z" fill="#8B5CF6" />
+                                </svg>
+                            </span>
 
-                        <span class="sp-sidebar__label">Hồ sơ</span>
-                    </a>
-                </li>
-                <li>
-                    @if (Route::has('logout'))
+                            <span class="sp-sidebar__label">Hồ sơ</span>
+                        </a>
+                    </li>
+                    <li>
                         <form method="POST" action="{{ route('logout') }}" class="sp-sidebar__logout-form">
                             @csrf
                             <button type="submit" class="sp-sidebar__link sp-sidebar__link--logout" title="Đăng xuất" aria-label="Đăng xuất">
@@ -289,23 +290,28 @@
                                 <span class="sp-sidebar__label">Đăng xuất</span>
                             </button>
                         </form>
-                    @else
-                        <form method="POST" action="{{ Route::has('admin.logout') ? route('admin.logout') : url('/logout') }}" class="sp-sidebar__logout-form" onsubmit="if(!this.action.includes('admin/logout')){ event.preventDefault(); window.location.href='{{ url('/login') }}'; }">
-                            @csrf
-                            <button type="submit" class="sp-sidebar__link sp-sidebar__link--logout" title="Đăng xuất" aria-label="Đăng xuất">
-                                <span class="sp-sidebar__icon sp-sidebar__icon--sm" aria-hidden="true">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                                        <polyline points="16 17 21 12 16 7" />
-                                        <line x1="21" y1="12" x2="9" y2="12" />
-                                    </svg>
-                                </span>
+                    </li>
+                @else
+                    <li>
+                        <a
+                            href="{{ route('login') }}"
+                            class="sp-sidebar__link{{ $active === 'login' ? ' is-active' : '' }}"
+                            title="Đăng nhập"
+                            aria-label="Đăng nhập"
+                            @if ($active === 'login') aria-current="page" @endif
+                        >
+                            <span class="sp-sidebar__icon sp-sidebar__icon--sm" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" focusable="false">
+                                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" stroke="#2B7FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                    <polyline points="10 17 15 12 10 7" stroke="#2B7FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                    <line x1="15" y1="12" x2="3" y2="12" stroke="#2B7FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                            </span>
 
-                                <span class="sp-sidebar__label">Đăng xuất</span>
-                            </button>
-                        </form>
-                    @endif
-                </li>
+                            <span class="sp-sidebar__label">Đăng nhập</span>
+                        </a>
+                    </li>
+                @endauth
             </ul>
         </nav>
     </div>

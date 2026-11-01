@@ -23,7 +23,7 @@
         <div class="lt-progress-body">
             <div class="lt-progress-top">
                 <p class="lt-progress-name">Nghe: Part 1 – Mô tả tranh</p>
-                <a href="{{ route('luyen-tap.nghe.mo-ta-hinh') }}" class="lt-progress-cta">Tiếp tục</a>
+                <a href="{{ route('luyen-tap.nghe.mo-ta-hinh') }}" class="lt-progress-cta" data-require-auth>Tiếp tục</a>
             </div>
             <p class="lt-progress-meta">Bài đang học dang dở • 12/20 câu</p>
             <div class="lt-progress-bar-wrap">
@@ -41,7 +41,7 @@
         <div class="lt-progress-body">
             <div class="lt-progress-top">
                 <p class="lt-progress-name">Đọc: Part 5 – Hoàn thành câu</p>
-                <a href="{{ url('/luyen-tap') }}" class="lt-progress-cta">Tiếp tục</a>
+                <a href="{{ url('/luyen-tap') }}" class="lt-progress-cta" data-require-auth>Tiếp tục</a>
             </div>
             <p class="lt-progress-meta">Bài đang học dang dở • 8/12 câu</p>
             <div class="lt-progress-bar-wrap">
