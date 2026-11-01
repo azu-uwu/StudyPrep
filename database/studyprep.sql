@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Oct 27, 2026 at 10:16 AM
+-- Generation Time: Nov 01, 2026 at 08:45 AM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -315,8 +315,16 @@ CREATE TABLE `users` (
   `failed_login_attempts` int NOT NULL DEFAULT '0',
   `locked_until` datetime DEFAULT NULL,
   `email_verified_at` datetime DEFAULT NULL,
-  `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'ACTIVE'
+  `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'ACTIVE',
+  `remember_token` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `users`
+--
+
+INSERT INTO `users` (`user_id`, `user_name`, `email`, `password_hash`, `full_name`, `avatar_url`, `role`, `energy`, `created_at`, `failed_login_attempts`, `locked_until`, `email_verified_at`, `status`, `remember_token`) VALUES
+(5, 'pa@k73.com', 'pa@k73.com', '$2y$12$pVHcWTT6R9Z0nNfBdIbbueiL5z5Cr7yIdbSQsjHLcLW2AXVvNPjAm', 'Phương Nguyễn', NULL, 'student', 5, '2026-11-01 15:24:21', 0, NULL, NULL, 'ACTIVE', NULL);
 
 -- --------------------------------------------------------
 
@@ -346,7 +354,8 @@ CREATE TABLE `vocabularies` (
   `part_of_speech` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `pronunciation` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `example_en` text COLLATE utf8mb4_unicode_ci,
-  `example_vi` text COLLATE utf8mb4_unicode_ci
+  `example_vi` text COLLATE utf8mb4_unicode_ci,
+  `image_url` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -618,7 +627,7 @@ ALTER TABLE `topics`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `user_id` bigint NOT NULL AUTO_INCREMENT;
+  MODIFY `user_id` bigint NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `user_vocabulary`

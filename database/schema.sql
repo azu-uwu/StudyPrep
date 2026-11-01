@@ -447,7 +447,10 @@ RENAME TABLE
     testforms           TO test_form,
     uservocabularies    TO user_vocabulary;
 
-============ CẬP NHẬT THÊM BẢNG ============
+
+    
+
+-- ============ CẬP NHẬT THÊM BẢNG ============
 -- Bảng activity_log: Lưu hoạt động của người dùng
 CREATE TABLE activity_log (
     activity_id BIGINT NOT NULL AUTO_INCREMENT,
@@ -508,3 +511,6 @@ CREATE TABLE feedback (
 -- Thêm cột ảnh cho từ vựng --
 ALTER TABLE `vocabularies`
 ADD COLUMN `image_url` varchar(500) DEFAULT NULL AFTER `example_vi`;
+
+-- Thêm cột remember_token cho bảng Users tính năng ghi nhớ đăng nhập
+ALTER TABLE Users ADD COLUMN remember_token VARCHAR(100) NULL;
