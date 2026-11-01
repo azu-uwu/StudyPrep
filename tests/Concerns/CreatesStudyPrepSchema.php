@@ -23,6 +23,7 @@ trait CreatesStudyPrepSchema
             $table->timestamp('locked_until')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('status', 20)->default('ACTIVE');
+            $table->rememberToken();
         });
 
         Schema::create('skills', function (Blueprint $table): void {

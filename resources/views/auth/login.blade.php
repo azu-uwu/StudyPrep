@@ -454,8 +454,8 @@
 
                     {{-- Ghi nhớ đăng nhập & Quên mật khẩu --}}
                     <div class="auth-options">
-                        <label class="auth-remember">
-                            <input type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
+                        <label for="remember" class="auth-remember">
+                            <input type="checkbox" name="remember" id="remember" value="1" {{ old('remember') ? 'checked' : '' }}>
                             <span>Ghi nhớ đăng nhập</span>
                         </label>
                         <a href="{{ Route::has('password.request') ? route('password.request') : '#' }}" class="auth-forgot-link">Quên mật khẩu?</a>

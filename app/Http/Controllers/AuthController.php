@@ -63,8 +63,7 @@ class AuthController extends Controller
 
         $user = User::where('email', $data['email'])->first();
 
-        if (! $user || $user->isLocked()
-            || ! Hash::check($data['password'], $user->password_hash)) {
+        if (! $user || $user->isLocked()) {
             return back()
                 ->withErrors([
                     'email' => 'Thông tin đăng nhập không hợp lệ hoặc tài khoản bị khóa.',
@@ -72,7 +71,16 @@ class AuthController extends Controller
                 ->onlyInput('email');
         }
 
-        Auth::login($user, $request->boolean('remember'));
+        $remember = $request->boolean('remember');
+
+        if (! Auth::attempt(['email' => $data['email'], 'password' => $data['password']], $remember)) {
+            return back()
+                ->withErrors([
+                    'email' => 'Thông tin đăng nhập không hợp lệ hoặc tài khoản bị khóa.',
+                ])
+                ->onlyInput('email');
+        }
+
         $request->session()->regenerate();
 
         if ($user->isAdmin()) {

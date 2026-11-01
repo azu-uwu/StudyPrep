@@ -25,6 +25,7 @@ use Illuminate\Support\Str;
     'locked_until',
     'email_verified_at',
     'status',
+    'remember_token',
 ])]
 #[Hidden(['password_hash', 'remember_token'])]
 class User extends Authenticatable
@@ -39,7 +40,7 @@ class User extends Authenticatable
     protected $primaryKey = 'user_id';
 
     /**
-     * Schema dumps do not include updated_at / remember_token.
+     * Schema dumps do not include updated_at.
      */
     public $timestamps = false;
 
