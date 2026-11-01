@@ -404,7 +404,8 @@
 
                 <div class="auth-divider">HOẶC ĐĂNG NHẬP BẰNG EMAIL</div>
 
-                <form method="POST" action="{{ Route::has('login') ? route('login') : '#' }}">
+                <!-- <form method="POST" action="{{ Route::has('login') ? route('login') : '#' }}"> -->
+                <form method="POST" action="{{ route('login.store') }}">
                     @csrf
                     <div class="auth-fields">
 

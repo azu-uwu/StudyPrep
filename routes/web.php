@@ -9,6 +9,8 @@ use App\Http\Controllers\ListeningPracticeController;
 use App\Http\Controllers\ReadingPracticeController;
 use App\Http\Controllers\VocabularyPracticeController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
+// use Illuminate\Support\Facades\Route;
 
 // Trang chủ mặc định chuyển hướng đến màn hình chính: Luyện tập
 Route::get('/', function () {
@@ -83,9 +85,9 @@ Route::view('/cai-dat', 'pages.cai-dat')->name('cai-dat');
 
 // Trang demo component của nhóm (giữ nguyên không làm ảnh hưởng)
 Route::view('/component-demo', 'components.component-demo');
-Route::view('/register', 'auth.register')->name('register');
-Route::view('/login', 'auth.login')->name('login');
-Route::post('/login', [SessionController::class, 'store']);
+// Route::view('/register', 'auth.register')->name('register');
+// Route::view('/login', 'auth.login')->name('login');
+// Route::post('/login', [SessionController::class, 'store']);
 Route::view('/forgot-password', 'auth.forgot-password')->name('password.request');
 Route::redirect('/quen-mat-khau', '/forgot-password');
 Route::redirect('/admin/login', '/login')->name('admin.login');
@@ -138,3 +140,41 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::redirect('/tu-vung-flashcard', '/admin/vocabularies');
     });
 });
+
+
+/*
+|--------------------------------------------------------------------------
+| AUTHENTICATION - STUDYPREP
+|--------------------------------------------------------------------------
+*/
+
+// Khách chưa đăng nhập
+Route::middleware('guest')->group(function () {
+
+    // Đăng ký
+    Route::get('/register', [AuthController::class, 'showRegister'])
+        ->name('register');
+
+    Route::post('/register', [AuthController::class, 'register'])
+        ->name('register.store');
+
+    // Đăng nhập
+    Route::get('/login', [AuthController::class, 'showLogin'])
+        ->name('login');
+
+    Route::post('/login', [AuthController::class, 'login'])
+        ->name('login.store');
+
+    // Giao diện quên mật khẩu
+    Route::view('/forgot-password', 'auth.forgot-password')
+        ->name('password.request');
+});
+
+// Đăng xuất người dùng
+Route::post('/logout', [AuthController::class, 'logout'])
+    ->middleware('auth')
+    ->name('logout');
+
+// Đường dẫn thay thế
+Route::redirect('/quen-mat-khau', '/forgot-password');
+Route::redirect('/admin/login', '/login')->name('admin.login');

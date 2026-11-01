@@ -362,7 +362,8 @@
 
                 <div class="auth-divider">HOẶC ĐĂNG KÝ BẰNG EMAIL</div>
 
-                <form method="POST" action="{{ Route::has('register') ? route('register') : '#' }}">
+                <!-- <form method="POST" action="{{ Route::has('register') ? route('register') : '#' }}"> -->
+                <form method="POST" action="{{ route('register.store') }}">
                     @csrf
                     <div class="auth-fields">
 
