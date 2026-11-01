@@ -94,10 +94,16 @@
         .sp-icon svg { width: 20px; height: 20px; }
         .sp-icon--error { color: #BA1A1A; }
         .sp-icon--success { color: #008557; }
-        .sp-iconbtn { align-self: center; flex: none; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; margin-right: 6px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: #414755; cursor: pointer; }
-        .sp-iconbtn:hover { background: #F0F3FF; }
+        .sp-iconbtn { align-self: center; flex: none; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; margin-right: 6px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: #414755; cursor: pointer; transition: color .15s ease, background-color .15s ease; }
+        .sp-iconbtn:hover { color: #111C2D; background: #F0F3FF; }
         .sp-iconbtn:focus-visible { outline: 2px solid #0057BF; outline-offset: 1px; }
-        .sp-iconbtn svg { width: 20px; height: 20px; }
+        .sp-iconbtn svg { width: 20px; height: 20px; flex: none; }
+        .sp-iconbtn svg[hidden],
+        .sp-iconbtn [hidden],
+        .sp-field [hidden] { display: none !important; }
+        .sp-iconbtn [data-eye-off] { display: none; }
+        .sp-iconbtn[aria-pressed="true"] [data-eye-open] { display: none !important; }
+        .sp-iconbtn[aria-pressed="true"] [data-eye-off] { display: block !important; }
         .sp-clear { width: 24px; height: 24px; border-radius: 9999px; background: #CFDAF2; }
         .sp-meta { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
         .sp-caption { font-size: 11px; font-weight: 600; line-height: 14px; color: #414755; }
