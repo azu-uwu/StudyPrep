@@ -19,7 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->redirectGuestsTo(fn (): string => route('login'));
-        $middleware->redirectUsersTo(fn (): string => route('admin.dashboard'));
+        $middleware->redirectUsersTo(fn (Request $request): string => $request->user()?->isAdmin() ? route('admin.dashboard') : route('luyen-tap'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

@@ -5,11 +5,12 @@ use App\Http\Controllers\Admin\QuestionController;
 use App\Http\Controllers\Admin\SessionController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VocabularyController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ListeningPracticeController;
 use App\Http\Controllers\ReadingPracticeController;
 use App\Http\Controllers\VocabularyPracticeController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
+
 // use Illuminate\Support\Facades\Route;
 
 // Trang chủ mặc định chuyển hướng đến màn hình chính: Luyện tập
@@ -85,12 +86,6 @@ Route::view('/cai-dat', 'pages.cai-dat')->name('cai-dat');
 
 // Trang demo component của nhóm (giữ nguyên không làm ảnh hưởng)
 Route::view('/component-demo', 'components.component-demo');
-// Route::view('/register', 'auth.register')->name('register');
-// Route::view('/login', 'auth.login')->name('login');
-// Route::post('/login', [SessionController::class, 'store']);
-Route::view('/forgot-password', 'auth.forgot-password')->name('password.request');
-Route::redirect('/quen-mat-khau', '/forgot-password');
-Route::redirect('/admin/login', '/login')->name('admin.login');
 
 Route::prefix('admin')->name('admin.')->group(function (): void {
     Route::middleware(['auth', 'admin'])->group(function (): void {
@@ -140,7 +135,6 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::redirect('/tu-vung-flashcard', '/admin/vocabularies');
     });
 });
-
 
 /*
 |--------------------------------------------------------------------------

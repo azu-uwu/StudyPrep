@@ -371,8 +371,8 @@
                         <div class="auth-input-wrap">
                             <span class="auth-input-icon" aria-hidden="true">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="12" cy="12" r="4"/>
-                                    <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/>
+                                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
                                 </svg>
                             </span>
                             <x-input
@@ -380,6 +380,7 @@
                                 type="text"
                                 placeholder="Họ tên của bạn"
                                 style="padding-left: 46px;"
+                                :error="($errors ?? null)?->first('name')"
                             />
                         </div>
 
@@ -396,6 +397,7 @@
                                 type="email"
                                 placeholder="Nhập email của bạn"
                                 style="padding-left: 46px;"
+                                :error="($errors ?? null)?->first('email')"
                             />
                         </div>
 
@@ -410,8 +412,9 @@
                             <x-input
                                 name="password"
                                 type="password"
-                                placeholder="Nhập mật khẩu"
+                                placeholder="Nhập mật khẩu (tối thiểu 8 ký tự)"
                                 style="padding-left: 46px;"
+                                :error="($errors ?? null)?->first('password')"
                             />
                         </div>
 
