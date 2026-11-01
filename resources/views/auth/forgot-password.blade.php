@@ -310,11 +310,11 @@
             </div>
 
             {{-- ========================================================
-                 BƯỚC 1: NHẬP EMAIL
+                 BƯỚC 1: NHẬP EMAIL & GỬI LIÊN KẾT
                  ======================================================== --}}
             <div class="step-pane is-active" id="step-pane-1">
                 <h1 class="auth-title">Quên mật khẩu?</h1>
-                <p class="auth-desc">Đừng lo lắng! Nhập email của bạn và chúng tôi sẽ gửi mã đặt lại mật khẩu.</p>
+                <p class="auth-desc">Nhập email đã đăng ký và chúng tôi sẽ gửi cho bạn liên kết để đặt lại mật khẩu.</p>
 
                 <form class="auth-form" id="form-step-1" novalidate onsubmit="return false;">
                     <div class="auth-inputs-wrap">
@@ -334,7 +334,7 @@
                             type="submit"
                             id="btn-step-1"
                         >
-                            <span class="btn-text">GỬI MÃ</span>
+                            <span class="btn-text">GỬI LIÊN KẾT ĐẶT LẠI MẬT KHẨU</span>
                         </x-button>
                     </div>
                 </form>
@@ -348,98 +348,11 @@
             </div>
 
             {{-- ========================================================
-                 BƯỚC 2: NHẬP MÃ XÁC MINH
-                 ======================================================== --}}
-            <div class="step-pane" id="step-pane-2">
-                <h1 class="auth-title">Nhập mã</h1>
-                <p class="auth-desc">
-                    Nhập mã số đã được gửi đến email<br>
-                    <strong id="display-masked-email">phu**********n1565@gmailcom</strong>
-                </p>
-
-                <form class="auth-form" id="form-step-2" novalidate onsubmit="return false;">
-                    <div class="auth-inputs-wrap">
-                        <x-input
-                            id="verification_code"
-                            name="verification_code"
-                            type="text"
-                            placeholder="Nhập mã xác minh"
-                            maxlength="10"
-                            autocomplete="one-time-code"
-                        />
-                    </div>
-
-                    <div class="auth-btn-wrap">
-                        <x-button
-                            variant="primary"
-                            size="medium"
-                            type="submit"
-                            id="btn-step-2"
-                        >
-                            <span class="btn-text">XÁC MINH</span>
-                        </x-button>
-                    </div>
-                </form>
-
-                <div class="auth-nav">
-                    <button type="button" class="auth-nav-back" id="btn-back-to-step-1">Quay lại</button>
-                    <a href="{{ route('login') }}" class="auth-nav-link">Đăng nhập</a>
-                    <span class="auth-nav-dot">•</span>
-                    <a href="{{ route('register') }}" class="auth-nav-link">Đăng ký</a>
-                </div>
-            </div>
-
-            {{-- ========================================================
-                 BƯỚC 3: ĐẶT LẠI MẬT KHẨU
-                 ======================================================== --}}
-            <div class="step-pane" id="step-pane-3">
-                <h1 class="auth-title">Đặt lại mật khẩu</h1>
-
-                <form class="auth-form" id="form-step-3" novalidate onsubmit="return false;">
-                    <div class="auth-inputs-wrap">
-                        <x-input
-                            id="new_password"
-                            name="new_password"
-                            type="password"
-                            placeholder="Mật khẩu mới"
-                            autocomplete="new-password"
-                        />
-
-                        <x-input
-                            id="confirm_password"
-                            name="confirm_password"
-                            type="password"
-                            placeholder="Nhập lại mật khẩu mới"
-                            autocomplete="new-password"
-                        />
-                    </div>
-
-                    <div class="auth-btn-wrap">
-                        <x-button
-                            variant="primary"
-                            size="medium"
-                            type="submit"
-                            id="btn-step-3"
-                        >
-                            <span class="btn-text">ĐỔI MẬT KHẨU</span>
-                        </x-button>
-                    </div>
-                </form>
-
-                <div class="auth-nav">
-                    <button type="button" class="auth-nav-back" id="btn-back-to-step-2">Quay lại</button>
-                    <a href="{{ route('login') }}" class="auth-nav-link">Đăng nhập</a>
-                    <span class="auth-nav-dot">•</span>
-                    <a href="{{ route('register') }}" class="auth-nav-link">Đăng ký</a>
-                </div>
-            </div>
-
-            {{-- ========================================================
-                 BƯỚC HOÀN TẤT: THÔNG BÁO THÀNH CÔNG
+                 BƯỚC 2: THÔNG BÁO KIỂM TRA EMAIL
                  ======================================================== --}}
             <div class="step-pane" id="step-pane-success">
-                <h1 class="auth-title">Đổi mật khẩu thành công!</h1>
-                <p class="auth-desc">Mật khẩu của bạn đã được cập nhật thành công. Vui lòng đăng nhập bằng mật khẩu mới để tiếp tục hành trình học tập.</p>
+                <h1 class="auth-title">Kiểm tra email của bạn</h1>
+                <p class="auth-desc">Chúng tôi đã gửi liên kết đặt lại mật khẩu đến email của bạn. Vui lòng kiểm tra hộp thư để tiếp tục.</p>
 
                 <div class="auth-btn-wrap">
                     <x-button
@@ -465,42 +378,24 @@
         <div class="auth-help" role="button" tabindex="0" onclick="alert('Nếu cần hỗ trợ thêm, vui lòng liên hệ bộ phận hỗ trợ StudyPrep qua email: support@studyprep.vn');">Cần thêm trợ giúp?</div>
     </div>
 
-    {{-- Script điều khiển logic 3 bước, validation và mock server --}}
+    {{-- Script điều khiển gửi liên kết, validation và hiển thị thông báo --}}
     <script>
     (function () {
         'use strict';
 
-        // In-memory state (không lưu mã bí mật vào localStorage/sessionStorage)
+        // In-memory state
         var appState = {
-            currentStep: 1,
             email: '',
-            code: '',
             isSubmitting: false
         };
 
         // DOM elements
         var step1Pane = document.getElementById('step-pane-1');
-        var step2Pane = document.getElementById('step-pane-2');
-        var step3Pane = document.getElementById('step-pane-3');
         var stepSuccessPane = document.getElementById('step-pane-success');
         var mainIcon = document.getElementById('auth-main-icon');
-        var displayMaskedEmail = document.getElementById('display-masked-email');
-
         var formStep1 = document.getElementById('form-step-1');
-        var formStep2 = document.getElementById('form-step-2');
-        var formStep3 = document.getElementById('form-step-3');
-
         var btnStep1 = document.getElementById('btn-step-1');
-        var btnStep2 = document.getElementById('btn-step-2');
-        var btnStep3 = document.getElementById('btn-step-3');
-
-        var btnBackToStep1 = document.getElementById('btn-back-to-step-1');
-        var btnBackToStep2 = document.getElementById('btn-back-to-step-2');
-
         var inputEmail = document.getElementById('email');
-        var inputCode = document.getElementById('verification_code');
-        var inputNewPassword = document.getElementById('new_password');
-        var inputConfirmPassword = document.getElementById('confirm_password');
 
         /**
          * Hàm hiển thị trạng thái lỗi cho component x-input có sẵn trong dự án.
@@ -527,7 +422,6 @@
                 errorIcon.setAttribute('aria-hidden', 'true');
                 errorIcon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>';
 
-                // Nếu có nút toggle password, đặt icon lỗi trước nút toggle
                 var toggleBtn = control.querySelector('[data-sp-toggle]');
                 if (toggleBtn) {
                     control.insertBefore(errorIcon, toggleBtn);
@@ -583,91 +477,41 @@
         /**
          * Lắng nghe sự kiện gõ phím để xóa lỗi ngay khi người dùng chỉnh sửa.
          */
-        [inputEmail, inputCode, inputNewPassword, inputConfirmPassword].forEach(function (inp) {
-            if (!inp) return;
-            inp.addEventListener('input', function () {
-                clearInputError(inp.id);
+        if (inputEmail) {
+            inputEmail.addEventListener('input', function () {
+                clearInputError('email');
             });
-        });
-
-        /**
-         * Che một phần địa chỉ email an toàn để hiển thị tại bước 2.
-         * Ví dụ: phunguyen1565@gmail.com -> phu**********n1565@gmailcom
-         */
-        function maskEmail(email) {
-            if (!email || typeof email !== 'string' || email.indexOf('@') === -1) {
-                return email;
-            }
-            var parts = email.split('@');
-            var local = parts[0];
-            var domain = parts.slice(1).join('@');
-
-            if (local.length <= 3) {
-                return local.charAt(0) + '***@' + domain;
-            }
-            if (local.length <= 6) {
-                return local.slice(0, 2) + '****' + local.slice(-1) + '@' + domain;
-            }
-
-            var prefix = local.slice(0, 3);
-            var suffix = local.slice(-5);
-            var starsCount = Math.max(8, local.length - 8);
-            var stars = '';
-            for (var i = 0; i < starsCount; i++) {
-                stars += '*';
-            }
-            return prefix + stars + suffix + '@' + domain;
         }
 
         /**
-         * Chuyển đổi giao diện giữa các bước
+         * Cập nhật icon phong bì mặc định
          */
-        function showStep(stepNumber) {
-            appState.currentStep = stepNumber;
-
-            [step1Pane, step2Pane, step3Pane, stepSuccessPane].forEach(function (pane) {
-                if (pane) pane.classList.remove('is-active');
-            });
-
-            if (stepNumber === 1) {
-                step1Pane.classList.add('is-active');
-                setEnvelopeIcon();
-                if (inputEmail) {
-                    inputEmail.value = appState.email;
-                    inputEmail.focus();
-                }
-            } else if (stepNumber === 2) {
-                step2Pane.classList.add('is-active');
-                setEnvelopeIcon();
-                if (displayMaskedEmail) {
-                    displayMaskedEmail.textContent = maskEmail(appState.email);
-                }
-                if (inputCode) {
-                    inputCode.value = appState.code;
-                    inputCode.focus();
-                }
-            } else if (stepNumber === 3) {
-                step3Pane.classList.add('is-active');
-                setEnvelopeIcon();
-                if (inputNewPassword) {
-                    inputNewPassword.focus();
-                }
-            } else if (stepNumber === 'success') {
-                stepSuccessPane.classList.add('is-active');
-                setSuccessIcon();
-            }
-        }
-
         function setEnvelopeIcon() {
             if (!mainIcon) return;
             mainIcon.className = 'auth-icon-circle';
             mainIcon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="3"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>';
         }
 
+        /**
+         * Cập nhật icon tích xanh khi thành công
+         */
         function setSuccessIcon() {
             if (!mainIcon) return;
             mainIcon.className = 'auth-icon-circle auth-icon-circle--success';
             mainIcon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+        }
+
+        /**
+         * Chuyển sang màn hình thông báo gửi liên kết thành công
+         */
+        function showSuccess() {
+            if (step1Pane) {
+                step1Pane.classList.remove('is-active');
+            }
+            if (stepSuccessPane) {
+                stepSuccessPane.classList.add('is-active');
+            }
+            setSuccessIcon();
         }
 
         /**
@@ -691,166 +535,52 @@
         }
 
         // ========================================================
-        // XỬ LÝ BƯỚC 1: GỬI MÃ
+        // XỬ LÝ GỬI LIÊN KẾT ĐẶT LẠI MẬT KHẨU
         // ========================================================
-        formStep1.addEventListener('submit', function (e) {
-            e.preventDefault();
-            if (appState.isSubmitting) return;
+        if (formStep1) {
+            formStep1.addEventListener('submit', function (e) {
+                e.preventDefault();
+                if (appState.isSubmitting) return;
 
-            var emailVal = (inputEmail.value || '').trim();
+                var emailVal = (inputEmail.value || '').trim();
 
-            // 1. Kiểm tra rỗng
-            if (!emailVal) {
-                setInputError('email', 'Vui lòng nhập email của bạn.');
-                inputEmail.focus();
-                return;
-            }
-
-            // 2. Kiểm tra định dạng email
-            var emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
-            if (!emailRegex.test(emailVal)) {
-                setInputError('email', 'Email không đúng định dạng. Ví dụ: name@gmail.com');
-                inputEmail.focus();
-                return;
-            }
-
-            // 3. Cơ chế xác thực gửi mã (Mock Server có độ trễ thực tế)
-            appState.isSubmitting = true;
-            setButtonLoading(btnStep1, true, 'ĐANG GỬI MÃ...', 'GỬI MÃ');
-
-            setTimeout(function () {
-                appState.isSubmitting = false;
-                setButtonLoading(btnStep1, false, '', 'GỬI MÃ');
-
-                // Trường hợp giả lập test lỗi email không tồn tại nếu nhập domain @notfound.com hoặc error@
-                if (emailVal.indexOf('@notfound.com') !== -1 || emailVal.indexOf('error@') !== -1) {
-                    setInputError('email', 'Email này chưa được đăng ký trong hệ thống StudyPrep.');
+                // 1. Kiểm tra rỗng
+                if (!emailVal) {
+                    setInputError('email', 'Vui lòng nhập email của bạn.');
                     inputEmail.focus();
                     return;
                 }
 
-                // Gửi mã thành công -> chuyển sang Bước 2
-                appState.email = emailVal;
-                clearInputError('email');
-                showStep(2);
-            }, 600);
-        });
-
-        // ========================================================
-        // XỬ LÝ BƯỚC 2: XÁC MINH MÃ
-        // ========================================================
-        formStep2.addEventListener('submit', function (e) {
-            e.preventDefault();
-            if (appState.isSubmitting) return;
-
-            var codeVal = (inputCode.value || '').trim();
-
-            // 1. Kiểm tra đã nhập mã hay chưa
-            if (!codeVal) {
-                setInputError('verification_code', 'Vui lòng nhập mã xác minh.');
-                inputCode.focus();
-                return;
-            }
-
-            // 2. Kiểm tra độ dài mã
-            if (codeVal.length < 4) {
-                setInputError('verification_code', 'Mã xác minh phải có ít nhất 4 ký tự.');
-                inputCode.focus();
-                return;
-            }
-
-            // 3. Cơ chế xác minh mã (Mock Server)
-            appState.isSubmitting = true;
-            setButtonLoading(btnStep2, true, 'ĐANG XÁC MINH...', 'XÁC MINH');
-
-            setTimeout(function () {
-                appState.isSubmitting = false;
-                setButtonLoading(btnStep2, false, '', 'XÁC MINH');
-
-                // Trường hợp giả lập test mã sai (ví dụ nhập 0000 hoặc 999999)
-                if (codeVal === '0000' || codeVal === '000000' || codeVal === '999999') {
-                    setInputError('verification_code', 'Mã xác minh không chính xác hoặc đã hết hạn.');
-                    inputCode.focus();
+                // 2. Kiểm tra định dạng email
+                var emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+                if (!emailRegex.test(emailVal)) {
+                    setInputError('email', 'Email không đúng định dạng. Ví dụ: name@gmail.com');
+                    inputEmail.focus();
                     return;
                 }
 
-                // Xác minh thành công -> chuyển sang Bước 3
-                appState.code = codeVal;
-                clearInputError('verification_code');
-                showStep(3);
-            }, 600);
-        });
+                // 3. Cơ chế giả lập gửi liên kết đặt lại mật khẩu qua email (Mock Server)
+                appState.isSubmitting = true;
+                setButtonLoading(btnStep1, true, 'ĐANG GỬI LIÊN KẾT...', 'GỬI LIÊN KẾT ĐẶT LẠI MẬT KHẨU');
 
-        // Nút quay lại từ Bước 2 về Bước 1
-        btnBackToStep1.addEventListener('click', function () {
-            showStep(1);
-        });
+                setTimeout(function () {
+                    appState.isSubmitting = false;
+                    setButtonLoading(btnStep1, false, '', 'GỬI LIÊN KẾT ĐẶT LẠI MẬT KHẨU');
 
-        // ========================================================
-        // XỬ LÝ BƯỚC 3: ĐẶT LẠI MẬT KHẨU
-        // ========================================================
-        formStep3.addEventListener('submit', function (e) {
-            e.preventDefault();
-            if (appState.isSubmitting) return;
+                    // Trường hợp giả lập test lỗi email không tồn tại nếu nhập domain @notfound.com hoặc error@
+                    if (emailVal.indexOf('@notfound.com') !== -1 || emailVal.indexOf('error@') !== -1) {
+                        setInputError('email', 'Email này chưa được đăng ký trong hệ thống StudyPrep.');
+                        inputEmail.focus();
+                        return;
+                    }
 
-            var newPass = inputNewPassword.value || '';
-            var confirmPass = inputConfirmPassword.value || '';
-
-            var hasError = false;
-
-            // 1. Kiểm tra mật khẩu mới
-            if (!newPass) {
-                setInputError('new_password', 'Vui lòng nhập mật khẩu mới.');
-                hasError = true;
-            } else if (newPass.length < 6) {
-                // Quy tắc mật khẩu thống nhất với dự án (UserController: min:6)
-                setInputError('new_password', 'Mật khẩu phải chứa ít nhất 6 ký tự.');
-                hasError = true;
-            } else {
-                clearInputError('new_password');
-            }
-
-            // 2. Kiểm tra nhập lại mật khẩu
-            if (!confirmPass) {
-                setInputError('confirm_password', 'Vui lòng nhập lại mật khẩu mới.');
-                hasError = true;
-            } else if (newPass && newPass !== confirmPass) {
-                setInputError('confirm_password', 'Mật khẩu nhập lại không khớp với mật khẩu mới.');
-                hasError = true;
-            } else {
-                clearInputError('confirm_password');
-            }
-
-            if (hasError) {
-                return;
-            }
-
-            // 3. Cơ chế gọi server cập nhật mật khẩu (Mock Server)
-            appState.isSubmitting = true;
-            setButtonLoading(btnStep3, true, 'ĐANG ĐỔI MẬT KHẨU...', 'ĐỔI MẬT KHẨU');
-
-            setTimeout(function () {
-                appState.isSubmitting = false;
-                setButtonLoading(btnStep3, false, '', 'ĐỔI MẬT KHẨU');
-
-                // Trường hợp giả lập test lỗi máy chủ khi đặt mật khẩu là "error123"
-                if (newPass === 'error123') {
-                    setInputError('new_password', 'Đã có lỗi từ máy chủ khi cập nhật mật khẩu. Vui lòng thử lại.');
-                    inputNewPassword.focus();
-                    return;
-                }
-
-                // Đổi mật khẩu thành công -> chuyển sang màn hình hoàn tất
-                clearInputError('new_password');
-                clearInputError('confirm_password');
-                showStep('success');
-            }, 750);
-        });
-
-        // Nút quay lại từ Bước 3 về Bước 2
-        btnBackToStep2.addEventListener('click', function () {
-            showStep(2);
-        });
+                    // Gửi liên kết thành công -> hiển thị thông báo kiểm tra email
+                    appState.email = emailVal;
+                    clearInputError('email');
+                    showSuccess();
+                }, 600);
+            });
+        }
 
     })();
     </script>
