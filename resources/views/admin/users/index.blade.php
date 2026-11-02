@@ -251,7 +251,7 @@
                         <th>TIẾN ĐỘ & ĐIỂM ƯỚC TÍNH</th>
                         <th>LẦN ONLINE CUỐI</th>
                         <th>TRẠNG THÁI</th>
-                        <th style="text-align: right; padding-right: 24px;">THAO TÁC</th>
+                        <th class="admin-actions-heading">THAO TÁC</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -347,8 +347,8 @@
                             </td>
 
                             {{-- Thao tác --}}
-                            <td style="text-align: right; padding-right: 20px;">
-                                <div class="user-actions-cell" style="justify-content: flex-end;">
+                            <td class="admin-actions-cell">
+                                <div class="user-actions-cell">
                                     {{-- Nút Sửa / Chi tiết (Sliders/Settings icon) --}}
                                     <button type="button"
                                             class="action-icon-btn"

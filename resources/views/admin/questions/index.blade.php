@@ -5,7 +5,9 @@
 @section('top_breadcrumb')
     <span>Hệ thống</span>
     <span class="crumb-arrow">></span>
-    <span>Quản trị người dùng</span>
+    <span>Quản lý đào tạo</span>
+    <span class="crumb-arrow">></span>
+    <span>Ngân hàng câu hỏi</span>
 @endsection
 
 @section('content')
@@ -60,8 +62,7 @@
                 <span class="crumb-active">Ngân hàng câu hỏi TOEIC</span>
             </div>
             <div class="user-title-row">
-                <h1 class="user-page-title">Kho Đề thi & Câu hỏi Chuẩn hóa</h1>
-                <span class="qbank-ets-badge">ETS 2024 – 2025</span>
+                <h1 class="user-page-title">Ngân hàng câu hỏi TOEIC</h1>
             </div>
         </div>
 
@@ -384,7 +385,7 @@
                             <th style="width: 160px;">KỸ NĂNG & DẠNG BÀI</th>
                             <th style="width: 130px;">LƯỢT DÙNG & TỈ LỆ ĐÚNG</th>
                             <th style="width: 140px;">TRẠNG THÁI</th>
-                            <th style="text-align: right; width: 110px; padding-right: 22px;">THAO TÁC</th>
+                            <th class="admin-actions-heading" style="width: 110px;">THAO TÁC</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -571,8 +572,8 @@
                                 </td>
 
                                 {{-- THAO TÁC --}}
-                                <td style="text-align: right; padding-right: 20px;">
-                                    <div class="user-actions-cell" style="justify-content: flex-end;">
+                                <td class="admin-actions-cell">
+                                    <div class="user-actions-cell">
                                         @if ($isReported)
                                             {{-- Nút sửa lỗi trực tiếp (Wrench tool) --}}
                                             <button type="button"

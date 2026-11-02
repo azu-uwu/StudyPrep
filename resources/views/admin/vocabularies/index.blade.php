@@ -211,7 +211,7 @@
                                     <th style="text-align: center;">ẢNH</th>
                                     <th>NGỮ CẢNH TOEIC & VÍ DỤ</th>
                                     <th>BỘ THẺ FLASHCARD</th>
-                                    <th style="text-align: right; padding-right: 18px;">THAO TÁC</th>
+                                    <th class="vcb-actions-col">THAO TÁC</th>
                                 </tr>
                             </thead>
                             <tbody>
