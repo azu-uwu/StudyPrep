@@ -324,6 +324,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`user_id`, `user_name`, `email`, `password_hash`, `full_name`, `avatar_url`, `role`, `energy`, `created_at`, `failed_login_attempts`, `locked_until`, `email_verified_at`, `status`, `remember_token`) VALUES
+(6, 'admin', 'admin@studyprep.com', '$2y$12$jrbCKMwx5hN9TDuRIRlTXOG7joCQuyK8B.GAa/MgDzsWUsNoatVcG', 'Nguyễn Admin', NULL, 'admin', 999, '2026-11-02 00:00:00', 0, NULL, '2026-11-02 00:00:00', 'ACTIVE', NULL),
 (5, 'pa@k73.com', 'pa@k73.com', '$2y$12$pVHcWTT6R9Z0nNfBdIbbueiL5z5Cr7yIdbSQsjHLcLW2AXVvNPjAm', 'Phương Nguyễn', NULL, 'student', 5, '2026-11-01 15:24:21', 0, NULL, NULL, 'ACTIVE', NULL);
 
 -- --------------------------------------------------------

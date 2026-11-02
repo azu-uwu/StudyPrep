@@ -17,12 +17,15 @@
              ========================================== --}}
         <div id="spPartsListView">
 
-            {{-- 1.1. Header: Nút quay lại & Tiêu đề --}}
+            {{-- 1.1. Header: Nút quay lại, Logo & Tiêu đề --}}
             <div class="sp-skill-header">
                 <a href="{{ url('/luyen-tap') }}" class="sp-skill-back-btn" title="Quay lại trang Luyện tập" aria-label="Quay lại Luyện tập">
                     <svg viewBox="0 0 24 24" fill="none">
                         <path d="M15 19l-7-7 7-7" stroke="#111C2D" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
+                </a>
+                <a href="{{ url('/luyen-tap') }}" class="sp-skill-logo-link" title="StudyPrep">
+                    <img class="sp-sidebar__logo" src="{{ asset('images/logo.svg') }}" alt="StudyPrep" style="height: 32px; width: auto; display: block;">
                 </a>
                 <h1 class="sp-skill-title">Luyện theo Kỹ năng</h1>
             </div>
@@ -85,13 +88,18 @@
              ========================================== --}}
         <div id="spSetupView" class="sp-setup-inpage" style="display: none;">
 
-            {{-- Nút X đóng ở góc trên bên trái quay lại danh sách bài --}}
-            <button type="button" class="sp-setup-inpage__close-btn" onclick="closeInpageSetup()" title="Quay lại danh sách bài" aria-label="Đóng">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-            </button>
+            {{-- Topbar Setup: Logo & Nút X đóng ở góc quay lại danh sách bài --}}
+            <div class="sp-setup-topbar">
+                <a href="{{ $skill === 'doc' ? url('/luyen-tap/doc') : route('luyen-tap.nghe') }}" class="sp-setup-logo-link" title="StudyPrep">
+                    <img class="sp-sidebar__logo" src="{{ asset('images/logo.svg') }}" alt="StudyPrep" style="height: 30px; width: auto; display: block;">
+                </a>
+                <button type="button" class="sp-setup-inpage__close-btn" onclick="closeInpageSetup()" title="Quay lại danh sách bài" aria-label="Đóng">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
 
             <div class="sp-setup-inpage__inner">
                 {{-- Icon khối bo tròn --}}

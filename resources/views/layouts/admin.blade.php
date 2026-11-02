@@ -43,6 +43,9 @@
                         <line x1="3" y1="18" x2="21" y2="18"></line>
                     </svg>
                 </button>
+                <a href="{{ route('admin.dashboard') }}" class="admin-topbar-mobile-logo" title="StudyPrep Admin">
+                    <img class="sp-sidebar__logo" src="{{ asset('images/logo.svg') }}" alt="StudyPrep">
+                </a>
                 <div class="admin-breadcrumb-top">
                     @hasSection('top_breadcrumb')
                         @yield('top_breadcrumb')

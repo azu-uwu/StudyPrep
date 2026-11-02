@@ -12,14 +12,8 @@
     {{-- Header Logo + ADMIN PORTAL Badge --}}
     <div>
         <div class="admin-sidebar-header">
-            <a href="{{ route('admin.dashboard') }}" class="admin-logo-link">
-                <svg class="admin-logo-cap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
-                    <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"></path>
-                </svg>
-                <span class="admin-brand-name">
-                    <span class="brand-study">Study</span><span class="brand-prep">PREP</span>
-                </span>
+            <a href="{{ route('admin.dashboard') }}" class="admin-logo-link" title="StudyPrep Admin">
+                <img class="sp-sidebar__logo admin-logo-img" src="{{ asset('images/logo.svg') }}" alt="StudyPrep">
             </a>
             <div class="admin-portal-badge">
                 <span>ADMIN</span>

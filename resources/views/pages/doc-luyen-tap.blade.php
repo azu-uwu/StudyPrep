@@ -20,7 +20,7 @@
     <header class="sp-vp-header">
         <div class="sp-vp-header-left">
             <a href="{{ url('/luyen-tap/doc') }}" class="sp-vp-logo" title="StudyPrep">
-                <img src="{{ asset('images/logo.svg') }}" alt="StudyPrep" class="sp-vp-logo-img">
+                <img class="sp-sidebar__logo sp-vp-logo-img" src="{{ asset('images/logo.svg') }}" alt="StudyPrep">
             </a>
             <a href="{{ url('/luyen-tap/doc') }}" class="sp-vp-close-btn" title="Thoát bài luyện tập" onclick="return confirmExit(event)">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">

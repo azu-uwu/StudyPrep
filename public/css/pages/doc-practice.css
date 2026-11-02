@@ -278,8 +278,11 @@
 }
 
 .sp-vp-logo-img {
-    height: 32px;
+    height: 32px !important;
+    width: auto !important;
+    max-width: 140px;
     display: block;
+    object-fit: contain;
 }
 
 .sp-vp-logo span {

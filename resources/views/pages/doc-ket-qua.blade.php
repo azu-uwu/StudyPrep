@@ -6,8 +6,11 @@
 
 <div class="sp-kq-container">
 
-    {{-- Nút X đóng ở góc trên bên trái --}}
+    {{-- Thanh trên cùng: Logo & Nút X đóng --}}
     <div class="sp-kq-topbar">
+        <a href="{{ url('/luyen-tap/doc') }}" class="sp-kq-logo-link" title="StudyPrep">
+            <img class="sp-sidebar__logo sp-kq-logo-img" src="{{ asset('images/logo.svg') }}" alt="StudyPrep">
+        </a>
         <a href="{{ url('/luyen-tap/doc') }}" class="sp-kq-close-btn" title="Đóng và quay lại danh sách bài luyện Đọc" aria-label="Đóng">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>

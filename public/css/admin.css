@@ -65,6 +65,32 @@ body.admin-body {
     color: inherit;
 }
 
+.admin-logo-img {
+    width: 150px;
+    height: 84.38px;
+    display: block;
+    object-fit: contain;
+}
+
+.admin-topbar-mobile-logo {
+    display: none;
+    align-items: center;
+    text-decoration: none;
+}
+
+.admin-topbar-mobile-logo img {
+    width: 150px;
+    height: 84.38px;
+    display: block;
+    object-fit: contain;
+}
+
+@media (max-width: 1024px) {
+    .admin-topbar-mobile-logo {
+        display: inline-flex;
+    }
+}
+
 .admin-logo-cap {
     width: 28px;
     height: 28px;
@@ -745,6 +771,8 @@ body.admin-body {
     }
 
     .admin-topbar {
+        min-height: 100px;
+        height: auto;
         padding: 0 20px;
     }
 

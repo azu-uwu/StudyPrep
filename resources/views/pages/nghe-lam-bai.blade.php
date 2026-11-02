@@ -20,7 +20,7 @@
     <header class="sp-lexam-header">
         <div class="sp-lexam-header-left">
             <a href="{{ route('luyen-tap.nghe') }}" class="sp-lexam-logo-link" title="StudyPrep">
-                <img src="{{ asset('images/logo.svg') }}" alt="StudyPrep" class="sp-lexam-logo-img">
+                <img class="sp-sidebar__logo sp-lexam-logo-img" src="{{ asset('images/logo.svg') }}" alt="StudyPrep">
             </a>
             <a href="{{ route('luyen-tap.nghe.mo-ta-hinh') }}" class="sp-lexam-close-btn" title="Thoát bài luyện tập" onclick="return confirmExit(event)">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">

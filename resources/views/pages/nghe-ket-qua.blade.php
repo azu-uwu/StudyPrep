@@ -1,11 +1,14 @@
-<x-layouts.app active="luyen-tap" title="StudyPrep - Kết quả bài luyện Listening">
+﻿<x-layouts.app active="luyen-tap" title="StudyPrep - Kết quả bài luyện Listening">
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/pages/doc-ket-qua.css') }}">
 @endpush
 
 <div class="sp-kq-container">
-    <div class="sp-kq-topbar">
+        <div class="sp-kq-topbar">
+        <a href="{{ route('luyen-tap.nghe') }}" class="sp-kq-logo-link" title="StudyPrep">
+            <img class="sp-sidebar__logo sp-kq-logo-img" src="{{ asset('images/logo.svg') }}" alt="StudyPrep">
+        </a>
         <a href="{{ route('luyen-tap.nghe') }}" class="sp-kq-close-btn" title="Quay lại danh sách bài luyện Nghe" aria-label="Đóng">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>

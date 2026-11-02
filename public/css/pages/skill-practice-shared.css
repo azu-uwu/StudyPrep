@@ -38,6 +38,13 @@
     margin-bottom: 24px;
 }
 
+.sp-skill-logo-link {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    margin-right: 4px;
+}
+
 .sp-skill-back-btn {
     display: inline-flex;
     align-items: center;
@@ -443,11 +450,43 @@
     }
 }
 
-/* Nút X đóng ở góc trên bên trái giống Hình 1 */
+/* Topbar Logo & Nút X đóng ở setup */
+.sp-setup-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 8px;
+    padding: 0 4px;
+}
+
+.sp-setup-logo-link {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.sp-setup-logo-link img {
+    height: 32px !important;
+    width: auto !important;
+    max-width: 140px;
+    display: block;
+    object-fit: contain;
+}
+
+.sp-skill-logo-link img {
+    height: 32px !important;
+    width: auto !important;
+    max-width: 140px;
+    display: block;
+    object-fit: contain;
+}
+
+/* Nút X đóng ở góc trên bên phải thanh setup */
 .sp-setup-inpage__close-btn {
-    position: absolute;
-    top: -6px;
-    left: -4px;
+    position: relative;
+    top: auto;
+    left: auto;
     width: 38px;
     height: 38px;
     border-radius: 50%;
