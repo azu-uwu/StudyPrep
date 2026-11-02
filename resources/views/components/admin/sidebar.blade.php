@@ -10,10 +10,12 @@
 
 <aside id="admin-sidebar" class="admin-sidebar">
     {{-- Header Logo + ADMIN PORTAL Badge --}}
-    <div>
+    
+    <div class="admin-sidebar-main">
         <div class="admin-sidebar-header">
-            <a href="{{ route('admin.dashboard') }}" class="admin-logo-link" title="StudyPrep Admin">
-                <img class="sp-sidebar__logo admin-logo-img" src="{{ asset('images/logo.svg') }}" alt="StudyPrep">
+            <a class="sp-sidebar__brand" href="{{ route('admin.dashboard') }}" aria-label="StudyPrep - Trang chủ">
+                <img class="sp-sidebar__logo" src="{{ asset('images/logo.svg') }}" alt="StudyPrep">
+                <img class="sp-sidebar__mark" src="{{ asset('favicon.svg') }}" alt="" aria-hidden="true">
             </a>
             <div class="admin-portal-badge">
                 <span>ADMIN</span>
@@ -91,40 +93,10 @@
                             <span>Quản lý người dùng</span>
                         </a>
                     </li>
-                    <li class="admin-nav-item {{ $active === 'phan-quyen' ? 'active' : '' }}">
-                        <a href="#phan-quyen">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                                <circle cx="12" cy="11" r="2.5"></circle>
-                                <path d="M9.5 16a3.5 3.5 0 0 1 5 0"></path>
-                            </svg>
-                            <span>Phân quyền & Vai trò</span>
-                        </a>
-                    </li>
-                    <li class="admin-nav-item {{ $active === 'bao-cao' ? 'active' : '' }}">
-                        <a href="#bao-cao">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M18 20V10"></path>
-                                <path d="M12 20V4"></path>
-                                <path d="M6 20v-6"></path>
-                            </svg>
-                            <span>Báo cáo & Thống kê</span>
-                        </a>
-                    </li>
-                    <li class="admin-nav-item {{ $active === 'cai-dat' ? 'active' : '' }}">
-                        <a href="#cai-dat">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="3"></circle>
-                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                            </svg>
-                            <span>Cài đặt hệ thống</span>
-                        </a>
-                    </li>
                 </ul>
             </div>
         </nav>
     </div>
-
     {{-- Bottom Admin Profile Card --}}
     <div class="admin-sidebar-footer">
         <div class="admin-user-container">

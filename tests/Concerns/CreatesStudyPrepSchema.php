@@ -77,6 +77,27 @@ trait CreatesStudyPrepSchema
             $table->boolean('is_correct')->default(false);
         });
 
+        Schema::create('attempt_response', function (Blueprint $table): void {
+            $table->id('response_id');
+            $table->unsignedBigInteger('attempt_id');
+            $table->unsignedBigInteger('question_id');
+            $table->text('text_response')->nullable();
+            $table->string('media_url', 500)->nullable();
+            $table->decimal('score', 6, 2)->nullable();
+            $table->text('feedback')->nullable();
+            $table->timestamp('submitted_at')->nullable();
+        });
+
+        Schema::create('feedback', function (Blueprint $table): void {
+            $table->id('feedback_id');
+            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('question_id');
+            $table->text('content');
+            $table->string('status', 20)->default('PENDING');
+            $table->timestamp('created_at')->useCurrent();
+            $table->timestamp('updated_at')->useCurrent();
+        });
+
         Schema::create('test_blueprint', function (Blueprint $table): void {
             $table->id('blueprint_id');
             $table->string('name', 150);
@@ -133,6 +154,7 @@ trait CreatesStudyPrepSchema
             $table->string('pronunciation', 150)->nullable();
             $table->text('example_en')->nullable();
             $table->text('example_vi')->nullable();
+            $table->string('image_url', 500)->nullable();
         });
     }
 }

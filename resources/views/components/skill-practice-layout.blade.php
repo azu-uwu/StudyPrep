@@ -81,7 +81,7 @@
         </div>
 
         {{-- ==========================================
-             2. IN-PAGE SETUP VIEW (KHỚP 100% HÌNH 1)
+             2. IN-PAGE SETUP VIEW 
              - Không dùng modal/popup overlay, không backdrop
              - Nằm trực tiếp trong luồng trang chính
              - Cố định khung container chung, không lệch width

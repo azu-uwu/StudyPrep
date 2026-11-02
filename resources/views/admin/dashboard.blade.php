@@ -2,6 +2,12 @@
 
 @section('title', 'Tổng quan Dashboard')
 
+@section('top_breadcrumb')
+    <span>Hệ thống</span>
+    <span class="crumb-arrow">&gt;</span>
+    <span class="crumb-active">Tổng quan Dashboard</span>
+@endsection
+
 @section('content')
     @php
         $admin = auth()->user();
@@ -16,10 +22,10 @@
             <span class="crumb-active">Tổng quan Dashboard</span>
         </div>
         <h1 class="admin-welcome-title">
-            Chào buổi sáng, {{ $adminName }}! <span role="img" aria-label="Vẫy tay">👋</span>
+            {{ $greeting['title'] }}, {{ $adminName }}! <span role="img" aria-label="Vẫy tay">👋</span>
         </h1>
         <p class="admin-welcome-subtitle">
-            Tổng quan chỉ số vận hành đào tạo, doanh thu & hiệu suất luyện thi hôm nay.
+            {{ $greeting['subtitle'] }}
         </p>
     </section>
 
@@ -28,11 +34,11 @@
         {{-- Thẻ 1: Học viên hoạt động --}}
         <article class="admin-kpi-card">
             <div>
-                <p class="admin-kpi-label">HỌC VIÊN HOẠT ĐỘNG</p>
+                <p class="admin-kpi-label">NGƯỜI DÙNG HOẠT ĐỘNG</p>
                 <p class="admin-kpi-value">
-                    {{ number_format(($learnerStats['active'] ?? 0) > 0 ? $learnerStats['active'] : 8420) }}
+                        {{ number_format($userStats['active']) }}
                 </p>
-                <span class="sr-only">Tổng học viên: {{ number_format($learnerStats['total'] ?? 0) }}</span>
+                    <span class="sr-only">Tổng người dùng: {{ number_format($userStats['total'] ?? 0) }}</span>
             </div>
             <div class="admin-kpi-badge badge-blue">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -49,7 +55,7 @@
             <div>
                 <p class="admin-kpi-label">LƯỢT LÀM BÀI HÔM NAY</p>
                 <p class="admin-kpi-value">
-                    {{ number_format(($attemptStats['today'] ?? 0) > 0 ? $attemptStats['today'] : 14890) }}
+                    {{ number_format($attemptStats['today']) }}
                 </p>
             </div>
             <div class="admin-kpi-badge badge-teal">
@@ -66,10 +72,10 @@
         <div class="admin-chart-header">
             <div>
                 <h2 class="admin-chart-title">Xu hướng luyện thi & Lượt nộp bài</h2>
-                <p class="admin-chart-subtitle">Tần suất làm đề theo cụm kỹ năng TOEIC (LC/RC & Speaking/Writing AI)</p>
+                <p class="admin-chart-subtitle">Số lượt nộp bài theo cụm kỹ năng trong tuần này</p>
             </div>
             <div class="admin-chart-meta">
-                <span class="admin-update-pill">Cập nhật 5 phút trước</span>
+                <span class="admin-update-pill">Cập nhật {{ now()->format('H:i') }}</span>
                 <div class="admin-chart-legends">
                     <div class="legend-item">
                         <span class="legend-dot dot-purple"></span>
@@ -77,14 +83,14 @@
                     </div>
                     <div class="legend-item">
                         <span class="legend-dot dot-green"></span>
-                        <span>Writing & Speaking AI</span>
+                        <span>Writing & Speaking</span>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="admin-chart-canvas-container">
-            @if (collect($weeklyChart['started'] ?? [])->sum() === 0 && collect($weeklyChart['submitted'] ?? [])->sum() === 0)
+            @if (collect($weeklyChart['listeningReading'])->sum() === 0 && collect($weeklyChart['writingSpeaking'])->sum() === 0)
                 <span class="sr-only">Chưa có lượt thi thử trong tuần này.</span>
             @endif
             <canvas id="admin-trend-chart" aria-label="Biểu đồ xu hướng luyện thi"></canvas>
@@ -99,13 +105,12 @@
                 <p class="admin-queue-subtitle">Nhiệm vụ đào tạo, phúc khảo chấm điểm AI và phản hồi câu hỏi bài thi</p>
             </div>
             <a href="#xem-tat-ca" class="admin-queue-link">
-                Xem tất cả ({{ max(18, (int) ($questionStats['pending'] ?? 0)) }})
+                Xem tất cả ({{ $feedbackStats['pending'] }})
             </a>
         </div>
 
         <div class="admin-queue-list">
-            @if (isset($pendingQuestions) && $pendingQuestions->isNotEmpty())
-                @foreach ($pendingQuestions as $question)
+            @forelse ($pendingFeedback as $feedback)
                     <div class="admin-queue-item">
                         <div class="admin-queue-item-left">
                             <div class="admin-queue-icon-badge">
@@ -117,52 +122,28 @@
                             <div class="admin-queue-info">
                                 <div class="admin-queue-item-title-row">
                                     <span class="admin-queue-item-title">
-                                        Phản ánh câu hỏi #Q-{{ $question->question_id }} ({{ $question->section->code ?? 'PART5' }} {{ $question->section->name ?? 'Incomplete Sentences' }})
+                                        Phản ánh câu hỏi #Q-{{ $feedback->question?->question_id }} ({{ $feedback->question?->section?->name ?? 'Chưa phân loại' }})
                                     </span>
                                     <span class="admin-status-pill">Cần duyệt</span>
                                 </div>
                                 <div class="admin-queue-item-desc">
-                                    {{ $question->section->skill->skill_name ?? 'Reading' }}: {{ \Illuminate\Support\Str::limit($question->content, 95) ?: '3 học viên báo lỗi giải thích ngữ pháp đáp án (B) chưa rõ ràng' }}
+                                    {{ $feedback->user?->full_name ?? $feedback->user?->email }}:
+                                    {{ \Illuminate\Support\Str::limit($feedback->content, 95) }}
                                 </div>
                                 <div class="admin-queue-item-time">
-                                    Gửi cách đây {{ optional($question->created_at)->diffForHumans(null, true) ?? '42 phút' }}
+                                    Gửi cách đây {{ $feedback->created_at?->diffForHumans(null, true) ?? '—' }}
                                 </div>
                             </div>
                         </div>
                         <div>
-                            <a href="#cau-hoi-{{ $question->question_id }}" class="admin-queue-action-btn">
+                            <a href="{{ route('admin.questions.index', ['search' => $feedback->question?->question_id]) }}" class="admin-queue-action-btn">
                                 Xem câu hỏi
                             </a>
                         </div>
                     </div>
-                @endforeach
-            @else
-                <span class="sr-only">Không có câu hỏi nào đang chờ duyệt.</span>
-                {{-- Mục mẫu chuẩn giao diện ảnh mẫu --}}
-                <div class="admin-queue-item">
-                    <div class="admin-queue-item-left">
-                        <div class="admin-queue-icon-badge">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
-                                <line x1="4" y1="22" x2="4" y2="15"></line>
-                            </svg>
-                        </div>
-                        <div class="admin-queue-info">
-                            <div class="admin-queue-item-title-row">
-                                <span class="admin-queue-item-title">Phản ánh câu hỏi #Q-4402 (Part 5 Incomplete Sentences)</span>
-                                <span class="admin-status-pill">Cần duyệt</span>
-                            </div>
-                            <div class="admin-queue-item-desc">3 học viên báo lỗi giải thích ngữ pháp đáp án (B) chưa rõ ràng</div>
-                            <div class="admin-queue-item-time">Gửi cách đây 42 phút</div>
-                        </div>
-                    </div>
-                    <div>
-                        <a href="#cau-hoi-4402" class="admin-queue-action-btn">
-                            Xem câu hỏi
-                        </a>
-                    </div>
-                </div>
-            @endif
+            @empty
+                <p class="admin-queue-item">Không có phản ánh câu hỏi cần duyệt.</p>
+            @endforelse
         </div>
 
         {{-- Phục vụ dữ liệu ngữ cảnh & kiểm thử --}}
@@ -193,24 +174,13 @@
             purpleGrad.addColorStop(0, 'rgba(59, 53, 220, 0.28)');
             purpleGrad.addColorStop(1, 'rgba(240, 243, 255, 0.01)');
 
-            // Tạo gradient cho Writing & Speaking AI (Teal/Xanh lục)
             var tealGrad = ctx.createLinearGradient(0, 0, 0, 240);
             tealGrad.addColorStop(0, 'rgba(13, 148, 136, 0.16)');
             tealGrad.addColorStop(1, 'rgba(240, 243, 255, 0.01)');
 
-            var labels = [
-                'Thứ Hai (14/05)',
-                'Thứ Ba',
-                'Thứ Tư',
-                'Thứ Năm',
-                'Thứ Sáu',
-                'Thứ Bảy',
-                'Chủ Nhật (Hôm nay)'
-            ];
-
-            // Dữ liệu đường cong mượt theo chuẩn ảnh mẫu
-            var lrData = [25, 45, 62, 86, 85, 87, 88];
-            var wsData = [16, 25, 34, 43, 49, 54, 58];
+            var labels = {{ \Illuminate\Support\Js::from($weeklyChart['labels']) }};
+            var lrData = {{ \Illuminate\Support\Js::from($weeklyChart['listeningReading']) }};
+            var wsData = {{ \Illuminate\Support\Js::from($weeklyChart['writingSpeaking']) }};
 
             new Chart(ctx, {
                 type: 'line',
@@ -225,25 +195,25 @@
                             backgroundColor: purpleGrad,
                             fill: true,
                             tension: 0.45,
-                            pointRadius: [0, 5, 5, 5, 0, 0, 0],
+                            pointRadius: 5,
                             pointHoverRadius: 7,
                             pointBackgroundColor: '#ffffff',
                             pointBorderColor: '#3b35dc',
                             pointBorderWidth: 2.5
                         },
                         {
-                            label: 'Writing & Speaking AI',
+                            label: 'Writing & Speaking',
                             data: wsData,
                             borderColor: '#0d9488',
-                            borderWidth: 2.5,
+                            borderWidth: 2.2,
                             backgroundColor: tealGrad,
                             fill: true,
                             tension: 0.35,
-                            pointRadius: [0, 0, 0, 5, 0, 0, 0],
-                            pointHoverRadius: 7,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
                             pointBackgroundColor: '#ffffff',
                             pointBorderColor: '#0d9488',
-                            pointBorderWidth: 2.5
+                            pointBorderWidth: 2
                         }
                     ]
                 },

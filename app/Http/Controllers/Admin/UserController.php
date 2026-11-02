@@ -20,7 +20,7 @@ class UserController extends Controller
     public function index(Request $request): View
     {
         $search = trim((string) $request->input('search', ''));
-        $role = $request->input('role', 'all');
+        $role = strtolower((string) $request->input('role', 'all'));
         $status = $request->input('status', 'all');
         $timeFilter = $request->input('time', '30');
         $perPage = (int) $request->input('per_page', 25);
@@ -28,7 +28,7 @@ class UserController extends Controller
             $perPage = 25;
         }
 
-        $query = User::query();
+        $query = User::query()->withCount('attempts');
 
         // 1. Tìm kiếm theo Họ tên, Email, Mã ID, Username
         if ($search !== '') {
@@ -45,8 +45,14 @@ class UserController extends Controller
         }
 
         // 2. Lọc theo Vai trò
-        if ($role !== 'all' && in_array($role, ['user', 'teacher', 'admin'], true)) {
-            $query->where('role', $role);
+        if (in_array($role, ['learner', 'user', 'student'], true)) {
+            $query->whereIn('role', ['learner', 'user', 'student']);
+        } elseif (in_array($role, ['teacher', 'instructor', 'giang_vien'], true)) {
+            $query->whereIn('role', ['teacher', 'instructor', 'giang_vien']);
+        } elseif ($role === 'admin') {
+            $query->whereIn('role', ['admin', 'super_admin']);
+        } else {
+            $role = 'all';
         }
 
         // 3. Lọc theo Trạng thái
@@ -56,10 +62,7 @@ class UserController extends Controller
                     $q->whereNull('locked_until')->orWhere('locked_until', '<=', now());
                 });
         } elseif ($status === 'PENDING') {
-            $query->where(function ($q) {
-                $q->where('status', 'PENDING')
-                    ->orWhereNull('email_verified_at');
-            });
+            $query->where('status', 'PENDING');
         } elseif ($status === 'LOCKED') {
             $query->where(function ($q) {
                 $q->where('status', 'LOCKED')
@@ -91,10 +94,10 @@ class UserController extends Controller
 
         // Chỉ số hiển thị đồng bộ với giao diện mẫu của hệ thống
         $stats = [
-            'total' => max($totalDbUsers, 24850),
-            'teachers' => max($totalDbTeachers, 142),
-            'locked' => max($totalDbLocked, 38),
-            'total_db' => $totalDbUsers,
+            'total' => $totalDbUsers,
+            'active' => User::query()->active()->count(),
+            'teachers' => $totalDbTeachers,
+            'locked' => $totalDbLocked,
         ];
 
         return view('admin.users.index', [
@@ -119,7 +122,7 @@ class UserController extends Controller
             'full_name' => 'required|string|max:100',
             'email' => 'required|email|max:255|unique:users,email',
             'user_name' => 'nullable|string|max:100|unique:users,user_name',
-            'role' => 'required|in:user,teacher,admin',
+            'role' => 'required|in:user,learner,teacher,admin',
             'status' => 'required|in:ACTIVE,PENDING,LOCKED',
             'password' => 'required|string|min:6',
         ], [
@@ -176,7 +179,7 @@ class UserController extends Controller
                 'max:255',
                 Rule::unique('users', 'email')->ignore($user->user_id, 'user_id'),
             ],
-            'role' => 'required|in:user,teacher,admin',
+            'role' => 'required|in:user,learner,teacher,admin',
             'status' => 'required|in:ACTIVE,PENDING,LOCKED',
             'password' => 'nullable|string|min:6',
         ], [
@@ -317,7 +320,7 @@ class UserController extends Controller
                     $u->user_name,
                     $u->role_display,
                     $u->status_label,
-                    $u->package_title,
+                    '',
                     $u->created_at ? $u->created_at->format('d/m/Y H:i') : '',
                 ]);
             }

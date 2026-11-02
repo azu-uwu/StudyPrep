@@ -160,6 +160,18 @@
                         </div>
                     </div>
 
+                    <div class="vc-form-group">
+                        <label class="vc-label" for="inputImageUrl">URL hình ảnh (tùy chọn)</label>
+                        <input
+                            type="url"
+                            id="inputImageUrl"
+                            name="image_url"
+                            class="vc-input"
+                            value="{{ old('image_url') }}"
+                            placeholder="https://example.com/image.jpg"
+                        >
+                    </div>
+
                     {{-- Row 3: Target Score / Levels --}}
                     <div class="vc-form-group">
                         <label class="vc-label">

@@ -3,150 +3,115 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Feedback;
 use App\Models\Question;
+use App\Models\ScoreResult;
 use App\Models\TestAttempt;
 use App\Models\User;
 use App\Models\Vocabulary;
+use Carbon\Carbon;
 use Carbon\CarbonInterface;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    /**
-     * Trang chủ quản trị: tổng hợp chỉ số vận hành từ CSDL StudyPrep.
-     */
     public function index(): View
     {
         $weekStart = now()->startOfWeek(Carbon::MONDAY)->startOfDay();
         $weekEnd = now()->endOfWeek(Carbon::SUNDAY)->endOfDay();
 
-        try {
-            $learnerStats = [
-                'total' => User::query()->count(),
-                'active' => User::query()->active()->count(),
-                'locked' => User::query()->locked()->count(),
-            ];
+        $userStats = [
+            'total' => User::query()->count(),
+            'active' => User::query()->active()->count(),
+            'locked' => User::query()->locked()->count(),
+        ];
 
-            $questionStats = [
-                'total' => Question::query()->count(),
-                'pending' => Question::query()->pending()->count(),
-                'active' => Question::query()->active()->count(),
-            ];
+        $questionStats = [
+            'total' => Question::query()->count(),
+            'pending' => Question::query()->pending()->count(),
+            'active' => Question::query()->active()->count(),
+        ];
 
-            $attemptStats = [
-                'today' => TestAttempt::query()->whereDate('started_at', today())->count(),
-                'week' => TestAttempt::query()
-                    ->whereBetween('started_at', [$weekStart, $weekEnd])
-                    ->count(),
-            ];
+        $submittedAttempts = TestAttempt::query()->whereNotNull('submitted_at');
+        $attemptStats = [
+            'today' => (clone $submittedAttempts)->whereDate('submitted_at', today())->count(),
+            'week' => (clone $submittedAttempts)->whereBetween('submitted_at', [$weekStart, $weekEnd])->count(),
+        ];
 
-            $vocabularyTotal = Vocabulary::query()->count();
+        $feedbackStats = [
+            'pending' => Feedback::query()->where('status', 'PENDING')->count(),
+        ];
 
-            $recentAttempts = TestAttempt::query()
-                ->with([
-                    'user:user_id,full_name,email,avatar_url',
-                    'testForm:test_form_id,title',
-                    'scoreResult:result_id,attempt_id,listening_score,reading_score,total_score,graded_at',
-                ])
-                ->orderByDesc('started_at')
-                ->orderByDesc('attempt_id')
-                ->limit(5)
-                ->get();
+        $recentAttempts = TestAttempt::query()
+            ->with([
+                'user:user_id,full_name,email,avatar_url',
+                'testForm:test_form_id,title',
+                'scoreResult:result_id,attempt_id,listening_score,reading_score,total_score,graded_at',
+            ])
+            ->orderByDesc('submitted_at')
+            ->orderByDesc('attempt_id')
+            ->limit(5)
+            ->get();
 
-            $pendingQuestions = Question::query()
-                ->pending()
-                ->with([
-                    'section:section_id,code,name,skill_id',
-                    'section.skill:skill_id,code,skill_name',
-                    'questionType:question_type_id,name',
-                ])
-                ->orderByDesc('created_at')
-                ->orderByDesc('question_id')
-                ->limit(5)
-                ->get();
-
-            $weeklyChart = $this->weeklyAttemptChart($weekStart, $weekEnd);
-        } catch (\Throwable $e) {
-            $learnerStats = ['total' => 8420, 'active' => 8420, 'locked' => 0];
-            $questionStats = ['total' => 18, 'pending' => 18, 'active' => 18];
-            $attemptStats = ['today' => 14890, 'week' => 14890];
-            $vocabularyTotal = 1200;
-            $recentAttempts = collect();
-            $pendingQuestions = collect();
-            $weeklyChart = [
-                'labels' => [
-                    'Thứ Hai (14/05)',
-                    'Thứ Ba',
-                    'Thứ Tư',
-                    'Thứ Năm',
-                    'Thứ Sáu',
-                    'Thứ Bảy',
-                    'Chủ Nhật (Hôm nay)',
-                ],
-                'started' => [25, 45, 62, 86, 85, 87, 88],
-                'submitted' => [16, 25, 34, 43, 49, 54, 58],
-            ];
-        }
+        $pendingFeedback = Feedback::query()
+            ->with([
+                'question.section.skill',
+                'user:user_id,full_name,email',
+            ])
+            ->where('status', 'PENDING')
+            ->orderByDesc('created_at')
+            ->orderByDesc('feedback_id')
+            ->limit(5)
+            ->get();
 
         return view('admin.dashboard', [
-            'learnerStats' => $learnerStats,
+            'userStats' => $userStats,
             'questionStats' => $questionStats,
             'attemptStats' => $attemptStats,
-            'vocabularyTotal' => $vocabularyTotal,
+            'feedbackStats' => $feedbackStats,
+            'vocabularyTotal' => Vocabulary::query()->count(),
             'recentAttempts' => $recentAttempts,
-            'pendingQuestions' => $pendingQuestions,
-            'weeklyChart' => $weeklyChart,
+            'pendingFeedback' => $pendingFeedback,
+            'weeklyChart' => $this->weeklySubmissionChart($weekStart, $weekEnd),
             'greeting' => $this->greetingFor(now()),
         ]);
     }
 
     /**
-     * @return array{labels: list<string>, started: list<int>, submitted: list<int>}
+     * @return array{labels: list<string>, listeningReading: list<int>, writingSpeaking: list<int>}
      */
-    private function weeklyAttemptChart(CarbonInterface $weekStart, CarbonInterface $weekEnd): array
+    private function weeklySubmissionChart(CarbonInterface $weekStart, CarbonInterface $weekEnd): array
     {
-        $startedByDay = $this->countAttemptsByDate('started_at', $weekStart, $weekEnd);
-        $submittedByDay = $this->countAttemptsByDate('submitted_at', $weekStart, $weekEnd);
+        $dailyScores = ScoreResult::query()
+            ->join('attempts', 'attempts.attempt_id', '=', 'score_result.attempt_id')
+            ->whereNotNull('attempts.submitted_at')
+            ->whereBetween('attempts.submitted_at', [$weekStart, $weekEnd])
+            ->selectRaw('DATE(attempts.submitted_at) AS day')
+            ->selectRaw('COUNT(DISTINCT CASE WHEN score_result.listening_score IS NOT NULL OR score_result.reading_score IS NOT NULL THEN attempts.attempt_id END) AS listening_reading')
+            ->selectRaw('COUNT(DISTINCT CASE WHEN score_result.speaking_score IS NOT NULL OR score_result.writing_score IS NOT NULL THEN attempts.attempt_id END) AS writing_speaking')
+            ->groupByRaw('DATE(attempts.submitted_at)')
+            ->get()
+            ->keyBy('day');
 
         $labels = [];
-        $started = [];
-        $submitted = [];
+        $listeningReading = [];
+        $writingSpeaking = [];
 
         for ($day = $weekStart->copy(); $day->lte($weekEnd); $day->addDay()) {
-            $key = $day->toDateString();
-            $labels[] = $this->vietnameseWeekdayLabel($day);
-            $started[] = (int) $startedByDay->get($key, 0);
-            $submitted[] = (int) $submittedByDay->get($key, 0);
+            $counts = $dailyScores->get($day->toDateString());
+            $labels[] = $this->weekdayLabel($day);
+            $listeningReading[] = (int) ($counts->listening_reading ?? 0);
+            $writingSpeaking[] = (int) ($counts->writing_speaking ?? 0);
         }
 
         return [
             'labels' => $labels,
-            'started' => $started,
-            'submitted' => $submitted,
+            'listeningReading' => $listeningReading,
+            'writingSpeaking' => $writingSpeaking,
         ];
     }
 
-    /**
-     * @return Collection<string, int>
-     */
-    private function countAttemptsByDate(string $column, CarbonInterface $from, CarbonInterface $to): Collection
-    {
-        $allowed = ['started_at', 'submitted_at'];
-        $column = in_array($column, $allowed, true) ? $column : 'started_at';
-
-        return TestAttempt::query()
-            ->whereNotNull($column)
-            ->whereBetween($column, [$from, $to])
-            ->selectRaw("DATE({$column}) as day, COUNT(*) as aggregate")
-            ->groupByRaw("DATE({$column})")
-            ->orderBy('day')
-            ->pluck('aggregate', 'day')
-            ->map(fn (mixed $value): int => (int) $value);
-    }
-
-    private function vietnameseWeekdayLabel(CarbonInterface $day): string
+    private function weekdayLabel(CarbonInterface $day): string
     {
         $names = [
             1 => 'Thứ Hai',
@@ -158,7 +123,7 @@ class DashboardController extends Controller
             7 => 'Chủ Nhật',
         ];
 
-        $label = $names[$day->dayOfWeekIso] ?? $day->isoFormat('dddd');
+        $label = $names[$day->dayOfWeekIso];
 
         if ($day->isToday()) {
             return $label.' (Hôm nay)';
@@ -178,14 +143,12 @@ class DashboardController extends Controller
     {
         $hour = (int) $now->format('G');
 
-        $title = match (true) {
-            $hour < 12 => 'Chào buổi sáng',
-            $hour < 18 => 'Chào buổi chiều',
-            default => 'Chào buổi tối',
-        };
-
         return [
-            'title' => $title,
+            'title' => match (true) {
+                $hour < 12 => 'Chào buổi sáng',
+                $hour < 18 => 'Chào buổi chiều',
+                default => 'Chào buổi tối',
+            },
             'subtitle' => 'Tổng quan chỉ số vận hành đào tạo, ngân hàng câu hỏi & hiệu suất luyện thi hôm nay.',
         ];
     }

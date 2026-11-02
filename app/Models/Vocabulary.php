@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'pronunciation',
     'example_en',
     'example_vi',
+    'image_url',
 ])]
 class Vocabulary extends Model
 {
@@ -44,7 +45,7 @@ class Vocabulary extends Model
     }
 
     /**
-     * Get target level (e.g. 750+, 800+, 650+, 550+, 450+)
+     * Get the stored target level or indicate that it is unavailable.
      */
     public function getTargetLevelAttribute(): string
     {
@@ -55,11 +56,7 @@ class Vocabulary extends Model
             return trim($parts[1] ?? '650+');
         }
 
-        // Default level mapping based on POS or word length if not specified
-        $hash = abs(crc32($this->word ?? '')) % 5;
-        $levels = ['450+', '550+', '650+', '750+', '800+'];
-
-        return $levels[$hash];
+        return 'Chưa phân loại';
     }
 
     /**

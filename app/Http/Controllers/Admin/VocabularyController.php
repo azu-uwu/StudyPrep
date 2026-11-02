@@ -69,7 +69,7 @@ class VocabularyController extends Controller
             $previewVocab = Vocabulary::with('topic')->find($previewId);
         }
         if (! $previewVocab) {
-            $previewVocab = $vocabularies->first() ?? Vocabulary::with('topic')->first();
+            $previewVocab = $vocabularies->first();
         }
 
         return view('admin.vocabularies.index', compact(
@@ -110,6 +110,7 @@ class VocabularyController extends Controller
             'pronunciation' => ['nullable', 'string', 'max:150'],
             'example_en' => ['nullable', 'string'],
             'example_vi' => ['nullable', 'string'],
+            'image_url' => ['nullable', 'url', 'max:500'],
             'topic_id' => ['nullable'],
             'new_topic_name' => ['nullable', 'string', 'max:100'],
             'action_type' => ['nullable', 'string'],
@@ -133,8 +134,9 @@ class VocabularyController extends Controller
         }
 
         $pos = trim((string) ($validated['part_of_speech'] ?? 'Từ vựng'));
-        if (! empty($validated['level'])) {
-            $pos = $pos.'|'.trim($validated['level']);
+        $level = $this->normalizeLevel($validated['level'] ?? null);
+        if ($level !== null) {
+            $pos = $pos.'|'.$level;
         }
 
         $meaning = trim($validated['meaning_vi']);
@@ -150,6 +152,7 @@ class VocabularyController extends Controller
             'pronunciation' => trim((string) ($validated['pronunciation'] ?? '')),
             'example_en' => trim((string) ($validated['example_en'] ?? '')),
             'example_vi' => trim((string) ($validated['example_vi'] ?? '')),
+            'image_url' => $validated['image_url'] ?? null,
         ]);
 
         $isDraft = ($request->input('action_type') === 'draft');
@@ -174,12 +177,14 @@ class VocabularyController extends Controller
             'pronunciation' => ['nullable', 'string', 'max:150'],
             'example_en' => ['nullable', 'string'],
             'example_vi' => ['nullable', 'string'],
+            'image_url' => ['nullable', 'url', 'max:500'],
             'topic_id' => ['required', 'integer'],
         ]);
 
         $pos = trim((string) ($validated['part_of_speech'] ?? 'Từ vựng'));
-        if (! empty($validated['level'])) {
-            $pos = $pos.'|'.trim($validated['level']);
+        $level = $this->normalizeLevel($validated['level'] ?? null);
+        if ($level !== null) {
+            $pos = $pos.'|'.$level;
         }
 
         $meaning = trim($validated['meaning_vi']);
@@ -195,6 +200,7 @@ class VocabularyController extends Controller
             'pronunciation' => trim((string) ($validated['pronunciation'] ?? '')),
             'example_en' => trim((string) ($validated['example_en'] ?? '')),
             'example_vi' => trim((string) ($validated['example_vi'] ?? '')),
+            'image_url' => $validated['image_url'] ?? null,
         ]);
 
         return redirect()->route('admin.vocabularies.index')->with('info', 'Đã cập nhật từ vựng "'.$vocabulary->word.'" thành công!');
@@ -209,6 +215,18 @@ class VocabularyController extends Controller
         $vocabulary->delete();
 
         return redirect()->route('admin.vocabularies.index')->with('info', 'Đã xóa từ vựng "'.$word.'" thành công!');
+    }
+
+    private function normalizeLevel(?string $level): ?string
+    {
+        $level = trim((string) $level);
+        if ($level === '') {
+            return null;
+        }
+
+        return preg_match('/\d{3,4}\+/', $level, $matches) === 1
+            ? $matches[0]
+            : $level;
     }
 
     /**

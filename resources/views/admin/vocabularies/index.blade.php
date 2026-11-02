@@ -18,9 +18,9 @@
             <h1 class="vcb-title">Quản lý Từ vựng & Flashcards</h1>
             <div class="vcb-count-badge">
                 <span>•</span>
-                <span>{{ number_format(max($totalVocabCount, 18450)) }} TỪ HỆ THỐNG</span>
+                <span>{{ number_format($totalVocabCount) }} TỪ HỆ THỐNG</span>
                 <span>•</span>
-                <span>{{ $totalTopicCount > 7 ? $totalTopicCount : 142 }} BỘ THẺ FLASHCARDS</span>
+                <span>{{ $totalTopicCount }} BỘ THẺ FLASHCARDS</span>
             </div>
         </div>
 
@@ -91,7 +91,7 @@
                     </svg>
                 </div>
             </div>
-            <div class="vcb-kpi-val">{{ number_format(max($totalVocabCount, 18450)) }}</div>
+            <div class="vcb-kpi-val">{{ number_format($totalVocabCount) }}</div>
         </div>
 
         {{-- Card 2: Bộ thẻ Flashcards mở --}}
@@ -106,7 +106,7 @@
                 </div>
             </div>
             <div class="vcb-kpi-val">
-                <span>{{ $totalTopicCount > 7 ? $totalTopicCount : 142 }}</span>
+                <span>{{ $totalTopicCount }}</span>
                 <span class="vcb-kpi-val-unit">bộ thẻ</span>
             </div>
         </div>
@@ -149,6 +149,7 @@
             <option value="650+" {{ $levelFilter === '650+' ? 'selected' : '' }}>Level 650+ (Khá)</option>
             <option value="750+" {{ $levelFilter === '750+' ? 'selected' : '' }}>Level 750+ (Nâng cao)</option>
             <option value="800+" {{ $levelFilter === '800+' ? 'selected' : '' }}>Level 800+ (Chuyên sâu)</option>
+            <option value="900+" {{ $levelFilter === '900+' ? 'selected' : '' }}>Level 900+ (Mastery)</option>
         </select>
 
         {{-- Topic Filter --}}
@@ -218,25 +219,7 @@
                                 @forelse ($vocabularies as $index => $item)
                                     @php
                                         $isSelected = ($previewVocab && $previewVocab->vocabulary_id === $item->vocabulary_id) || ($index === 0 && !$previewVocab);
-                                        // Specific thumbnail images matching TOEIC domains
-                                        $thumbIndex = ($item->vocabulary_id % 7);
-                                        $thumbSVGs = [
-                                            // Finance / Chart
-                                            'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="50" viewBox="0 0 60 50"><rect width="60" height="50" fill="%23e0f2fe"/><rect x="8" y="28" width="8" height="14" fill="%230284c7" rx="1"/><rect x="20" y="20" width="8" height="22" fill="%230284c7" rx="1"/><rect x="32" y="12" width="8" height="30" fill="%2338bdf8" rx="1"/><rect x="44" y="6" width="8" height="36" fill="%230369a1" rx="1"/></svg>',
-                                            // Laptop / Desk
-                                            'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="50" viewBox="0 0 60 50"><rect width="60" height="50" fill="%23f1f5f9"/><rect x="12" y="14" width="36" height="22" rx="2" fill="%23334155"/><rect x="15" y="17" width="30" height="16" rx="1" fill="%2360a5fa"/><polygon points="8,40 52,40 48,36 12,36" fill="%2394a3b8"/></svg>',
-                                            // Meeting Room
-                                            'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="50" viewBox="0 0 60 50"><rect width="60" height="50" fill="%23fef3c7"/><ellipse cx="30" cy="28" rx="22" ry="12" fill="%23d97706"/><circle cx="15" cy="18" r="4" fill="%23b45309"/><circle cx="30" cy="14" r="4" fill="%23b45309"/><circle cx="45" cy="18" r="4" fill="%23b45309"/></svg>',
-                                            // Conference Hall
-                                            'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="50" viewBox="0 0 60 50"><rect width="60" height="50" fill="%23ede9fe"/><path d="M10 38 L30 18 L50 38 Z" fill="%238b5cf6"/><rect x="22" y="24" width="16" height="14" fill="%23c4b5fd"/></svg>',
-                                            // Modern Architecture
-                                            'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="50" viewBox="0 0 60 50"><rect width="60" height="50" fill="%23fae8ff"/><rect x="14" y="10" width="14" height="32" fill="%23c084fc"/><rect x="32" y="18" width="14" height="24" fill="%23a855f7"/></svg>',
-                                            // Growth Arrow
-                                            'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="50" viewBox="0 0 60 50"><rect width="60" height="50" fill="%23dcfce7"/><polyline points="10,38 24,24 36,30 50,12" fill="none" stroke="%2316a34a" stroke-width="4" stroke-linecap="round"/></svg>',
-                                            // Commuter Train
-                                            'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="50" viewBox="0 0 60 50"><rect width="60" height="50" fill="%23e0e7ff"/><rect x="12" y="14" width="36" height="24" rx="4" fill="%234338ca"/><circle cx="22" cy="38" r="3" fill="%231e1b4b"/><circle cx="38" cy="38" r="3" fill="%231e1b4b"/><rect x="16" y="18" width="10" height="8" rx="1" fill="%23bfdbfe"/><rect x="34" y="18" width="10" height="8" rx="1" fill="%23bfdbfe"/></svg>',
-                                        ];
-                                        $rowThumb = $thumbSVGs[$thumbIndex];
+
                                         $itemData = [
                                             'id' => $item->vocabulary_id,
                                             'word' => $item->word,
@@ -247,11 +230,12 @@
                                             'meaning_vi' => $item->clean_meaning_vi,
                                             'definition_en' => $item->clean_definition_en,
                                             'example_en' => $item->example_en ?? '',
-                                            'example_vi' => $item->example_vi ?? ''
+                                            'example_vi' => $item->example_vi ?? '',
+                                            'image_url' => $item->image_url,
                                         ];
                                     @endphp
                                     <tr class="vcb-row-item {{ $isSelected ? 'vcb-row-selected' : '' }}"
-                                        onclick="selectVocabItem({{ $item->vocabulary_id }}, '{{ addslashes($item->word) }}', '{{ addslashes($item->pronunciation ?? '') }}', '{{ addslashes($item->clean_pos) }}', '{{ addslashes($item->target_level) }}', '{{ addslashes($item->clean_meaning_vi) }}', '{{ addslashes($item->clean_definition_en) }}', '{{ addslashes($item->example_en ?? '') }}', '{{ addslashes($item->example_vi ?? '') }}', '{{ $rowThumb }}', this)">
+                                        onclick="selectVocabItem({{ \Illuminate\Support\Js::from($itemData) }}, this)">
                                         {{-- Checkbox --}}
                                         <td style="text-align: center;" onclick="event.stopPropagation()">
                                             <input type="checkbox" name="selected_ids[]" value="{{ $item->vocabulary_id }}" class="vcb-checkbox-custom vcb-item-check" {{ $isSelected ? 'checked' : '' }} onchange="updateSelectedCount()">
@@ -261,7 +245,7 @@
                                         <td class="vcb-word-col">
                                             <div class="vcb-word-header">
                                                 <span class="vcb-word-title">{{ $item->word }}</span>
-                                                <button type="button" class="vcb-audio-btn" title="Phát âm" onclick="event.stopPropagation(); playAudio('{{ addslashes($item->word) }}')">
+                                                <button type="button" class="vcb-audio-btn" title="Phát âm" onclick="event.stopPropagation(); playAudio({{ \Illuminate\Support\Js::from($item->word) }})">
                                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                         <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
                                                         <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
@@ -285,7 +269,11 @@
 
                                         {{-- ẢNH --}}
                                         <td class="vcb-img-col">
-                                            <img src="{{ $rowThumb }}" alt="{{ $item->word }}" class="vcb-img-thumb">
+                                            @if ($item->image_url)
+                                                <img src="{{ $item->image_url }}" alt="{{ $item->word }}" class="vcb-img-thumb">
+                                            @else
+                                                <span>—</span>
+                                            @endif
                                         </td>
 
                                         {{-- NGỮ CẢNH TOEIC & VÍ DỤ --}}
@@ -307,7 +295,7 @@
                                         <td class="vcb-actions-col" onclick="event.stopPropagation()">
                                             <div class="vcb-actions-wrap">
                                                 {{-- Nút xem trước (Eye icon) --}}
-                                                <button type="button" class="vcb-action-btn" title="Xem trước Flashcard" onclick="selectVocabItem({{ $item->vocabulary_id }}, '{{ addslashes($item->word) }}', '{{ addslashes($item->pronunciation ?? '') }}', '{{ addslashes($item->clean_pos) }}', '{{ addslashes($item->target_level) }}', '{{ addslashes($item->clean_meaning_vi) }}', '{{ addslashes($item->clean_definition_en) }}', '{{ addslashes($item->example_en ?? '') }}', '{{ addslashes($item->example_vi ?? '') }}', '{{ $rowThumb }}', this.closest('tr'))">
+                                                <button type="button" class="vcb-action-btn" title="Xem trước Flashcard" onclick="selectVocabItem({{ \Illuminate\Support\Js::from($itemData) }}, this.closest('tr'))">
                                                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                                         <circle cx="12" cy="12" r="3"></circle>
@@ -384,7 +372,7 @@
                     {{-- Table Footer / Pagination --}}
                     <div class="vcb-table-footer">
                         <div class="vcb-footer-left">
-                            Hiển thị 1–{{ $vocabularies->count() }} trong tổng số {{ number_format(max($totalVocabCount, 18450)) }} từ
+                            Hiển thị {{ $vocabularies->firstItem() ?? 0 }}–{{ $vocabularies->lastItem() ?? 0 }} trong tổng số {{ number_format($vocabularies->total()) }} từ
                         </div>
 
                         <div class="vcb-footer-mid">
@@ -436,15 +424,26 @@
                         </svg>
                         <span class="vcb-preview-title">Xem trước Flashcard</span>
                     </div>
-                    <span class="vcb-badge-live">LIVE PREVIEW</span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="vcb-badge-live">LIVE PREVIEW</span>
+                        <div class="vcb-preview-scroll-actions" title="Cuộn ngang xem trọn vẹn Flashcard">
+                            <button type="button" class="vcb-scroll-btn" onclick="scrollPreviewCard(-120)" title="Cuộn sang trái" aria-label="Cuộn sang trái">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                            </button>
+                            <button type="button" class="vcb-scroll-btn" onclick="scrollPreviewCard(120)" title="Cuộn sang phải" aria-label="Cuộn sang phải">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="vcb-preview-desc">
                     Mô phỏng trải nghiệm lật thẻ 2 mặt của học viên trên Web & Mobile App theo giải thuật SM-2.
                 </div>
 
-                {{-- Interactive Flashcard Component --}}
-                <div class="vcb-flashcard-sim">
+                {{-- Interactive Flashcard Component with Horizontal Scroll --}}
+                <div class="vcb-preview-scroll-container overflow-x-auto" id="vcbPreviewScrollContainer">
+                    <div class="vcb-flashcard-sim">
                     {{-- Nav Toolbar inside Card --}}
                     <div class="vcb-sim-toolbar">
                         <div class="vcb-sim-tabs">
@@ -464,20 +463,20 @@
 
                     {{-- 3D Flip Card Viewport --}}
                     @php
-                        $initWord = $previewVocab ? $previewVocab->word : 'extraordinarily';
-                        $initIpa = $previewVocab ? ($previewVocab->pronunciation ?? '/ɪkˈstrɔːr.dən.er.əl.i/') : '/ɪkˈstrɔːr.dən.er.əl.i/';
-                        $initPos = $previewVocab ? $previewVocab->clean_pos : 'Phó từ (Adv)';
-                        $initLvl = $previewVocab ? $previewVocab->target_level : '750+';
-                        $initMeaning = $previewVocab ? $previewVocab->clean_meaning_vi : 'Đặc biệt, phi thường';
-                        $initDef = $previewVocab ? ($previewVocab->clean_definition_en ?: 'To a very unusual or remarkable degree') : 'To a very unusual or remarkable degree';
-                        $initExEn = $previewVocab ? ($previewVocab->example_en ?: 'The quarter report demonstrated an extraordinarily high return on investment.') : 'The quarter report demonstrated an extraordinarily high return on investment.';
-                        $initExVi = $previewVocab ? ($previewVocab->example_vi ?: 'Báo cáo quý cho thấy tỷ suất sinh lời đặc biệt cao.') : 'Báo cáo quý cho thấy tỷ suất sinh lời đặc biệt cao.';
+                        $initWord = $previewVocab?->word ?? 'Chưa có dữ liệu';
+                        $initIpa = $previewVocab?->pronunciation ?? '';
+                        $initPos = $previewVocab?->clean_pos ?? '';
+                        $initLvl = $previewVocab?->target_level ?? '';
+                        $initMeaning = $previewVocab?->clean_meaning_vi ?? '';
+                        $initDef = $previewVocab?->clean_definition_en ?? '';
+                        $initExEn = $previewVocab?->example_en ?? '';
+                        $initExVi = $previewVocab?->example_vi ?? '';
                     @endphp
                     <div class="vcb-card-viewport" onclick="toggleCardFlip()" style="cursor: pointer;">
                         <div class="vcb-card-flipper" id="cardFlipper">
                             {{-- Mặt Trước (Front) --}}
                             <div class="vcb-card-face vcb-card-front">
-                                <img id="simCardImg" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='120' viewBox='0 0 300 120'><rect width='300' height='120' fill='%23e0f2fe'/><rect x='30' y='65' width='24' height='45' fill='%230284c7' rx='2'/><rect x='65' y='50' width='24' height='60' fill='%230284c7' rx='2'/><rect x='100' y='35' width='24' height='75' fill='%2338bdf8' rx='2'/><rect x='135' y='20' width='24' height='90' fill='%230369a1' rx='2'/><polyline points='30,70 65,55 100,40 135,25 170,15' fill='none' stroke='%230284c7' stroke-width='4' stroke-linecap='round'/></svg>" alt="Card Image" class="vcb-card-banner-img">
+                                <img id="simCardImg" @if ($previewVocab?->image_url) src="{{ $previewVocab->image_url }}" @else hidden @endif alt="{{ $initWord }}" class="vcb-card-banner-img">
 
                                 <div class="vcb-sim-word-row">
                                     <span class="vcb-sim-word" id="simWord">{{ $initWord }}</span>
@@ -531,6 +530,7 @@
                         </button>
                     </div>
                 </div>
+                </div>
             </div>
         </div>
     </div>
@@ -577,6 +577,7 @@
                             <option value="650+">650+</option>
                             <option value="750+" selected>750+</option>
                             <option value="800+">800+</option>
+                            <option value="900+">900+</option>
                         </select>
                     </div>
                 </div>
@@ -598,6 +599,11 @@
                 <div class="vcb-form-group">
                     <label class="vcb-form-label">Định nghĩa tiếng Anh (English Definition)</label>
                     <input type="text" name="definition_en" class="vcb-form-control" placeholder="Ví dụ: To a very unusual or remarkable degree">
+                </div>
+
+                <div class="vcb-form-group">
+                    <label class="vcb-form-label">URL hình ảnh</label>
+                    <input type="url" name="image_url" class="vcb-form-control" placeholder="https://example.com/image.jpg">
                 </div>
 
                 <div class="vcb-form-group">
@@ -737,6 +743,7 @@
                             <option value="650+">650+</option>
                             <option value="750+">750+</option>
                             <option value="800+">800+</option>
+                            <option value="900+">900+</option>
                         </select>
                     </div>
                 </div>
@@ -758,6 +765,11 @@
                 <div class="vcb-form-group">
                     <label class="vcb-form-label">Định nghĩa tiếng Anh (English Definition)</label>
                     <input type="text" id="edit_vocab_def_en" name="definition_en" class="vcb-form-control" placeholder="Ví dụ: To a very unusual or remarkable degree">
+                </div>
+
+                <div class="vcb-form-group">
+                    <label class="vcb-form-label">URL hình ảnh</label>
+                    <input type="url" id="edit_vocab_image_url" name="image_url" class="vcb-form-control" placeholder="https://example.com/image.jpg">
                 </div>
 
                 <div class="vcb-form-group">
@@ -927,7 +939,7 @@
     }
 
     // Select row and dynamically update Live Preview Flashcard
-    function selectVocabItem(id, word, ipa, pos, lvl, meaning, def, exEn, exVi, thumbSrc, rowElem) {
+    function selectVocabItem(item, rowElem) {
         // Update table row active styling
         var rows = document.querySelectorAll('.vcb-row-item');
         rows.forEach(function(r) { r.classList.remove('vcb-row-selected'); });
@@ -936,16 +948,22 @@
         }
 
         // Update Flashcard Widget Content
-        document.getElementById('simWord').innerText = word;
-        document.getElementById('simIpa').innerText = ipa || '/.../';
-        document.getElementById('simPos').innerText = 'Từ loại (' + pos + ')';
-        document.getElementById('simLvl').innerText = lvl;
-        document.getElementById('simMeaning').innerText = meaning;
-        document.getElementById('simDef').innerText = def;
-        document.getElementById('simExEn').innerText = exEn ? '"' + exEn + '"' : '';
-        document.getElementById('simExVi').innerText = exVi || '';
-        if (thumbSrc) {
-            document.getElementById('simCardImg').src = thumbSrc;
+        document.getElementById('simWord').innerText = item.word || 'Chưa có dữ liệu';
+        document.getElementById('simIpa').innerText = item.pronunciation || '';
+        document.getElementById('simPos').innerText = item.pos ? 'Từ loại (' + item.pos + ')' : '';
+        document.getElementById('simLvl').innerText = item.level || '';
+        document.getElementById('simMeaning').innerText = item.meaning_vi || '';
+        document.getElementById('simDef').innerText = item.definition_en || '';
+        document.getElementById('simExEn').innerText = item.example_en ? '"' + item.example_en + '"' : '';
+        document.getElementById('simExVi').innerText = item.example_vi || '';
+
+        var image = document.getElementById('simCardImg');
+        if (item.image_url) {
+            image.src = item.image_url;
+            image.hidden = false;
+        } else {
+            image.removeAttribute('src');
+            image.hidden = true;
         }
 
         // Flip back to front on word switch
@@ -979,6 +997,7 @@
         document.getElementById('edit_vocab_def_en').value = item.definition_en || '';
         document.getElementById('edit_vocab_example_en').value = item.example_en || '';
         document.getElementById('edit_vocab_example_vi').value = item.example_vi || '';
+        document.getElementById('edit_vocab_image_url').value = item.image_url || '';
 
         var posSelect = document.getElementById('edit_vocab_pos');
         if (posSelect && item.pos) {
@@ -1067,6 +1086,14 @@
         if (confirm('Bạn có chắc chắn muốn xóa ' + checked.length + ' từ vựng đã chọn khỏi hệ thống?')) {
             document.getElementById('bulkActionInput').value = 'delete';
             document.getElementById('vcbBulkForm').submit();
+        }
+    }
+
+    // Cuộn ngang xem trọn vẹn Flashcard preview
+    function scrollPreviewCard(offset) {
+        var container = document.getElementById('vcbPreviewScrollContainer');
+        if (container) {
+            container.scrollBy({ left: offset, behavior: 'smooth' });
         }
     }
 

@@ -55,6 +55,7 @@ class VocabularyControllerTest extends TestCase
             'meaning_vi' => 'Đặc biệt, phi thường || To a very unusual or remarkable degree',
             'example_en' => 'The quarter report demonstrated an extraordinarily high return on investment.',
             'example_vi' => 'Báo cáo quý tăng trưởng vượt trội...',
+            'image_url' => 'https://example.test/extraordinarily.jpg',
         ]);
 
         $response = $this->actingAs($admin)->get(route('admin.vocabularies.index'));
@@ -70,6 +71,7 @@ class VocabularyControllerTest extends TestCase
         $response->assertSee('LIVE PREVIEW');
         $response->assertSee('extraordinarily');
         $response->assertSee('Finance & Budget');
+        $response->assertSee('https://example.test/extraordinarily.jpg');
     }
 
     public function test_admin_can_search_and_filter_vocabularies(): void
@@ -153,6 +155,7 @@ class VocabularyControllerTest extends TestCase
         $response->assertSessionHas('info');
         $this->assertDatabaseHas('vocabularies', [
             'word' => 'substantially',
+            'part_of_speech' => 'Adverb (Phó từ / Trạng từ)|800+',
         ]);
     }
 
@@ -175,12 +178,14 @@ class VocabularyControllerTest extends TestCase
             'topic_id' => $topic->topic_id,
             'example_en' => 'The corporation gained a substantial market share.',
             'example_vi' => 'Tập đoàn đạt thị phần đáng kể.',
+            'image_url' => 'https://example.test/substantial.jpg',
         ]);
 
         $response->assertRedirect(route('admin.vocabularies.index'));
         $this->assertDatabaseHas('vocabularies', [
             'word' => 'substantial',
             'part_of_speech' => 'Adj|800+',
+            'image_url' => 'https://example.test/substantial.jpg',
         ]);
     }
 

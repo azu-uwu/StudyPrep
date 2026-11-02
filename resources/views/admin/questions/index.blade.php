@@ -305,6 +305,7 @@
                         <option value="REPORTED" {{ $filters['status'] === 'REPORTED' ? 'selected' : '' }}>• Báo lỗi đáp án</option>
                         <option value="PENDING" {{ $filters['status'] === 'PENDING' ? 'selected' : '' }}>• Chờ duyệt</option>
                         <option value="DRAFT" {{ $filters['status'] === 'DRAFT' ? 'selected' : '' }}>• Bản nháp</option>
+                        <option value="ARCHIVED" {{ $filters['status'] === 'ARCHIVED' ? 'selected' : '' }}>• Đã lưu trữ</option>
                     </select>
                     <svg class="qbank-filter-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="6 9 12 15 18 9"></polyline>
@@ -395,7 +396,6 @@
                                 $isReported = strtoupper((string)$q->status) === 'REPORTED';
                                 $isPending = strtoupper((string)$q->status) === 'PENDING';
                                 $options = $q->options;
-                                $correctOpt = $options->firstWhere('is_correct', true);
                             @endphp
                             <tr>
                                 {{-- Checkbox --}}
@@ -420,123 +420,30 @@
 
                                 {{-- TRÍCH ĐOẠN / NỘI DUNG CÂU HỎI --}}
                                 <td>
-                                    {{-- Q-10892: Trắc nghiệm Part 5 --}}
-                                    @if ($q->question_id == 10892 || ($q->part_badge === 'Part 5' && !$isReported))
-                                        <div class="q-content-text">
-                                            "With bicycling becoming more popular than ever, the city council plans to <span style="color: #4338ca; font-weight: 700;">---</span> the number of bicycle lanes along riverside avenues."
-                                        </div>
-                                        <div>
-                                            <span class="q-ans-pill">Đáp án đúng: C. expand</span>
-                                            <span class="q-opt-options">A. define • B. inspect • D. relieve</span>
-                                        </div>
+                                    <div class="q-content-text">{{ $q->content }}</div>
 
-                                    {{-- Q-10893: Part 1 tranh kèm audio --}}
-                                    @elseif ($q->question_id == 10893 || $q->part_badge === 'Part 1')
-                                        <div style="display: flex; align-items: center; gap: 12px;">
-                                            <div class="q-thumb-box">P1 TRANH</div>
-                                            <div>
-                                                <div class="q-content-text" style="font-weight: 500;">
-                                                    Bức tranh số 01: Nhân viên văn phòng làm việc với máy tính xách tay bên cửa sổ kính.
-                                                </div>
-                                                <div style="display: flex; align-items: center; gap: 8px;">
-                                                    <span class="q-audio-pill">
-                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                                                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                                                        </svg>
-                                                        audio_track_01.mp3
-                                                    </span>
-                                                    <span class="q-ans-pill" style="margin: 0; background-color: #f1f5f9; color: #334155;">
-                                                        Đáp án: (B)
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                    {{-- Q-10894: Writing T1 mô tả tranh --}}
-                                    @elseif ($q->question_id == 10894 || $q->part_badge === 'Writing T1')
-                                        <div style="display: flex; align-items: center; gap: 12px;">
-                                            <div class="q-thumb-box" style="background: linear-gradient(135deg, #0f766e, #14b8a6);">W1 ẢNH</div>
-                                            <div>
-                                                <div class="q-content-text">
-                                                    Từ khóa bắt buộc: <strong style="color: #4338ca;">tourist / landmark</strong> — Yêu cầu viết 1 câu mô tả chính xác bức tranh.
-                                                </div>
-                                                <div style="font-size: 11.5px; color: #64748b; margin-top: 4px; display: flex; align-items: center; gap: 4px;">
-                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                                                        <line x1="8" y1="21" x2="16" y2="21"></line>
-                                                        <line x1="12" y1="17" x2="12" y2="21"></line>
-                                                    </svg>
-                                                    <span>Chấm AI Tự động + Kiểm tra ngữ pháp</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                    {{-- Q-10895: Đoạn văn đôi Part 7 --}}
-                                    @elseif ($q->question_id == 10895 || $q->part_badge === 'Part 7')
-                                        <div>
-                                            <span class="q-tag-blue">Đoạn văn đôi (4 câu hỏi)</span>
-                                            <div class="q-title-bold">Amon Donates $50,000 to Grenel Music Academy & Confirmation...</div>
-                                            <div class="q-content-text" style="color: #64748b; font-size: 12.5px;">
-                                                Questions 176–180 refer to the following press release and subsequent confirmation letter...
-                                            </div>
-                                            <div style="font-size: 11.5px; color: #64748b; margin-top: 3px;">
-                                                Khóa câu: #10895-1 (C), #10895-2 (A), #10895-3 (D), #10895-4 (B)
-                                            </div>
-                                        </div>
-
-                                    {{-- Q-10896: Báo lỗi đáp án Part 5 --}}
-                                    @elseif ($isReported || $q->question_id == 10896)
-                                        <div class="q-content-text">
-                                            "The marketing director suggested that we <span style="color: #dc2626; font-weight: 700;">------</span> the product launch date until next quarter to avoid overlapping campaigns."
-                                        </div>
-                                        <div class="q-reported-alert">
-                                            <span style="color: #64748b; font-weight: 400;">Hiện tại: B. postpone</span>
-                                            <span style="color: #cbd5e1;">•</span>
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                                <circle cx="12" cy="12" r="10"></circle>
-                                                <line x1="12" y1="8" x2="12" y2="12"></line>
-                                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                                            </svg>
-                                            <span>2 học viên phản hồi cấu trúc bàng thái cách (subjunctive)</span>
-                                        </div>
-
-                                    {{-- Q-10897: Writing T2 Chờ duyệt --}}
-                                    @elseif ($isPending || $q->question_id == 10897)
-                                        <div>
-                                            <span class="q-tag-blue" style="background-color: #f1f5f9; color: #475569;">Respond to an e-mail request</span>
-                                            <div class="q-title-bold">Vehicle Fleet Rental Inquiry from Apex Logistics</div>
-                                            <div class="q-content-text" style="font-size: 12.5px;">
-                                                Yêu cầu học viên trả lời thư đề nghị cung cấp biểu phí và điều khoản hủy dịch vụ
-                                            </div>
-                                            <div style="font-size: 11px; color: #94a3b8; margin-top: 3px;">
-                                                Người tạo: GV. Trần Minh Hoàng • Biên soạn 2 giờ trước
-                                            </div>
-                                        </div>
-
-                                    {{-- Q-10898: Listening Part 3 cụm hội thoại --}}
-                                    @elseif ($q->question_id == 10898 || $q->part_badge === 'Part 3')
-                                        <div>
-                                            <span class="q-audio-pill" style="margin: 0 0 4px 0;">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                                                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
-                                                </svg>
-                                                Audio 0:42s (Cụm 3 câu)
-                                            </span>
-                                            <div class="q-title-bold" style="margin-top: 4px;">Two colleagues negotiating conference hall bookings</div>
-                                            <div class="q-content-text" style="color: #64748b; font-size: 12px;">
-                                                Questions 41–43 refer to the conversation between a project manager and an event coordinator...
-                                            </div>
-                                            <span class="q-ans-pill" style="margin-top: 4px;">Đáp án đúng: 41(A) • 42(D) • 43(B)</span>
-                                        </div>
-
-                                    {{-- Fallback generic --}}
-                                    @else
-                                        <div class="q-content-text">{{ $q->content }}</div>
-                                        @if ($q->explanation)
-                                            <div class="q-opt-options">{{ Str::limit($q->explanation, 100) }}</div>
+                                    @if ($q->questionSet?->media_url)
+                                        @if (strtolower((string) $q->questionSet->media_type) === 'image')
+                                            <img src="{{ $q->questionSet->media_url }}" alt="Question media" style="max-width: 180px; max-height: 100px; margin-top: 8px;">
+                                        @else
+                                            <audio controls preload="none" src="{{ $q->questionSet->media_url }}" style="max-width: 220px; margin-top: 8px;"></audio>
                                         @endif
+                                    @endif
+
+                                    @if ($options->isNotEmpty())
+                                        <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;">
+                                            @foreach ($options as $option)
+                                                <span class="{{ $option->is_correct ? 'q-ans-pill' : 'q-opt-options' }}">
+                                                    {{ $option->label }}. {{ $option->content }}
+                                                </span>
+                                            @endforeach
+                                        </div>
+                                    @endif
+
+                                    @if ($q->explanation)
+                                        <div class="q-opt-options" style="display: block; margin-top: 6px;">
+                                            {{ \Illuminate\Support\Str::limit($q->explanation, 160) }}
+                                        </div>
                                     @endif
                                 </td>
 
@@ -673,43 +580,107 @@
                 </div>
 
                 <div class="user-pagination">
-                    {{-- Nút về trang đầu |< --}}
-                    <a href="{{ $questions->url(1) }}" class="page-btn {{ $questions->onFirstPage() ? 'disabled' : '' }}" title="Trang đầu">
-                        &verbar;&lt;
-                    </a>
-
-                    {{-- Nút trang trước < --}}
-                    <a href="{{ $questions->previousPageUrl() }}" class="page-btn {{ $questions->onFirstPage() ? 'disabled' : '' }}" title="Trang trước">
-                        &lt;
-                    </a>
-
-                    {{-- Trang 1 (Active) --}}
-                    <a href="{{ $questions->url(1) }}" class="page-btn {{ $questions->currentPage() === 1 ? 'active' : '' }}">1</a>
-
-                    @if ($questions->lastPage() >= 2)
-                        <a href="{{ $questions->url(2) }}" class="page-btn {{ $questions->currentPage() === 2 ? 'active' : '' }}">2</a>
+                    {{-- Nút về trang đầu (ChevronsLeft) --}}
+                    @if ($questions->onFirstPage())
+                        <span class="page-btn disabled" title="Trang đầu" aria-disabled="true">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="11 17 6 12 11 7"></polyline>
+                                <polyline points="18 17 13 12 18 7"></polyline>
+                            </svg>
+                        </span>
                     @else
-                        <span class="page-btn">2</span>
+                        <a href="{{ $questions->url(1) }}" class="page-btn" title="Trang đầu">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="11 17 6 12 11 7"></polyline>
+                                <polyline points="18 17 13 12 18 7"></polyline>
+                            </svg>
+                        </a>
                     @endif
 
-                    @if ($questions->lastPage() >= 3)
-                        <a href="{{ $questions->url(3) }}" class="page-btn {{ $questions->currentPage() === 3 ? 'active' : '' }}">3</a>
+                    {{-- Nút trang trước (ChevronLeft) --}}
+                    @if ($questions->onFirstPage())
+                        <span class="page-btn disabled" title="Trang trước" aria-disabled="true">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="15 18 9 12 15 6"></polyline>
+                            </svg>
+                        </span>
                     @else
-                        <span class="page-btn">3</span>
+                        <a href="{{ $questions->previousPageUrl() }}" class="page-btn" title="Trang trước">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="15 18 9 12 15 6"></polyline>
+                            </svg>
+                        </a>
                     @endif
 
-                    <span class="page-btn disabled">...</span>
-                    <span class="page-btn">1,779</span>
+                    {{-- Dynamic Page Numbers --}}
+                    @php
+                        $cur = $questions->currentPage();
+                        $last = $questions->lastPage();
+                    @endphp
 
-                    {{-- Nút trang sau > --}}
-                    <a href="{{ $questions->nextPageUrl() ?: '#' }}" class="page-btn {{ !$questions->hasMorePages() ? 'disabled' : '' }}" title="Trang sau">
-                        &gt;
-                    </a>
+                    @if ($last <= 7)
+                        @for ($i = 1; $i <= $last; $i++)
+                            @if ($i === $cur)
+                                <span class="page-btn active">{{ $i }}</span>
+                            @else
+                                <a href="{{ $questions->url($i) }}" class="page-btn">{{ $i }}</a>
+                            @endif
+                        @endfor
+                    @else
+                        @if ($cur > 3)
+                            <a href="{{ $questions->url(1) }}" class="page-btn">1</a>
+                            @if ($cur > 4)
+                                <span class="page-btn disabled">...</span>
+                            @endif
+                        @endif
 
-                    {{-- Nút về trang cuối >| --}}
-                    <a href="{{ $questions->url($questions->lastPage()) }}" class="page-btn {{ !$questions->hasMorePages() ? 'disabled' : '' }}" title="Trang cuối">
-                        &gt;&verbar;
-                    </a>
+                        @for ($i = max(1, $cur - 2); $i <= min($last, $cur + 2); $i++)
+                            @if ($i === $cur)
+                                <span class="page-btn active">{{ $i }}</span>
+                            @else
+                                <a href="{{ $questions->url($i) }}" class="page-btn">{{ $i }}</a>
+                            @endif
+                        @endfor
+
+                        @if ($cur < $last - 2)
+                            @if ($cur < $last - 3)
+                                <span class="page-btn disabled">...</span>
+                            @endif
+                            <a href="{{ $questions->url($last) }}" class="page-btn">{{ $last }}</a>
+                        @endif
+                    @endif
+
+                    {{-- Nút trang sau (ChevronRight) --}}
+                    @if ($questions->hasMorePages())
+                        <a href="{{ $questions->nextPageUrl() }}" class="page-btn" title="Trang sau">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </a>
+                    @else
+                        <span class="page-btn disabled" title="Trang sau" aria-disabled="true">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </span>
+                    @endif
+
+                    {{-- Nút về trang cuối (ChevronsRight) --}}
+                    @if ($questions->hasMorePages())
+                        <a href="{{ $questions->url($questions->lastPage()) }}" class="page-btn" title="Trang cuối">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="13 17 18 12 13 7"></polyline>
+                                <polyline points="6 17 11 12 6 7"></polyline>
+                            </svg>
+                        </a>
+                    @else
+                        <span class="page-btn disabled" title="Trang cuối" aria-disabled="true">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="13 17 18 12 13 7"></polyline>
+                                <polyline points="6 17 11 12 6 7"></polyline>
+                            </svg>
+                        </span>
+                    @endif
                 </div>
             </div>
         </div>

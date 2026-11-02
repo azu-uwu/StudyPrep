@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Models\AnswerOption;
 use App\Models\ExamSection;
 use App\Models\Question;
+use App\Models\QuestionSet;
 use App\Models\QuestionType;
 use App\Models\Skill;
 use App\Models\User;
@@ -46,15 +48,33 @@ class QuestionControllerTest extends TestCase
         $skill = Skill::create(['skill_id' => 1, 'code' => 'LC', 'skill_name' => 'Listening']);
         $section = ExamSection::create(['section_id' => 1, 'skill_id' => 1, 'code' => 'PART1', 'name' => 'Part 1', 'sequence_no' => 1]);
         $type = QuestionType::create(['question_type_id' => 1, 'name' => 'Multiple Choice', 'response_mode' => 'SINGLE_CHOICE']);
+        $questionSet = QuestionSet::create([
+            'title' => 'Admin test set',
+            'media_url' => 'https://example.test/question.png',
+            'media_type' => 'image',
+        ]);
 
         Question::create([
             'question_id' => 10892,
             'section_id' => 1,
             'question_type_id' => 1,
+            'question_set_id' => $questionSet->question_set_id,
             'content' => 'Sample Question Content for TOEIC test',
             'difficulty' => 'MEDIUM',
             'points' => 1,
             'status' => 'ACTIVE',
+        ]);
+        AnswerOption::create([
+            'question_id' => 10892,
+            'label' => 'A',
+            'content' => 'Sample option A',
+            'is_correct' => true,
+        ]);
+        AnswerOption::create([
+            'question_id' => 10892,
+            'label' => 'B',
+            'content' => 'Sample option B',
+            'is_correct' => false,
         ]);
 
         $response = $this->actingAs($admin)->get(route('admin.questions.index'));
@@ -69,6 +89,51 @@ class QuestionControllerTest extends TestCase
         $response->assertSee('Cần kiểm duyệt');
         $response->assertSee('Xuất Excel');
         $response->assertSee('Sample Question Content for TOEIC test');
+        $response->assertSee('Sample option A');
+        $response->assertSee('https://example.test/question.png');
+    }
+
+    public function test_admin_can_filter_archived_questions_by_part_and_skill(): void
+    {
+        $admin = User::factory()->admin()->create();
+        Skill::create(['skill_id' => 1, 'code' => 'LC', 'skill_name' => 'Listening']);
+        ExamSection::create([
+            'section_id' => 1,
+            'skill_id' => 1,
+            'code' => 'PART5',
+            'name' => 'Part 5',
+            'sequence_no' => 5,
+        ]);
+        QuestionType::create([
+            'question_type_id' => 1,
+            'name' => 'Multiple Choice',
+            'response_mode' => 'SINGLE_CHOICE',
+        ]);
+
+        Question::create([
+            'section_id' => 1,
+            'question_type_id' => 1,
+            'content' => 'Archived filtered question',
+            'difficulty' => 'MEDIUM',
+            'status' => 'ARCHIVED',
+        ]);
+        Question::create([
+            'section_id' => 1,
+            'question_type_id' => 1,
+            'content' => 'Active unfiltered question',
+            'difficulty' => 'MEDIUM',
+            'status' => 'ACTIVE',
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.questions.index', [
+            'skill' => 'LC',
+            'part' => 'PART5',
+            'status' => 'ARCHIVED',
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('Archived filtered question');
+        $response->assertDontSee('Active unfiltered question');
     }
 
     public function test_admin_can_create_new_question(): void

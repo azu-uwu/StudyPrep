@@ -23,6 +23,9 @@
 <body class="admin-body">
     @php
         $navActive = $active ?? 'dashboard';
+        $currentAdmin = auth()->user();
+        $adminDisplayName = $currentAdmin->full_name ?? $currentAdmin->user_name ?? 'Nguyễn Admin';
+        $adminDisplayRole = ($currentAdmin->role ?? 'admin') === 'admin' ? 'Super Admin' : ucfirst($currentAdmin->role ?? 'Admin');
     @endphp
 
     {{-- Mobile backdrop --}}
@@ -33,7 +36,7 @@
 
     {{-- Main Container --}}
     <div class="admin-main-wrap">
-        {{-- Topbar Header (Matches Image 2) --}}
+        {{-- Topbar Header --}}
         <header class="admin-topbar">
             <div class="admin-topbar-left">
                 <button type="button" class="admin-mobile-toggle" onclick="toggleAdminSidebar()" aria-label="Mở menu">
@@ -43,20 +46,41 @@
                         <line x1="3" y1="18" x2="21" y2="18"></line>
                     </svg>
                 </button>
-                <a href="{{ route('admin.dashboard') }}" class="admin-topbar-mobile-logo" title="StudyPrep Admin">
-                    <img class="sp-sidebar__logo" src="{{ asset('images/logo.svg') }}" alt="StudyPrep">
-                </a>
                 <div class="admin-breadcrumb-top">
                     @hasSection('top_breadcrumb')
                         @yield('top_breadcrumb')
                     @else
                         <span>Hệ thống</span>
-                        <span class="crumb-arrow">></span>
-                        <span>Quản trị người dùng</span>
+                        <span class="crumb-arrow">&gt;</span>
+                        <span class="crumb-active">@yield('title', 'Quản trị hệ thống')</span>
                     @endif
                 </div>
             </div>
 
+            <div class="admin-topbar-right">
+                <div class="admin-topbar-user">
+                    <div class="admin-topbar-avatar" title="{{ $adminDisplayName }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </div>
+                    <div class="admin-topbar-user-meta">
+                        <span class="admin-topbar-user-name" title="{{ $adminDisplayName }}">{{ $adminDisplayName }}</span>
+                        <span class="admin-topbar-user-role">{{ $adminDisplayRole }}</span>
+                    </div>
+                    <form method="POST" action="{{ route('admin.logout') }}" style="margin: 0;">
+                        @csrf
+                        <button type="submit" class="admin-topbar-logout-btn" title="Đăng xuất" aria-label="Đăng xuất">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                <polyline points="16 17 21 12 16 7"></polyline>
+                                <line x1="21" y1="12" x2="9" y2="12"></line>
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
         </header>
 
         {{-- Content Area --}}

@@ -185,6 +185,7 @@
         <div class="user-filter-select-wrap">
             <select name="role" class="user-filter-select" onchange="this.form.submit()">
                 <option value="all" {{ $filters['role'] === 'all' ? 'selected' : '' }}>Tất cả vai trò</option>
+                <option value="learner" {{ $filters['role'] === 'learner' ? 'selected' : '' }}>Học viên</option>
                 <option value="user" {{ $filters['role'] === 'user' ? 'selected' : '' }}>Học viên</option>
                 <option value="teacher" {{ $filters['role'] === 'teacher' ? 'selected' : '' }}>Giảng viên TOEIC</option>
                 <option value="admin" {{ $filters['role'] === 'admin' ? 'selected' : '' }}>Quản trị viên</option>
@@ -248,8 +249,7 @@
                         <th>NGƯỜI DÙNG</th>
                         <th>VAI TRÒ</th>
                         <th>GÓI ĐĂNG KÝ</th>
-                        <th>TIẾN ĐỘ & ĐIỂM ƯỚC TÍNH</th>
-                        <th>LẦN ONLINE CUỐI</th>
+                        <th>ENERGY / LƯỢT THI</th>
                         <th>TRẠNG THÁI</th>
                         <th class="admin-actions-heading">THAO TÁC</th>
                     </tr>
@@ -257,7 +257,6 @@
                 <tbody>
                     @forelse ($users as $user)
                         @php
-                            $progress = $user->progress_info;
                             $isTeacher = in_array(strtolower((string)$user->role), ['teacher', 'instructor', 'giang_vien'], true);
                         @endphp
                         <tr>
@@ -309,32 +308,17 @@
 
                             {{-- Gói đăng ký --}}
                             <td>
-                                <div class="package-title">{{ $user->package_title }}</div>
-                                <div class="package-sub">{{ $user->package_subtitle }}</div>
+                                <div class="package-title">Chưa ghi nhận</div>
+                                <div class="package-sub">Gói đăng ký chưa có trong schema hiện tại</div>
                             </td>
 
-                            {{-- Tiến độ & Điểm ước tính --}}
+                            {{-- Số dư energy và lượt thi --}}
                             <td>
                                 <div class="progress-cell-wrap">
                                     <div class="progress-info-row">
-                                        <span class="progress-score-main">{{ $progress['stat1'] }}</span>
-                                        <span class="progress-sub-text">{{ $progress['stat2'] }}</span>
+                                        <span class="progress-score-main">{{ number_format($user->energy) }} energy</span>
+                                        <span class="progress-sub-text">{{ number_format($user->attempts_count) }} lượt thi</span>
                                     </div>
-                                    <div class="progress-bar-track">
-                                        <div class="progress-bar-fill"
-                                             style="width: {{ $progress['percent'] }}%; background-color: {{ $progress['color'] }};">
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
-
-                            {{-- Lần online cuối --}}
-                            <td>
-                                <div class="online-cell">
-                                    @if ($user->last_online_text === 'Vừa xong')
-                                        <span class="online-dot"></span>
-                                    @endif
-                                    <span>{{ $user->last_online_text }}</span>
                                 </div>
                             </td>
 

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\ExamSection;
+use App\Models\Feedback;
 use App\Models\Question;
 use App\Models\QuestionType;
 use App\Models\ScoreResult;
@@ -52,9 +53,9 @@ class DashboardControllerTest extends TestCase
 
         $response->assertOk();
         $response->assertViewIs('admin.dashboard');
-        $response->assertSee('Tổng học viên');
+        $response->assertSee('Tổng người dùng');
         $response->assertSee('Chưa có lượt thi thử nào trong hệ thống.');
-        $response->assertSee('Không có câu hỏi nào đang chờ duyệt.');
+        $response->assertSee('Không có phản ánh câu hỏi cần duyệt.');
         $response->assertSee('Chưa có lượt thi thử trong tuần này.');
     }
 
@@ -118,6 +119,15 @@ class DashboardControllerTest extends TestCase
             'status' => 'PENDING',
             'created_at' => now(),
         ]);
+        $pendingQuestion = Question::query()->where('status', 'PENDING')->firstOrFail();
+        Feedback::query()->create([
+            'user_id' => $learner->user_id,
+            'question_id' => $pendingQuestion->question_id,
+            'content' => 'Phương án đúng cần được kiểm tra lại.',
+            'status' => 'PENDING',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
         Question::query()->create([
             'section_id' => $section->section_id,
@@ -137,7 +147,7 @@ class DashboardControllerTest extends TestCase
         $response = $this->actingAs($admin)->get(route('admin.dashboard'));
 
         $response->assertOk();
-        $response->assertViewHas('learnerStats', function (array $stats): bool {
+        $response->assertViewHas('userStats', function (array $stats): bool {
             return $stats['total'] === 3 && $stats['active'] === 2 && $stats['locked'] === 1;
         });
         $response->assertViewHas('questionStats', function (array $stats): bool {
@@ -149,11 +159,12 @@ class DashboardControllerTest extends TestCase
         $response->assertViewHas('vocabularyTotal', 1);
         $response->assertSee('Trần Học Viên');
         $response->assertSee('Đề TOEIC Test 01');
-        $response->assertSee('PART5');
+        $response->assertSee('Incomplete Sentences');
         $response->assertSee('Reading');
+        $response->assertSee('Phương án đúng cần được kiểm tra lại.');
     }
 
-    public function test_admin_dashboard_renders_shared_sidebar_and_ui_mockup_elements(): void
+    public function test_admin_dashboard_renders_shared_sidebar_and_dynamic_empty_states(): void
     {
         $admin = User::factory()->admin()->create(['full_name' => 'Nguyễn Admin']);
 
@@ -187,19 +198,18 @@ class DashboardControllerTest extends TestCase
         $response->assertSee('StudyPREP Global');
 
         // Check KPI cards
-        $response->assertSee('HỌC VIÊN HOẠT ĐỘNG');
+        $response->assertSee('NGƯỜI DÙNG HOẠT ĐỘNG');
         $response->assertSee('LƯỢT LÀM BÀI HÔM NAY');
 
         // Check Chart Section
         $response->assertSee('Xu hướng luyện thi & Lượt nộp bài', false);
         $response->assertSee('Listening & Reading', false);
         $response->assertSee('Writing & Speaking AI', false);
-        $response->assertSee('Cập nhật 5 phút trước');
+        $response->assertSee('Cập nhật '.now()->format('H:i'));
 
         // Check Review Queue Section
         $response->assertSee('Hàng đợi kiểm duyệt & Chấm bài', false);
-        $response->assertSee('Phản ánh câu hỏi #Q-4402 (Part 5 Incomplete Sentences)');
-        $response->assertSee('Cần duyệt');
-        $response->assertSee('Xem câu hỏi');
+        $response->assertSee('Không có phản ánh câu hỏi cần duyệt.');
+        $response->assertDontSee('Q-4402');
     }
 }

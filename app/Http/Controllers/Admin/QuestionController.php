@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AnswerOption;
 use App\Models\ExamSection;
+use App\Models\Feedback;
 use App\Models\Question;
 use App\Models\QuestionSet;
 use App\Models\QuestionType;
@@ -24,10 +25,10 @@ class QuestionController extends Controller
     public function index(Request $request): View
     {
         $search = trim((string) $request->input('search', ''));
-        $skill = $request->input('skill', 'all');
-        $part = $request->input('part', 'all');
+        $skill = strtoupper((string) $request->input('skill', 'all'));
+        $part = strtoupper((string) $request->input('part', 'all'));
         $difficulty = $request->input('difficulty', 'all');
-        $status = $request->input('status', 'all');
+        $status = strtoupper((string) $request->input('status', 'all'));
         $tag = $request->input('tag', 'all');
         $perPage = (int) $request->input('per_page', 10);
         if ($perPage < 5 || $perPage > 100) {
@@ -35,7 +36,12 @@ class QuestionController extends Controller
         }
 
         $query = Question::query()
-            ->with(['section.skill', 'questionType', 'options']);
+            ->with(['section.skill', 'questionType', 'questionSet', 'options'])
+            ->withCount([
+                'responses',
+                'responses as correct_responses_count' => fn ($responseQuery) => $responseQuery
+                    ->whereColumn('attempt_response.score', '>=', 'questions.points'),
+            ]);
 
         // 1. Tìm kiếm theo Mã ID (#Q-10892), từ khóa, nội dung, giải thích
         if ($search !== '') {
@@ -69,9 +75,11 @@ class QuestionController extends Controller
             $query->where('difficulty', $difficulty);
         }
 
-        // 5. Lọc theo Trạng thái (ACTIVE, REPORTED, PENDING, DRAFT)
-        if ($status !== 'all') {
-            $query->where('status', strtoupper($status));
+        // 5. Chỉ nhận các trạng thái được hỗ trợ bởi giao diện quản trị.
+        if (in_array($status, ['ACTIVE', 'PENDING', 'DRAFT', 'ARCHIVED', 'REPORTED'], true)) {
+            $query->where('status', $status);
+        } else {
+            $status = 'all';
         }
 
         // Sắp xếp mặc định: Câu báo lỗi / chờ duyệt lên đầu, rồi theo thứ tự ID
@@ -85,11 +93,15 @@ class QuestionController extends Controller
         $totalReportedDb = Question::where('status', 'REPORTED')->count();
 
         $stats = [
-            'total' => max($totalDb, 12450),
-            'lc_rc' => 9800,
-            'sw' => 2650,
-            'reported' => max($totalReportedDb, 45),
-            'reported_feedback' => 32,
+            'total' => $totalDb,
+            'lc_rc' => Question::query()
+                ->whereHas('section.skill', fn ($query) => $query->whereIn('code', ['LC', 'RC']))
+                ->count(),
+            'sw' => Question::query()
+                ->whereHas('section.skill', fn ($query) => $query->where('code', 'SW'))
+                ->count(),
+            'reported' => $totalReportedDb,
+            'reported_feedback' => Feedback::query()->where('status', 'PENDING')->count(),
         ];
 
         $skills = Skill::all();
