@@ -10,6 +10,7 @@ use App\Models\Question;
 use App\Models\QuestionSet;
 use App\Models\QuestionType;
 use App\Models\Skill;
+use App\Services\ExamSampleDataService;
 use App\Services\TextToSpeechService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -129,16 +130,36 @@ class QuestionController extends Controller
     /**
      * Màn hình tạo mới câu hỏi TOEIC.
      */
-    public function create(): View
+    public function create(Request $request): View
     {
         $skills = Skill::all();
         $sections = ExamSection::with('skill')->orderBy('sequence_no')->get();
         $questionTypes = QuestionType::all();
 
+        $testContext = null;
+        $testId = $request->query('test_id');
+        $sectionId = $request->query('section_id');
+
+        if ($testId) {
+            $examService = app(ExamSampleDataService::class);
+            $test = $examService->findTest($testId);
+            if ($test) {
+                $targetSection = $sections->firstWhere('section_id', (int) $sectionId);
+                $testContext = [
+                    'test_id' => $test['id'],
+                    'test_title' => $test['title'],
+                    'test_code' => $test['code'],
+                    'section_id' => $sectionId ? (int) $sectionId : null,
+                    'section_name' => $targetSection ? $targetSection->name : null,
+                ];
+            }
+        }
+
         return view('admin.questions.create', [
             'skills' => $skills,
             'sections' => $sections,
             'questionTypes' => $questionTypes,
+            'testContext' => $testContext,
         ]);
     }
 

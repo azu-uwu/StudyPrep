@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\QuestionController;
 use App\Http\Controllers\Admin\SessionController;
+use App\Http\Controllers\Admin\TestController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VocabularyController;
 use App\Http\Controllers\AuthController;
@@ -101,6 +102,13 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
         Route::get('/users/export', [UserController::class, 'export'])->name('users.export');
         Route::post('/users/import', [UserController::class, 'import'])->name('users.import');
+
+        // Quản lý đề thi
+        Route::get('/tests', [TestController::class, 'index'])->name('tests.index');
+        Route::post('/tests', [TestController::class, 'store'])->name('tests.store');
+        Route::get('/tests/{id}', [TestController::class, 'show'])->name('tests.show');
+        Route::redirect('/de-thi', '/admin/tests');
+
         // Ngân hàng câu hỏi
         Route::get('/questions', [QuestionController::class, 'index'])->name('questions.index');
         Route::get('/questions/create', [QuestionController::class, 'create'])->name('questions.create');

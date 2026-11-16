@@ -5,9 +5,17 @@
 @section('top_breadcrumb')
     <span>Hệ thống</span>
     <span class="crumb-arrow">></span>
-    <a href="{{ route('admin.questions.index') }}" style="color: inherit; text-decoration: none;">Ngân hàng câu hỏi</a>
-    <span class="crumb-arrow">></span>
-    <span style="color: var(--admin-primary); font-weight: 600;">Thêm câu hỏi TOEIC mới</span>
+    @if (!empty($testContext))
+        <a href="{{ route('admin.tests.index') }}" style="color: inherit; text-decoration: none;">Quản lý đề thi</a>
+        <span class="crumb-arrow">></span>
+        <a href="{{ route('admin.tests.show', $testContext['test_id']) }}" style="color: inherit; text-decoration: none;">{{ $testContext['test_title'] }}</a>
+        <span class="crumb-arrow">></span>
+        <span style="color: var(--admin-primary); font-weight: 600;">Thêm câu hỏi vào đề</span>
+    @else
+        <a href="{{ route('admin.questions.index') }}" style="color: inherit; text-decoration: none;">Ngân hàng câu hỏi</a>
+        <span class="crumb-arrow">></span>
+        <span style="color: var(--admin-primary); font-weight: 600;">Thêm câu hỏi TOEIC mới</span>
+    @endif
 @endsection
 
 @section('content')
@@ -19,13 +27,31 @@
         <input type="hidden" name="question_type_id" value="1">
         <input type="hidden" name="difficulty" id="difficultyInput" value="{{ old('difficulty', 'MEDIUM') }}">
         <input type="hidden" name="points" value="{{ old('points', '1.00') }}">
+        @if (!empty($testContext))
+            <input type="hidden" name="test_id" value="{{ $testContext['test_id'] }}">
+        @endif
 
         {{-- Header & Top Action Buttons --}}
         <div class="qcreate-header">
             <div class="qcreate-title-wrap">
-                <h1 class="qcreate-page-title">Thêm câu hỏi TOEIC mới</h1>
+                <h1 class="qcreate-page-title">
+                    @if (!empty($testContext))
+                        Thêm câu hỏi vào đề: {{ $testContext['test_title'] }}
+                    @else
+                        Thêm câu hỏi TOEIC mới
+                    @endif
+                </h1>
             </div>
             <div class="qcreate-header-actions">
+                @if (!empty($testContext))
+                    <a href="{{ route('admin.tests.show', $testContext['test_id']) }}" class="qcreate-btn-top" style="text-decoration: none;" title="Quay lại đề thi">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                        <span>Quay lại đề thi</span>
+                    </a>
+                @endif
                 <button type="submit" name="action_type" value="draft" class="qcreate-btn-top" title="Lưu bản nháp câu hỏi">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
@@ -45,7 +71,7 @@
         </div>
 
         {{-- Thông báo lỗi validation nếu có --}}
-        @if ($errors->any())
+        @if (isset($errors) && $errors->any())
             <div style="background-color: #fee2e2; border: 1px solid #fecaca; color: #be123c; padding: 12px 18px; border-radius: 12px; margin-bottom: 20px; font-size: 14px;">
                 <div style="font-weight: 700; margin-bottom: 4px;">Có lỗi xảy ra khi lưu câu hỏi:</div>
                 <ul style="margin: 0; padding-left: 20px;">
@@ -53,6 +79,33 @@
                         <li>{{ $err }}</li>
                     @endforeach
                 </ul>
+            </div>
+        @endif
+
+        {{-- Banner ngữ cảnh nếu thêm từ Đề thi cụ thể --}}
+        @if (!empty($testContext))
+            <div style="background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%); border: 1.5px solid #c7d2fe; border-radius: 14px; padding: 14px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; box-shadow: 0 2px 8px rgba(79, 70, 229, 0.06);">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 38px; height: 38px; border-radius: 10px; background: #4338ca; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <div style="font-size: 12px; font-weight: 700; color: #4338ca; text-transform: uppercase; letter-spacing: 0.5px;">Ngữ cảnh đề thi đang thao tác</div>
+                        <div style="font-size: 14.5px; font-weight: 700; color: #1e1b4b; margin-top: 2px;">
+                            Đề thi: <span style="color: #4f46e5;">{{ $testContext['test_title'] }}</span> ({{ $testContext['test_code'] }})
+                            @if (!empty($testContext['section_name']))
+                                <span style="color: #94a3b8; margin: 0 6px;">&bull;</span>
+                                Phần thi mục tiêu: <span style="color: #0f172a;">{{ $testContext['section_name'] }}</span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+                <div style="font-size: 13px; color: #64748b; background: #ffffff; padding: 6px 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    Chế độ: <strong>Gắn trực tiếp vào đề thi</strong>
+                </div>
             </div>
         @endif
 
@@ -101,9 +154,11 @@
                     <select name="section_id" id="sectionSelect" class="qcreate-input-control" required onchange="updateSimHeader()">
                         @foreach ($sections as $sec)
                             @php
+                                $selectedSecId = old('section_id', $testContext['section_id'] ?? null);
                                 $isPart5 = str_contains($sec->section_name, 'Part 5') || $sec->section_id == 5;
+                                $isSelected = $selectedSecId ? ($selectedSecId == $sec->section_id) : $isPart5;
                             @endphp
-                            <option value="{{ $sec->section_id }}" {{ (old('section_id') == $sec->section_id || (!old('section_id') && $isPart5)) ? 'selected' : '' }}>
+                            <option value="{{ $sec->section_id }}" {{ $isSelected ? 'selected' : '' }}>
                                 {{ $sec->section_name }}
                             </option>
                         @endforeach
@@ -114,7 +169,7 @@
                 <div class="qcreate-field-group">
                     <label class="qcreate-field-label">Bộ đề / Nguồn trích xuất</label>
                     <div class="qcreate-input-icon-wrap">
-                        <input type="text" name="source_set" class="qcreate-input-control" value="{{ old('source_set', 'ETS TOEIC 2024 - Test 03') }}">
+                        <input type="text" name="source_set" class="qcreate-input-control" value="{{ old('source_set', $testContext['test_title'] ?? 'ETS TOEIC 2024 - Test 03') }}">
                         <span class="qcreate-icon-suffix" title="Sao chép nguồn" onclick="navigator.clipboard.writeText('ETS TOEIC 2024 - Test 03')">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>

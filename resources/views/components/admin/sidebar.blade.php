@@ -47,8 +47,8 @@
             <div class="admin-nav-group">
                 <div class="admin-nav-group-title">QUẢN LÝ ĐÀO TẠO</div>
                 <ul class="admin-nav-list">
-                    <li class="admin-nav-item {{ $active === 'de-thi' ? 'active' : '' }}">
-                        <a href="#de-thi">
+                    <li class="admin-nav-item {{ in_array($active, ['de-thi', 'tests']) ? 'active' : '' }}">
+                        <a href="{{ route('admin.tests.index') }}">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
                                 <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
