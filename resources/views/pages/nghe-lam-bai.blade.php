@@ -54,7 +54,7 @@
                 &larr;Câu trước
             </button>
 
-            <button type="button" class="sp-lexam-explain-toggle-btn {{ $isReview ? 'is-active' : '' }}" id="explainToggleBtn" onclick="toggleTranscriptDrawer()">
+            <button type="button" class="sp-lexam-explain-toggle-btn {{ $isReview ? 'is-active' : '' }}" id="explainToggleBtn" onclick="toggleTranscriptDrawer()" style="{{ $isReview ? '' : 'display: none;' }}">
                 <span style="font-size: 15px;">💡</span>
                 <span>Giải thích</span>
             </button>
@@ -67,9 +67,15 @@
         {{-- Khung 3 cột (hoặc 2 cột): Media/Audio | Transcript Drawer | Chọn đáp án --}}
         <div class="sp-lexam-grid">
 
-            {{-- CỘT TRÁI: Câu hỏi + Audio player + Ảnh Part 1 --}}
+            {{-- CỘT TRÁI: Câu hỏi + Audio player + Ảnh Part 1 / Biểu đồ Part 3,4 --}}
             <div class="sp-lexam-media-card">
-                <h2 class="sp-lexam-qnum-title" id="questionTitle">Câu 6</h2>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px;">
+                    <h2 class="sp-lexam-qnum-title" id="questionTitle" style="margin: 0;">Câu 1</h2>
+                    <span id="questionPartPill" style="font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: #e0f2fe; color: #0369a1;">Part 1</span>
+                </div>
+
+                {{-- Thẻ audio HTML5 dùng chung cho MP3 thực tế --}}
+                <audio id="studentMp3Player" preload="metadata" style="display: none;"></audio>
 
                 {{-- Trình phát Audio --}}
                 <div class="sp-lexam-audio-player">
@@ -153,6 +159,8 @@
             <div class="sp-lexam-answer-card">
                 <h3 class="sp-answer-card-title">Chọn đáp án</h3>
 
+                <div id="questionStemBox" style="display: none; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; font-size: 14.5px; font-weight: 700; color: #0f172a; line-height: 1.55;"></div>
+
                 <div class="sp-answer-options-list" id="answerOptionsList">
                     {{-- Render động bằng JS --}}
                 </div>
@@ -190,13 +198,17 @@
             @csrf
             <input type="hidden" name="total_count" value="{{ count($questions) }}">
             <input type="hidden" name="time_spent" id="timeSpentInput" value="0">
+            @foreach ($questions as $qItem)
+                <input type="hidden" name="question_ids[]" value="{{ $qItem['id'] }}">
+            @endforeach
         </form>
 
     </main>
 
     {{-- Script điều khiển --}}
+    <script src="{{ asset('js/toeic-audio-player.js') }}"></script>
     <script>
-        const questionsData = {!! json_encode($questions, JSON_UNESCAPED_UNICODE) !!};
+        const questionsData = {!! json_encode($questions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!};
         const isReviewMode = @json($isReview);
         const initialUserAnswers = {!! json_encode($userAnswers, JSON_UNESCAPED_UNICODE) !!};
 
@@ -220,8 +232,12 @@
             const pct = Math.round(((currentIndex + 1) / questionsData.length) * 100);
             document.getElementById('progressBarFill').style.width = pct + '%';
 
-            // 2. Cột trái: Tiêu đề & Ảnh
+            // 2. Cột trái: Tiêu đề, Part & Ảnh
             document.getElementById('questionTitle').textContent = 'Câu ' + q.question_number;
+            const partPill = document.getElementById('questionPartPill');
+            if (partPill) {
+                partPill.textContent = q.part || ('Part ' + (q.part_number || 1));
+            }
             const photoWrap = document.getElementById('photoWrap');
             const photoImg = document.getElementById('questionPhoto');
             if (q.image) {
@@ -232,13 +248,43 @@
             }
 
             // 3. Audio Player reset
-            totalSeconds = q.audio_duration_seconds || 29;
-            currentSecond = Math.min(14, totalSeconds);
-            document.getElementById('audioTotalDuration').textContent = q.audio_duration || '00:29';
+            if (window.ToeicAudioPlayer) {
+                window.ToeicAudioPlayer.stop();
+            }
+            isPlaying = false;
+            document.getElementById('playIcon').style.display = 'block';
+            document.getElementById('pauseIcon').style.display = 'none';
+            totalSeconds = q.audio_duration_seconds || 20;
+            currentSecond = 0;
+            document.getElementById('audioTotalDuration').textContent = q.audio_duration || '00:20';
             document.getElementById('audioSlider').max = totalSeconds;
             updateAudioDisplay();
 
-            // 4. Cột giữa: Transcript & Lời dịch
+            // 4. Quy tắc TOEIC chuẩn:
+            // - Part 1 & 2: Ẩn văn bản câu hỏi/đáp án khi làm bài; chỉ mở sau khi nộp bài (isReviewMode)
+            // - Part 3 & 4: Hiện sẵn câu hỏi & 4 phương án A/B/C/D; ẩn transcript hội thoại cho tới khi nộp bài
+            const partNum = Number(q.part_number || 1);
+            const stemBox = document.getElementById('questionStemBox');
+            if (stemBox) {
+                if ((partNum >= 3 || isReviewMode) && q.content) {
+                    stemBox.textContent = q.content;
+                    stemBox.style.display = 'block';
+                } else {
+                    stemBox.style.display = 'none';
+                }
+            }
+
+            const explainBtn = document.getElementById('explainToggleBtn');
+            const transcriptCard = document.getElementById('transcriptCard');
+            if (explainBtn) {
+                explainBtn.style.display = isReviewMode ? 'inline-flex' : 'none';
+            }
+            if (transcriptCard && !isReviewMode) {
+                transcriptCard.classList.remove('is-visible');
+                isDrawerOpen = false;
+            }
+
+            // Cột giữa: Transcript & Lời dịch (chỉ hiển thị nội dung khi isReviewMode)
             document.getElementById('transcriptBadgeNum').textContent = q.question_number;
             renderTranscriptContent();
 
@@ -278,6 +324,8 @@
             const container = document.getElementById('answerOptionsList');
             let html = '';
             const opts = q.options;
+            const partNum = Number(q.part_number || 1);
+            const showOptionText = (partNum >= 3 || isReviewMode);
 
             const userPick = userAnswers[q.id] || null;
             const isCorrect = userPick === q.correct;
@@ -302,10 +350,14 @@
                 }
 
                 const clickAction = !isReviewMode ? `onclick="selectOption(${q.id}, '${letter}')"` : '';
+                const optionTextHtml = showOptionText
+                    ? `<span style="font-size: 14px; color: #1e293b; font-weight: 600; line-height: 1.45;">${String(text || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`
+                    : '';
 
                 html += `
                     <div class="sp-answer-option-row" ${clickAction}>
                         <div class="sp-answer-circle ${circleClass}">${letter}</div>
+                        ${optionTextHtml}
                         ${extraLabel}
                     </div>
                 `;
@@ -414,53 +466,103 @@
         }
 
         function playAudio() {
-            isPlaying = true;
-            document.getElementById('playIcon').style.display = 'none';
-            document.getElementById('pauseIcon').style.display = 'block';
-
-            // Đọc thử bằng Web Speech nếu trình duyệt hỗ trợ
             const q = questionsData[currentIndex];
-            if ('speechSynthesis' in window && q.audio_text) {
-                window.speechSynthesis.cancel();
-                const utter = new SpeechSynthesisUtterance(q.audio_text);
-                utter.lang = 'en-US';
-                utter.rate = 0.9;
-                window.speechSynthesis.speak(utter);
-            }
+            if (!q || !window.ToeicAudioPlayer) return;
 
-            clearInterval(audioTimer);
-            audioTimer = setInterval(function() {
-                if (currentSecond < totalSeconds) {
-                    currentSecond++;
+            const audioEl = document.getElementById('studentMp3Player');
+            const callbacks = {
+                onPlay: function(dur) {
+                    isPlaying = true;
+                    document.getElementById('playIcon').style.display = 'none';
+                    document.getElementById('pauseIcon').style.display = 'block';
+                    if (dur && dur > 0) {
+                        totalSeconds = dur;
+                        document.getElementById('audioSlider').max = totalSeconds;
+                        const mm = Math.floor(totalSeconds / 60);
+                        const ss = totalSeconds % 60;
+                        document.getElementById('audioTotalDuration').textContent = (mm < 10 ? '0' : '') + mm + ':' + (ss < 10 ? '0' : '') + ss;
+                    }
+                },
+                onMetadata: function(dur) {
+                    if (dur && dur > 0) {
+                        totalSeconds = dur;
+                        document.getElementById('audioSlider').max = totalSeconds;
+                        const mm = Math.floor(totalSeconds / 60);
+                        const ss = totalSeconds % 60;
+                        document.getElementById('audioTotalDuration').textContent = (mm < 10 ? '0' : '') + mm + ':' + (ss < 10 ? '0' : '') + ss;
+                    }
+                },
+                onProgress: function(cur, dur) {
+                    currentSecond = cur;
+                    if (dur && dur > 0 && totalSeconds !== dur) {
+                        totalSeconds = dur;
+                        document.getElementById('audioSlider').max = totalSeconds;
+                    }
                     updateAudioDisplay();
-                } else {
-                    pauseAudio();
+                },
+                onPause: function() {
+                    isPlaying = false;
+                    document.getElementById('playIcon').style.display = 'block';
+                    document.getElementById('pauseIcon').style.display = 'none';
+                },
+                onEnded: function() {
+                    isPlaying = false;
+                    currentSecond = totalSeconds;
+                    updateAudioDisplay();
+                    document.getElementById('playIcon').style.display = 'block';
+                    document.getElementById('pauseIcon').style.display = 'none';
                 }
-            }, 1000);
+            };
+
+            if (q.audio_url) {
+                window.ToeicAudioPlayer.playMp3(audioEl, q.audio_url, callbacks);
+            } else {
+                window.ToeicAudioPlayer.playSpeech(q.audio_text || q.content || '', Object.assign({}, callbacks, {
+                    duration: q.audio_duration_seconds || 20
+                }));
+            }
         }
 
         function pauseAudio() {
             isPlaying = false;
-            clearInterval(audioTimer);
             document.getElementById('playIcon').style.display = 'block';
             document.getElementById('pauseIcon').style.display = 'none';
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
+            if (window.ToeicAudioPlayer) {
+                window.ToeicAudioPlayer.pause();
             }
         }
 
         function rewindAudio(sec) {
+            if (window.ToeicAudioPlayer && window.ToeicAudioPlayer.hasActiveHtmlAudio()) {
+                const pos = window.ToeicAudioPlayer.seekBy(-sec);
+                if (pos !== null) {
+                    currentSecond = pos;
+                    updateAudioDisplay();
+                    return;
+                }
+            }
             currentSecond = Math.max(0, currentSecond - sec);
             updateAudioDisplay();
         }
 
         function forwardAudio(sec) {
+            if (window.ToeicAudioPlayer && window.ToeicAudioPlayer.hasActiveHtmlAudio()) {
+                const pos = window.ToeicAudioPlayer.seekBy(sec);
+                if (pos !== null) {
+                    currentSecond = pos;
+                    updateAudioDisplay();
+                    return;
+                }
+            }
             currentSecond = Math.min(totalSeconds, currentSecond + sec);
             updateAudioDisplay();
         }
 
         function onAudioSliderChange(val) {
             currentSecond = parseInt(val, 10);
+            if (window.ToeicAudioPlayer && window.ToeicAudioPlayer.hasActiveHtmlAudio()) {
+                window.ToeicAudioPlayer.seekTo(currentSecond);
+            }
             updateAudioDisplay();
         }
 

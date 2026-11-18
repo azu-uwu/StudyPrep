@@ -2,27 +2,173 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Question;
+use App\Services\TextToSpeechService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 class ListeningPracticeController extends Controller
 {
     /**
-     * Ngân hàng câu hỏi Luyện kỹ năng Nghe TOEIC (Part 1 & Part 2)
-     * Khớp 100% với dữ liệu trong ảnh mẫu (Câu 6 mô tả hình, transcript, dịch nghĩa, lời giải)
+     * Lấy danh sách câu hỏi Listening trạng thái ACTIVE từ Database (kèm resolved_media_url & resolved_audio_url).
+     * Nếu DB chưa có dữ liệu Listening ACTIVE thì fallback về bộ mẫu để không gián đoạn giao diện.
+     *
+     * @param  array<int>|null  $specificIds
+     * @return array<int, array<string, mixed>>
      */
-    private function getQuestionBank(): array
+    private function loadListeningQuestions(?int $partFilter = null, int $limit = 20, ?array $specificIds = null): array
+    {
+        if (! Schema::hasTable('questions') || ! Schema::hasTable('exam_section')) {
+            return $this->getSampleQuestionBank();
+        }
+
+        $targetCodes = $partFilter && in_array($partFilter, [1, 2, 3, 4], true)
+            ? ['PART'.$partFilter]
+            : ['PART1', 'PART2', 'PART3', 'PART4'];
+
+        $query = Question::query()
+            ->with(['section', 'questionSet', 'options'])
+            ->where('status', Question::STATUS_ACTIVE)
+            ->whereHas('section', fn ($q) => $q->whereIn('code', $targetCodes));
+
+        if (! empty($specificIds)) {
+            $query->whereIn('question_id', $specificIds)->orderBy('question_id');
+        } else {
+            $query->orderBy('section_id')->orderBy('question_id')->limit($limit);
+        }
+
+        $dbQuestions = $query->get();
+        if ($dbQuestions->isEmpty()) {
+            return $this->getSampleQuestionBank();
+        }
+
+        $ttsService = app(TextToSpeechService::class);
+        $mapped = [];
+
+        foreach ($dbQuestions as $idx => $q) {
+            $partCode = strtoupper((string) ($q->section?->code ?? 'PART1'));
+            $partNumber = (int) preg_replace('/[^0-9]/', '', $partCode);
+            if ($partNumber < 1 || $partNumber > 4) {
+                $partNumber = 1;
+            }
+
+            $qSet = $q->questionSet;
+            $imageUrl = null;
+            $audioUrl = null;
+            $rawTranscript = '';
+
+            if ($qSet) {
+                $mediaUrl = $qSet->resolved_media_url;
+                $isImage = $mediaUrl !== null && (
+                    strtoupper((string) $qSet->media_type) === 'IMAGE'
+                    || preg_match('/\.(png|jpe?g|gif|webp|bmp)$/i', $mediaUrl) === 1
+                );
+                if ($isImage) {
+                    $imageUrl = $mediaUrl;
+                }
+                $audioUrl = $qSet->resolved_audio_url;
+                $rawTranscript = trim((string) ($qSet->transcript ?? ''));
+            }
+
+            $optionsMap = [];
+            $correctLabel = 'A';
+            foreach ($q->options->sortBy('label') as $opt) {
+                $lbl = strtoupper((string) $opt->label);
+                $optionsMap[$lbl] = (string) $opt->content;
+                if ($opt->is_correct) {
+                    $correctLabel = $lbl;
+                }
+            }
+            if (empty($optionsMap)) {
+                $optionsMap = $partNumber === 2
+                    ? ['A' => 'Option A', 'B' => 'Option B', 'C' => 'Option C']
+                    : ['A' => 'Option A', 'B' => 'Option B', 'C' => 'Option C', 'D' => 'Option D'];
+            }
+
+            // Kịch bản audio_text chuẩn TOEIC (cho fallback TTS nếu chưa có MP3)
+            $audioText = $qSet ? $ttsService->buildToeicListeningScript($qSet) : '';
+            if ($audioText === '') {
+                $optLines = [];
+                foreach ($optionsMap as $lbl => $txt) {
+                    $optLines[] = "({$lbl}) {$txt}";
+                }
+                $audioText = ($partNumber === 2 ? $q->content.' ' : '').implode('. ', $optLines);
+            }
+
+            $wordCount = max(1, str_word_count($audioText));
+            $durationSeconds = max(6, (int) round(($wordCount / 130) * 60));
+            $durationFormatted = sprintf('%02d:%02d', intdiv($durationSeconds, 60), $durationSeconds % 60);
+
+            // Transcript lines
+            if ($rawTranscript !== '') {
+                $transcriptLines = array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $rawTranscript) ?: [])));
+            } else {
+                $transcriptLines = [];
+                if ($partNumber >= 2) {
+                    $transcriptLines[] = (string) $q->content;
+                }
+                foreach ($optionsMap as $lbl => $txt) {
+                    $transcriptLines[] = "({$lbl}) {$txt}";
+                }
+            }
+
+            $explanationText = trim((string) ($q->explanation ?? ''));
+            $translationLines = $explanationText !== ''
+                ? array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $explanationText) ?: [])))
+                : ['Chưa có bản dịch chi tiết cho câu hỏi này.'];
+
+            $partNames = [
+                1 => 'Part 1: Mô tả hình',
+                2 => 'Part 2: Hỏi & Đáp',
+                3 => 'Part 3: Hội thoại ngắn',
+                4 => 'Part 4: Bài nói ngắn',
+            ];
+
+            $mapped[] = [
+                'id' => $q->question_id,
+                'question_number' => $idx + 1,
+                'part_code' => $partCode,
+                'part_number' => $partNumber,
+                'part' => $partNames[$partNumber] ?? 'Listening',
+                'content' => (string) $q->content,
+                'image' => $imageUrl,
+                'audio_url' => $audioUrl,
+                'audio_duration' => $durationFormatted,
+                'audio_duration_seconds' => $durationSeconds,
+                'audio_text' => $audioText,
+                'options' => $optionsMap,
+                'correct' => $correctLabel,
+                'transcript' => $transcriptLines,
+                'translation' => $translationLines,
+                'explanation' => $explanationText !== '' ? nl2br(e($explanationText)) : 'Đáp án đúng là <strong>('.$correctLabel.')</strong>.',
+            ];
+        }
+
+        return $mapped;
+    }
+
+    /**
+     * Dữ liệu mẫu dự phòng khi Database chưa có câu hỏi Listening ACTIVE.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function getSampleQuestionBank(): array
     {
         return [
             [
                 'id' => 6,
                 'question_number' => 6,
+                'part_code' => 'PART1',
+                'part_number' => 1,
                 'part' => 'Part 1: Mô tả hình',
+                'content' => 'Look at the picture and choose the statement that best describes what you see.',
                 'image' => asset('images/listening/part1_supermarket.jpg'),
+                'audio_url' => null,
                 'audio_duration' => '00:29',
                 'audio_duration_seconds' => 29,
-                'audio_text' => 'She is selecting a flowerpot.',
+                'audio_text' => '(A) She is at the supermarket. (B) She is selecting a flowerpot. (C) She is with her best friend. (D) She is paying for a flowerpot.',
                 'options' => [
                     'A' => 'She is at the supermarket.',
                     'B' => 'She is selecting a flowerpot.',
@@ -45,100 +191,17 @@ class ListeningPracticeController extends Controller
                 'explanation' => '(B) là đáp án đúng vì trong hình người phụ nữ đang cầm và lựa chọn một chậu hoa nhỏ trong giỏ/quầy cây.',
             ],
             [
-                'id' => 1,
-                'question_number' => 1,
-                'part' => 'Part 1: Mô tả hình',
-                'image' => asset('images/listening/part1_supermarket.jpg'),
-                'audio_duration' => '00:28',
-                'audio_duration_seconds' => 28,
-                'audio_text' => 'A man is typing on a laptop computer.',
-                'options' => [
-                    'A' => 'A man is typing on a laptop computer.',
-                    'B' => 'A man is putting away his notebook.',
-                    'C' => 'A man is drinking from a coffee mug.',
-                    'D' => 'A man is standing near the window.',
-                ],
-                'correct' => 'A',
-                'transcript' => [
-                    '(A) A man is typing on a laptop computer.',
-                    '(B) A man is putting away his notebook.',
-                    '(C) A man is drinking from a coffee mug.',
-                    '(D) A man is standing near the window.',
-                ],
-                'translation' => [
-                    '(A) Một người đàn ông đang gõ bàn phím trên máy tính xách tay.',
-                    '(B) Một người đàn ông đang cất cuốn sổ tay.',
-                    '(C) Một người đàn ông đang uống nước từ cốc cà phê.',
-                    '(D) Một người đàn ông đang đứng cạnh cửa sổ.',
-                ],
-                'explanation' => '(A) là đáp án đúng vì trong hình người đàn ông đang ngồi thao tác gõ phím trên máy tính xách tay bên bàn làm việc.',
-            ],
-            [
-                'id' => 2,
-                'question_number' => 2,
-                'part' => 'Part 1: Mô tả hình',
-                'image' => asset('images/listening/part1_supermarket.jpg'),
-                'audio_duration' => '00:26',
-                'audio_duration_seconds' => 26,
-                'audio_text' => 'Some pedestrians are crossing the intersection.',
-                'options' => [
-                    'A' => 'Some pedestrians are crossing the intersection.',
-                    'B' => 'Some vehicles are parked along the curb.',
-                    'C' => 'People are waiting in line at the bus stop.',
-                    'D' => 'Bicycles are being repaired on the sidewalk.',
-                ],
-                'correct' => 'A',
-                'transcript' => [
-                    '(A) Some pedestrians are crossing the intersection.',
-                    '(B) Some vehicles are parked along the curb.',
-                    '(C) People are waiting in line at the bus stop.',
-                    '(D) Bicycles are being repaired on the sidewalk.',
-                ],
-                'translation' => [
-                    '(A) Một số người đi bộ đang băng qua ngã tư.',
-                    '(B) Một số phương tiện đang đỗ dọc lề đường.',
-                    '(C) Mọi người đang xếp hàng tại điểm dừng xe buýt.',
-                    '(D) Những chiếc xe đạp đang được sửa chữa trên vỉa hè.',
-                ],
-                'explanation' => '(A) là đáp án đúng miêu tả chính xác nhóm người đi bộ đang di chuyển qua vạch kẻ đường ngã tư.',
-            ],
-            [
-                'id' => 3,
-                'question_number' => 3,
-                'part' => 'Part 1: Mô tả hình',
-                'image' => asset('images/listening/part1_supermarket.jpg'),
-                'audio_duration' => '00:24',
-                'audio_duration_seconds' => 24,
-                'audio_text' => 'A chef is preparing food in a restaurant kitchen.',
-                'options' => [
-                    'A' => 'A customer is paying at the counter.',
-                    'B' => 'A chef is preparing food in a kitchen.',
-                    'C' => 'Tables are being wiped by a waiter.',
-                    'D' => 'Dishes are being stacked in the sink.',
-                ],
-                'correct' => 'B',
-                'transcript' => [
-                    '(A) A customer is paying at the counter.',
-                    '(B) A chef is preparing food in a kitchen.',
-                    '(C) Tables are being wiped by a waiter.',
-                    '(D) Dishes are being stacked in the sink.',
-                ],
-                'translation' => [
-                    '(A) Khách hàng đang thanh toán tại quầy.',
-                    '(B) Đầu bếp đang chuẩn bị món ăn trong gian bếp.',
-                    '(C) Bàn ăn đang được người phục vụ lau dọn.',
-                    '(D) Bát đĩa đang được xếp trong bồn rửa.',
-                ],
-                'explanation' => '(B) là đáp án đúng miêu tả hoạt động chính của đầu bếp đang sơ chế nguyên liệu nấu nướng.',
-            ],
-            [
                 'id' => 4,
                 'question_number' => 4,
+                'part_code' => 'PART2',
+                'part_number' => 2,
                 'part' => 'Part 2: Hỏi & Đáp',
-                'image' => null, // Không có hình ảnh (Khớp ảnh mẫu 4 với 3 lựa chọn A, B, C)
+                'content' => 'Where is the marketing meeting going to be held?',
+                'image' => null,
+                'audio_url' => null,
                 'audio_duration' => '00:21',
                 'audio_duration_seconds' => 21,
-                'audio_text' => 'Where is the marketing meeting going to be held?',
+                'audio_text' => 'Where is the marketing meeting going to be held? (A) At 10:00 AM. (B) In Conference Room B. (C) Yes, I received the report.',
                 'options' => [
                     'A' => 'At 10:00 AM.',
                     'B' => 'In Conference Room B.',
@@ -163,16 +226,22 @@ class ListeningPracticeController extends Controller
     }
 
     /**
-     * Màn hình làm bài nghe (Matching ảnh mẫu 3 & 4)
+     * Màn hình làm bài nghe (nối dữ liệu thật từ DB).
      */
     public function practice(Request $request): View
     {
-        $count = (int) $request->query('count', 5);
+        $count = (int) $request->query('count', 10);
         if ($count <= 0) {
-            $count = 5;
+            $count = 10;
         }
 
-        $allQuestions = $this->getQuestionBank();
+        $rawPart = (string) $request->query('part', '');
+        $partFilter = null;
+        if (preg_match('/(\d)/', $rawPart, $m) === 1) {
+            $partFilter = (int) $m[1];
+        }
+
+        $allQuestions = $this->loadListeningQuestions($partFilter, $count);
         $selectedQuestions = array_slice($allQuestions, 0, min($count, count($allQuestions)));
 
         return view('pages.nghe-lam-bai', [
@@ -185,16 +254,19 @@ class ListeningPracticeController extends Controller
     }
 
     /**
-     * Xử lý nộp bài nghe
+     * Xử lý nộp bài nghe.
      */
     public function submit(Request $request): RedirectResponse
     {
         $submittedAnswers = $request->input('answers', []);
-        $count = (int) $request->input('total_count', 5);
+        $questionIds = array_values(array_filter(array_map('intval', (array) $request->input('question_ids', []))));
+        $count = (int) $request->input('total_count', 10);
         $timeSpentSeconds = max(0, (int) $request->input('time_spent', 0));
 
-        $bank = $this->getQuestionBank();
-        $questions = array_slice($bank, 0, min($count, count($bank)));
+        $bank = ! empty($questionIds)
+            ? $this->loadListeningQuestions(null, count($questionIds), $questionIds)
+            : $this->loadListeningQuestions(null, $count);
+        $questions = array_slice($bank, 0, min(max(1, $count), count($bank)));
 
         $correctCount = 0;
         $incorrectCount = 0;
@@ -223,7 +295,7 @@ class ListeningPracticeController extends Controller
             ]);
         }
 
-        $total = count($questions);
+        $total = count($details);
         $minutes = intdiv($timeSpentSeconds, 60);
         $seconds = $timeSpentSeconds % 60;
         $resultData = [
@@ -248,7 +320,7 @@ class ListeningPracticeController extends Controller
     }
 
     /**
-     * Màn hình tổng kết kết quả và xem đáp án luyện nghe
+     * Màn hình tổng kết kết quả và xem đáp án luyện nghe.
      */
     public function result(Request $request): View
     {
@@ -256,7 +328,7 @@ class ListeningPracticeController extends Controller
         $firstDetail = $result && ! empty($result['details']) ? reset($result['details']) : null;
 
         if (! is_array($firstDetail) || ! isset($firstDetail['options'])) {
-            $bank = $this->getQuestionBank();
+            $bank = $this->loadListeningQuestions(null, 5);
             $count = min(max(1, (int) ($result['total'] ?? count($bank))), count($bank));
             $questions = array_slice($bank, 0, $count);
             $answers = $result['answers'] ?? [];
