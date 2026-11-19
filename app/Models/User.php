@@ -121,6 +121,16 @@ class User extends Authenticatable
         return $this->hasMany(TestAttempt::class, 'user_id', 'user_id');
     }
 
+    /**
+     * Tiến độ học từ vựng của học viên này.
+     *
+     * @return HasMany<UserVocabulary, $this>
+     */
+    public function userVocabularies(): HasMany
+    {
+        return $this->hasMany(UserVocabulary::class, 'user_id', 'user_id');
+    }
+
     public function getInitialsAttribute(): string
     {
         $name = trim((string) ($this->full_name ?: $this->user_name));

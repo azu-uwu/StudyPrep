@@ -747,6 +747,8 @@ ALTER TABLE `user_vocabulary`
   ADD CONSTRAINT `FK_UserVocabularies_Users` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `FK_UserVocabularies_Vocabularies` FOREIGN KEY (`vocabulary_id`) REFERENCES `vocabularies` (`vocabulary_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
+ALTER TABLE topics
+MODIFY COLUMN user_id BIGINT NULL DEFAULT NULL;
 --
 -- Constraints for table `vocabularies`
 --

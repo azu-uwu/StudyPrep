@@ -1,6 +1,7 @@
 .clinerules/
 .specify/
 /_laravel
+/docs/backend-tasks.md
 
 # ignore của laravel
 *.log

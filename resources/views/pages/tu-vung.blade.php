@@ -143,24 +143,48 @@
         </a>
     </div>
 
-    {{-- Trạng thái rỗng --}}
-    <div class="tv-empty-box" id="myTopicsEmptyBox">
-        <div class="tv-empty-icon">
-            <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="8" y="10" width="4.5" height="24" rx="2.25" fill="#0EA5E9" />
-                <rect x="15" y="12" width="4.5" height="22" rx="2.25" fill="#38BDF8" />
-                <rect x="22" y="8" width="4.5" height="26" rx="2.25" fill="#0EA5E9" />
-                <rect x="29" y="14" width="4.5" height="20" rx="2.25" fill="#0284C7" transform="rotate(12 29 14)" />
-            </svg>
-        </div>
-        <p class="tv-empty-text">Bạn chưa có chủ đề nào</p>
-        <x-button variant="primary" size="medium" data-require-auth>
-            + Tạo chủ đề
-        </x-button>
-    </div>
+    @php
+        $myList = $myTopics ?? [];
+    @endphp
 
-    {{-- Danh sách chủ đề đã tạo của tôi (ẩn khi rỗng, hiển thị khi thêm mới) --}}
-    <div class="tv-my-topics-grid" id="myTopicsGrid" style="display: none;"></div>
+    @if(empty($myList))
+        {{-- Trạng thái rỗng --}}
+        <div class="tv-empty-box" id="myTopicsEmptyBox">
+            <div class="tv-empty-icon">
+                <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="8" y="10" width="4.5" height="24" rx="2.25" fill="#0EA5E9" />
+                    <rect x="15" y="12" width="4.5" height="22" rx="2.25" fill="#38BDF8" />
+                    <rect x="22" y="8" width="4.5" height="26" rx="2.25" fill="#0EA5E9" />
+                    <rect x="29" y="14" width="4.5" height="20" rx="2.25" fill="#0284C7" transform="rotate(12 29 14)" />
+                </svg>
+            </div>
+            <p class="tv-empty-text">Bạn chưa có chủ đề nào</p>
+            <x-button variant="primary" size="medium" data-require-auth>
+                + Tạo chủ đề
+            </x-button>
+        </div>
+    @else
+        {{-- Danh sách chủ đề đã tạo của tôi --}}
+        <div class="tv-my-topics-grid" id="myTopicsGrid">
+            @foreach($myList as $topic)
+                <a href="{{ route('tu-vung.show', $topic['topic_id']) }}"
+                   class="tv-my-topic-card tv-tactile-card"
+                   aria-label="{{ $topic['name'] }}"
+                   style="text-decoration: none;">
+                    <div class="tv-my-topic-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <div style="font-weight: 700; color: #111C2D; font-size: 15px;">{{ $topic['name'] }}</div>
+                        <div style="color: #64748B; font-size: 13px; margin-top: 2px;">{{ $topic['total_vocabularies'] }} từ</div>
+                    </div>
+                </a>
+            @endforeach
+        </div>
+    @endif
 </div>
 
 {{-- ===== SECTION 2: CHỦ ĐỀ PHỔ BIẾN (Tái sử dụng .lt-vocab-grid từ Luyện tập) ===== --}}
@@ -175,7 +199,7 @@
 
     {{-- Danh sách chủ đề phổ biến (Render từ mock data, Tactile 3D Button Interaction) --}}
     @php
-        $popularList = $popularTopics ?? \App\Services\VocabularyMockData::getPopularTopics();
+        $popularList = $popularTopics ?? [];
     @endphp
     <div class="lt-vocab-grid">
         @foreach($popularList as $topic)

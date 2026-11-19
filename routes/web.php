@@ -68,8 +68,8 @@ Route::get('/tu-vung', [VocabularyPracticeController::class, 'index'])->name('tu
 Route::get('/tu-vung/{topicId}/chon-tu', [VocabularyPracticeController::class, 'selectWords'])->name('tu-vung.chon-tu');
 Route::get('/tu-vung/{topicId}/flashcard', [VocabularyPracticeController::class, 'flashcard'])->name('tu-vung.flashcard');
 Route::get('/tu-vung/{topicId}', [VocabularyPracticeController::class, 'show'])->name('tu-vung.show');
-Route::redirect('/flashcard', '/tu-vung/test-1/flashcard');
-Route::redirect('/chon-tu', '/tu-vung/test-1/chon-tu');
+Route::redirect('/flashcard', '/tu-vung');
+Route::redirect('/chon-tu', '/tu-vung');
 
 Route::view('/phan-tich', 'pages.phan-tich-tong-quan')->name('phan-tich');
 Route::view('/phan-tich/chi-tiet', 'pages.phan-tich')->name('phan-tich.chi-tiet');

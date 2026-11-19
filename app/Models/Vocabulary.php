@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'topic_id',
@@ -27,6 +28,16 @@ class Vocabulary extends Model
     public function topic(): BelongsTo
     {
         return $this->belongsTo(Topic::class, 'topic_id', 'topic_id');
+    }
+
+    /**
+     * Tiến độ học của từng học viên trên từ vựng này.
+     *
+     * @return HasMany<UserVocabulary, $this>
+     */
+    public function userProgress(): HasMany
+    {
+        return $this->hasMany(UserVocabulary::class, 'vocabulary_id', 'vocabulary_id');
     }
 
     /**
