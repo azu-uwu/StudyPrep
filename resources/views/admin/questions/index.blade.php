@@ -64,9 +64,23 @@
             <div class="user-title-row">
                 <h1 class="user-page-title">Ngân hàng câu hỏi TOEIC</h1>
             </div>
+            <p class="user-page-subtitle" style="margin: 4px 0 0 0; color: #64748b; font-size: 13.5px;">
+                Kho Đề thi &amp; Câu hỏi Chuẩn hóa TOEIC (Listening, Reading, Speaking &amp; Writing)
+            </p>
         </div>
 
         <div class="user-header-actions">
+            {{-- Nút Tải file Word mẫu (.docx) --}}
+            <a href="{{ route('admin.questions.sample-docx') }}" class="btn-admin-action" title="Tải file Word (.docx) mẫu chuẩn cấu trúc nhập câu hỏi">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <path d="M12 18v-6"></path>
+                    <path d="M9 15l3 3 3-3"></path>
+                </svg>
+                <span>Tải file Word mẫu</span>
+            </a>
+
             {{-- Nút Xuất Excel --}}
             <a href="{{ route('admin.questions.export') }}" class="btn-admin-action excel" title="Xuất danh sách câu hỏi ra Excel (CSV)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -112,6 +126,34 @@
         </div>
     </div>
 
+    {{-- Banner ngữ cảnh nếu đang chọn câu hỏi từ Ngân hàng để gắn vào Đề thi --}}
+    @if (!empty($targetTest))
+        <div style="background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%); border: 1.5px solid #c7d2fe; border-radius: 14px; padding: 14px 20px; margin-bottom: 20px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: #4338ca; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <div style="font-size: 12px; font-weight: 700; color: #4338ca; text-transform: uppercase;">Chế độ gắn câu hỏi vào Đề thi</div>
+                    <div style="font-size: 14.5px; font-weight: 700; color: #1e1b4b;">
+                        Đề thi đích: <span style="color: #4f46e5;">{{ $targetTest->title }}</span> ({{ $targetTest->test_code }})
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button type="button" class="btn-admin-primary" onclick="submitBulkAction('assign')" style="padding: 8px 14px; font-size: 13px;">
+                    <span>Gắn các câu đã tick vào {{ $targetTest->test_code }}</span>
+                </button>
+                <a href="{{ route('admin.tests.show', $targetTest->test_form_id) }}" class="btn-admin-action" style="padding: 8px 14px; font-size: 13px; text-decoration: none;">
+                    &larr; Quay lại Đề thi
+                </a>
+            </div>
+        </div>
+    @endif
+
     {{-- 2. Bốn thẻ thống kê chỉ số (4 KPI Cards - Khớp ảnh mẫu) --}}
     <div class="qbank-kpi-grid">
         {{-- Thẻ 1: Tổng số câu hỏi --}}
@@ -148,7 +190,7 @@
             </div>
             <div class="qbank-kpi-val-row">
                 <span class="qbank-kpi-num">{{ number_format($stats['lc_rc']) }}</span>
-                <span class="qbank-kpi-sub">Part 1 – 7</span>
+                <span class="qbank-kpi-sub">Part 1 - 7</span>
             </div>
             <div class="qbank-kpi-foot">
                 <span>Đã chuẩn hóa thang điểm 990</span>
@@ -158,7 +200,7 @@
         {{-- Thẻ 3: TOEIC Speaking & Writing --}}
         <div class="qbank-kpi-card">
             <div class="qbank-kpi-top">
-                <p class="qbank-kpi-title">TOEIC Speaking & Writing</p>
+                <p class="qbank-kpi-title">TOEIC Speaking &amp; Writing</p>
                 <div class="qbank-kpi-icon icon-pink">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M12 20h9"></path>
@@ -168,17 +210,22 @@
             </div>
             <div class="qbank-kpi-val-row">
                 <span class="qbank-kpi-num">{{ number_format($stats['sw']) }}</span>
-                <span class="qbank-kpi-sub">SW Tasks</span>
+                <span class="qbank-kpi-sub">câu SW</span>
             </div>
-            <div class="qbank-kpi-foot">
-                <span>Tích hợp bộ chấm AI thông minh</span>
+            <div class="qbank-kpi-foot" style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+                <span style="font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #fef3c7; color: #b45309; border: 1px solid #fde68a;">
+                    Speaking: {{ number_format($stats['speaking'] ?? 0) }}
+                </span>
+                <span style="font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #ede9fe; color: #6d28d9; border: 1px solid #ddd6fe;">
+                    Writing: {{ number_format($stats['writing'] ?? 0) }}
+                </span>
             </div>
         </div>
 
         {{-- Thẻ 4: Cần kiểm duyệt & Báo lỗi --}}
         <div class="qbank-kpi-card">
             <div class="qbank-kpi-top">
-                <p class="qbank-kpi-title">Cần kiểm duyệt & Báo lỗi</p>
+                <p class="qbank-kpi-title">Cần kiểm duyệt &amp; Báo lỗi</p>
                 <div class="qbank-kpi-icon icon-red">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
@@ -188,12 +235,18 @@
                 </div>
             </div>
             <div class="qbank-kpi-val-row">
-                <span class="qbank-kpi-num" style="color: #dc2626;">{{ number_format($stats['reported']) }}</span>
+                <span class="qbank-kpi-num" style="color: {{ ($stats['reported'] + ($stats['pending'] ?? 0)) > 0 ? '#dc2626' : '#0f172a' }};">
+                    {{ number_format($stats['reported'] + ($stats['pending'] ?? 0)) }}
+                </span>
                 <span class="qbank-kpi-sub">câu hỏi</span>
             </div>
             <div class="qbank-kpi-foot">
-                <span class="qbank-red-pill">32 phản hồi</span>
-                <span>học viên báo sai đáp án</span>
+                @if ($stats['reported'] === 0 && ($stats['pending'] ?? 0) === 0)
+                    <span style="color: #047857; font-weight: 600;">Không có câu hỏi báo lỗi</span>
+                @else
+                    <span class="qbank-red-pill">{{ number_format($stats['reported']) }} báo lỗi</span>
+                    <span>&bull; {{ number_format($stats['pending'] ?? 0) }} chờ duyệt</span>
+                @endif
             </div>
         </div>
     </div>
@@ -246,10 +299,11 @@
                 <label>KỸ NĂNG</label>
                 <div class="qbank-filter-select-wrap">
                     <select name="skill" class="qbank-filter-select" onchange="this.form.submit()">
-                        <option value="all" {{ $filters['skill'] === 'all' ? 'selected' : '' }}>Tất cả kỹ năng (LC / RC / SW)</option>
-                        <option value="LC" {{ $filters['skill'] === 'LC' ? 'selected' : '' }}>Listening (LC)</option>
-                        <option value="RC" {{ $filters['skill'] === 'RC' ? 'selected' : '' }}>Reading (RC)</option>
-                        <option value="SW" {{ $filters['skill'] === 'SW' ? 'selected' : '' }}>Speaking & Writing (SW)</option>
+                        <option value="all" {{ $filters['skill'] === 'all' ? 'selected' : '' }}>Tất cả kỹ năng (Listening / Reading / Speaking / Writing)</option>
+                        <option value="LC" {{ $filters['skill'] === 'LC' ? 'selected' : '' }}>Listening</option>
+                        <option value="RC" {{ $filters['skill'] === 'RC' ? 'selected' : '' }}>Reading</option>
+                        <option value="SPK" {{ $filters['skill'] === 'SPK' ? 'selected' : '' }}>Speaking</option>
+                        <option value="WRT" {{ $filters['skill'] === 'WRT' ? 'selected' : '' }}>Writing</option>
                     </select>
                     <svg class="qbank-filter-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="6 9 12 15 18 9"></polyline>
@@ -263,15 +317,29 @@
                 <div class="qbank-filter-select-wrap">
                     <select name="part" class="qbank-filter-select" onchange="this.form.submit()">
                         <option value="all" {{ $filters['part'] === 'all' ? 'selected' : '' }}>Tất cả phần thi</option>
-                        <option value="PART1" {{ $filters['part'] === 'PART1' ? 'selected' : '' }}>Part 1: Photographs</option>
-                        <option value="PART2" {{ $filters['part'] === 'PART2' ? 'selected' : '' }}>Part 2: Question-Response</option>
-                        <option value="PART3" {{ $filters['part'] === 'PART3' ? 'selected' : '' }}>Part 3: Conversations</option>
-                        <option value="PART4" {{ $filters['part'] === 'PART4' ? 'selected' : '' }}>Part 4: Short Talks</option>
-                        <option value="PART5" {{ $filters['part'] === 'PART5' ? 'selected' : '' }}>Part 5: Incomplete Sentences</option>
-                        <option value="PART6" {{ $filters['part'] === 'PART6' ? 'selected' : '' }}>Part 6: Text Completion</option>
-                        <option value="PART7" {{ $filters['part'] === 'PART7' ? 'selected' : '' }}>Part 7: Reading Comprehension</option>
-                        <option value="WRITING_T1" {{ $filters['part'] === 'WRITING_T1' ? 'selected' : '' }}>Writing Task 1</option>
-                        <option value="WRITING_T2" {{ $filters['part'] === 'WRITING_T2' ? 'selected' : '' }}>Writing Task 2</option>
+                        <optgroup label="Listening (Part 1–4)">
+                            <option value="PART1" {{ $filters['part'] === 'PART1' ? 'selected' : '' }}>Part 1: Photographs (Mô tả tranh)</option>
+                            <option value="PART2" {{ $filters['part'] === 'PART2' ? 'selected' : '' }}>Part 2: Question-Response (Hỏi - Đáp)</option>
+                            <option value="PART3" {{ $filters['part'] === 'PART3' ? 'selected' : '' }}>Part 3: Conversations (Hội thoại ngắn)</option>
+                            <option value="PART4" {{ $filters['part'] === 'PART4' ? 'selected' : '' }}>Part 4: Short Talks (Bài nói ngắn)</option>
+                        </optgroup>
+                        <optgroup label="Reading (Part 5–7)">
+                            <option value="PART5" {{ $filters['part'] === 'PART5' ? 'selected' : '' }}>Part 5: Incomplete Sentences (Hoàn thành câu)</option>
+                            <option value="PART6" {{ $filters['part'] === 'PART6' ? 'selected' : '' }}>Part 6: Text Completion (Hoàn thành đoạn văn)</option>
+                            <option value="PART7" {{ $filters['part'] === 'PART7' ? 'selected' : '' }}>Part 7: Reading Comprehension (Đọc hiểu)</option>
+                        </optgroup>
+                        <optgroup label="Speaking (5 phần chuẩn ETS)">
+                            <option value="SPK_T1" {{ $filters['part'] === 'SPK_T1' ? 'selected' : '' }}>Speaking Part 1: Read a Text Aloud</option>
+                            <option value="SPK_T2" {{ $filters['part'] === 'SPK_T2' ? 'selected' : '' }}>Speaking Part 2: Describe a Picture</option>
+                            <option value="SPK_T3" {{ $filters['part'] === 'SPK_T3' ? 'selected' : '' }}>Speaking Part 3: Respond to Questions</option>
+                            <option value="SPK_T4" {{ $filters['part'] === 'SPK_T4' ? 'selected' : '' }}>Speaking Part 4: Respond Using Information</option>
+                            <option value="SPK_T5" {{ $filters['part'] === 'SPK_T5' ? 'selected' : '' }}>Speaking Part 5: Express an Opinion</option>
+                        </optgroup>
+                        <optgroup label="Writing (3 phần chuẩn ETS)">
+                            <option value="WRITING_T1" {{ $filters['part'] === 'WRITING_T1' ? 'selected' : '' }}>Writing Part 1: Write a Sentence</option>
+                            <option value="WRITING_T2" {{ $filters['part'] === 'WRITING_T2' ? 'selected' : '' }}>Writing Part 2: Respond to a Written Request</option>
+                            <option value="WRITING_T3" {{ $filters['part'] === 'WRITING_T3' ? 'selected' : '' }}>Writing Part 3: Write an Opinion Essay</option>
+                        </optgroup>
                     </select>
                     <svg class="qbank-filter-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="6 9 12 15 18 9"></polyline>
@@ -285,8 +353,9 @@
                 <div class="qbank-filter-select-wrap">
                     <select name="difficulty" class="qbank-filter-select" onchange="this.form.submit()">
                         <option value="all" {{ $filters['difficulty'] === 'all' ? 'selected' : '' }}>Tất cả mức độ</option>
+                        <option value="UNSET" {{ $filters['difficulty'] === 'UNSET' ? 'selected' : '' }}>Chưa phân loại</option>
                         <option value="EASY" {{ $filters['difficulty'] === 'EASY' ? 'selected' : '' }}>Cơ bản (Dưới 500)</option>
-                        <option value="MEDIUM" {{ $filters['difficulty'] === 'MEDIUM' ? 'selected' : '' }}>Trung bình (500 – 750)</option>
+                        <option value="MEDIUM" {{ $filters['difficulty'] === 'MEDIUM' ? 'selected' : '' }}>Trung bình (500 - 750)</option>
                         <option value="HARD" {{ $filters['difficulty'] === 'HARD' ? 'selected' : '' }}>Nâng cao (750+)</option>
                     </select>
                     <svg class="qbank-filter-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -301,11 +370,11 @@
                 <div class="qbank-filter-select-wrap">
                     <select name="status" class="qbank-filter-select" onchange="this.form.submit()">
                         <option value="all" {{ $filters['status'] === 'all' ? 'selected' : '' }}>Tất cả trạng thái</option>
-                        <option value="ACTIVE" {{ $filters['status'] === 'ACTIVE' ? 'selected' : '' }}>• Hoạt động</option>
-                        <option value="REPORTED" {{ $filters['status'] === 'REPORTED' ? 'selected' : '' }}>• Báo lỗi đáp án</option>
-                        <option value="PENDING" {{ $filters['status'] === 'PENDING' ? 'selected' : '' }}>• Chờ duyệt</option>
-                        <option value="DRAFT" {{ $filters['status'] === 'DRAFT' ? 'selected' : '' }}>• Bản nháp</option>
-                        <option value="ARCHIVED" {{ $filters['status'] === 'ARCHIVED' ? 'selected' : '' }}>• Đã lưu trữ</option>
+                        <option value="ACTIVE" {{ $filters['status'] === 'ACTIVE' ? 'selected' : '' }}>Hoạt động (Đã duyệt)</option>
+                        <option value="DRAFT" {{ $filters['status'] === 'DRAFT' ? 'selected' : '' }}>Bản nháp</option>
+                        <option value="PENDING" {{ $filters['status'] === 'PENDING' ? 'selected' : '' }}>Chờ duyệt</option>
+                        <option value="REPORTED" {{ $filters['status'] === 'REPORTED' ? 'selected' : '' }}>Báo lỗi đáp án</option>
+                        <option value="ARCHIVED" {{ $filters['status'] === 'ARCHIVED' ? 'selected' : '' }}>Đã lưu trữ</option>
                     </select>
                     <svg class="qbank-filter-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="6 9 12 15 18 9"></polyline>
@@ -319,6 +388,13 @@
                 <div class="qbank-filter-select-wrap">
                     <select name="tag" class="qbank-filter-select" onchange="this.form.submit()">
                         <option value="all" {{ $filters['tag'] === 'all' ? 'selected' : '' }}>Tất cả bộ đề</option>
+                        @if (isset($availableTests) && $availableTests->isNotEmpty())
+                            @foreach ($availableTests as $tItem)
+                                <option value="{{ $tItem->test_form_id }}" {{ (string) $filters['tag'] === (string) $tItem->test_form_id ? 'selected' : '' }}>
+                                    {{ $tItem->test_code }} - {{ \Illuminate\Support\Str::limit($tItem->title, 28) }}
+                                </option>
+                            @endforeach
+                        @endif
                         <option value="ETS" {{ $filters['tag'] === 'ETS' ? 'selected' : '' }}>ETS Official 2024</option>
                         <option value="Hacker" {{ $filters['tag'] === 'Hacker' ? 'selected' : '' }}>Hacker TOEIC</option>
                         <option value="SW" {{ $filters['tag'] === 'SW' ? 'selected' : '' }}>Speaking & Writing 2024</option>
@@ -331,22 +407,51 @@
         </div>
     </form>
 
-    {{-- 4. Thanh tác vụ chọn hàng loạt (Selection Action Bar - Khớp ảnh mẫu) --}}
+    {{-- 4. Thanh tác vụ chọn hàng loạt (Selection Action Bar - Hỗ trợ chọn toàn bộ danh sách không giới hạn trang) --}}
+    @php
+        $filteredTotalCount = (int) $questions->total();
+        $currentPageCount = (int) $questions->count();
+    @endphp
     <form id="bulk-action-form" method="POST" action="{{ route('admin.questions.bulk-action') }}">
         @csrf
         <input type="hidden" name="action" id="bulk-action-type" value="">
+        <input type="hidden" name="select_all" id="bulk-select-all" value="0">
+        <input type="hidden" name="filter_search" value="{{ $filters['search'] }}">
+        <input type="hidden" name="filter_skill" value="{{ $filters['skill'] }}">
+        <input type="hidden" name="filter_part" value="{{ $filters['part'] }}">
+        <input type="hidden" name="filter_difficulty" value="{{ $filters['difficulty'] }}">
+        <input type="hidden" name="filter_status" value="{{ $filters['status'] }}">
+        <input type="hidden" name="filter_tag" value="{{ $filters['tag'] }}">
+        <input type="hidden" name="test_id" id="bulk-assign-test-id" value="{{ $targetTest?->test_form_id ?? '' }}">
+        <input type="hidden" name="redirect_to_test" id="bulk-redirect-to-test" value="{{ !empty($targetTest) ? '1' : '0' }}">
 
         <div class="qbank-selection-bar">
-            <div class="qbank-sel-left">
+            <div class="qbank-sel-left" style="flex-wrap: wrap;">
                 <span class="qbank-sel-circle" id="selected-badge">0</span>
-                <span>câu hỏi đã chọn</span>
+                <span id="selected-label">câu hỏi đã chọn</span>
                 <span style="color: #cbd5e1;">|</span>
-                <a href="javascript:void(0)" class="qbank-sel-link" onclick="selectAllQuestionsOnPage()">
-                    Chọn tất cả {{ number_format($stats['total']) }} câu
+                <a href="javascript:void(0)" class="qbank-sel-link" id="select-all-matching-link" onclick="selectAllMatchingQuestions()">
+                    Chọn tất cả {{ number_format($filteredTotalCount) }} câu
+                </a>
+                @if ($filteredTotalCount > $currentPageCount)
+                    <a href="javascript:void(0)" class="qbank-sel-link" id="select-page-only-link" onclick="selectCurrentPageOnly()" style="display: none; color: #475569;">
+                        Chỉ chọn trang này ({{ $currentPageCount }} câu)
+                    </a>
+                @endif
+                <a href="javascript:void(0)" class="qbank-sel-link" id="clear-selection-link" onclick="clearAllSelectedQuestions()" style="display: none; color: #dc2626;">
+                    Bỏ chọn tất cả
                 </a>
             </div>
 
             <div class="qbank-sel-actions">
+                <button type="button" class="btn-sel-action" onclick="startBatchGenerateTts()" style="color: #0369a1; border-color: #bae6fd; background: #f0f9ff;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    </svg>
+                    <span>Sinh Audio TTS</span>
+                </button>
+
                 <button type="button" class="btn-sel-action" onclick="submitBulkAction('assign')">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
@@ -396,6 +501,9 @@
                                 $isReported = strtoupper((string)$q->status) === 'REPORTED';
                                 $isPending = strtoupper((string)$q->status) === 'PENDING';
                                 $options = $q->options;
+                                $isConstructive = in_array($q->skill_key, ['speaking', 'writing'], true);
+                                $groupCount = $q->group_questions_count;
+                                $hasImageMedia = $q->questionSet?->resolved_media_url && (strtolower((string) $q->questionSet->media_type) === 'image' || preg_match('/\.(png|jpe?g|gif|webp|bmp)$/i', $q->questionSet->resolved_media_url));
                             @endphp
                             <tr>
                                 {{-- Checkbox --}}
@@ -412,8 +520,13 @@
                                     <div class="q-id-text {{ $isReported ? 'danger' : '' }}">
                                         {{ $q->question_code_display }}
                                     </div>
-                                    <div class="q-badges-row">
+                                    <div class="q-badges-row" style="flex-wrap: wrap; gap: 4px;">
                                         <span class="q-part-pill">{{ $q->part_badge }}</span>
+                                        @if ($groupCount > 1)
+                                            <span style="display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 999px; font-size: 11px; font-weight: 700; background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe;">
+                                                Cụm {{ $groupCount }} câu
+                                            </span>
+                                        @endif
                                         <span class="q-source-pill">{{ $q->source_tag }}</span>
                                     </div>
                                 </td>
@@ -422,15 +535,27 @@
                                 <td>
                                     <div class="q-content-text">{{ $q->content }}</div>
 
-                                    @if ($q->questionSet?->media_url)
-                                        @if (strtolower((string) $q->questionSet->media_type) === 'image')
-                                            <img src="{{ $q->questionSet->media_url }}" alt="Question media" style="max-width: 180px; max-height: 100px; margin-top: 8px;">
-                                        @else
-                                            <audio controls preload="none" src="{{ $q->questionSet->media_url }}" style="max-width: 220px; margin-top: 8px;"></audio>
-                                        @endif
+                                    @if ($q->questionSet?->resolved_media_url && $hasImageMedia)
+                                        <img src="{{ $q->questionSet->resolved_media_url }}" alt="Question media" style="max-width: 180px; max-height: 100px; margin-top: 8px; border-radius: 8px; border: 1px solid #e2e8f0; object-fit: contain; display: block;">
                                     @endif
 
-                                    @if ($options->isNotEmpty())
+                                    @if ($q->questionSet?->resolved_audio_url)
+                                        <audio controls preload="none" src="{{ $q->questionSet->resolved_audio_url }}" style="max-width: 260px; height: 32px; margin-top: 8px; display: block;"></audio>
+                                    @endif
+
+                                    @if ($isConstructive)
+                                        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;">
+                                            <span style="font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: {{ $q->skill_key === 'speaking' ? '#fef3c7' : '#ede9fe' }}; color: {{ $q->skill_key === 'speaking' ? '#b45309' : '#6d28d9' }};">
+                                                {{ $q->skill_key === 'speaking' ? 'Speaking Task (Không trắc nghiệm)' : 'Writing Task (Tự luận)' }}
+                                            </span>
+                                            @if ($hasImageMedia)
+                                                <span class="q-opt-options">Kèm tranh minh họa</span>
+                                            @endif
+                                            @if ($q->questionSet?->stimulus_text)
+                                                <span class="q-opt-options">Ngữ liệu: {{ \Illuminate\Support\Str::limit(preg_replace('/\s+/', ' ', $q->questionSet->stimulus_text), 75) }}</span>
+                                            @endif
+                                        </div>
+                                    @elseif ($options->isNotEmpty())
                                         <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;">
                                             @foreach ($options as $option)
                                                 <span class="{{ $option->is_correct ? 'q-ans-pill' : 'q-opt-options' }}">
@@ -441,7 +566,7 @@
                                     @endif
 
                                     @if ($q->explanation)
-                                        <div class="q-opt-options" style="display: block; margin-top: 6px;">
+                                        <div class="q-opt-options" style="display: block; margin-top: 6px; white-space: pre-line;">
                                             {{ \Illuminate\Support\Str::limit($q->explanation, 160) }}
                                         </div>
                                     @endif
@@ -449,11 +574,22 @@
 
                                 {{-- KỸ NĂNG & DẠNG BÀI --}}
                                 <td>
-                                    <div style="font-weight: 700; color: #0f172a; font-size: 13.5px;">
-                                        {{ $q->skill_display }}
+                                    @php
+                                        $skillStyles = [
+                                            'listening' => 'background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;',
+                                            'reading' => 'background:#d1fae5;color:#047857;border:1px solid #a7f3d0;',
+                                            'speaking' => 'background:#fef3c7;color:#b45309;border:1px solid #fde68a;',
+                                            'writing' => 'background:#ede9fe;color:#6d28d9;border:1px solid #ddd6fe;',
+                                        ];
+                                        $skillBadgeStyle = $skillStyles[$q->skill_key] ?? 'background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;';
+                                    @endphp
+                                    <div>
+                                        <span style="display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 9999px; font-size: 12px; font-weight: 700; white-space: nowrap; {{ $skillBadgeStyle }}">
+                                            {{ $q->skill_display }}
+                                        </span>
                                     </div>
-                                    <div style="font-size: 12px; color: #64748b; margin-top: 2px;">
-                                        {{ $q->question_type_display }}
+                                    <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
+                                        {{ $q->question_type_display }} &bull; {{ $q->difficulty_label }}
                                     </div>
                                 </td>
 
@@ -469,49 +605,46 @@
                                 </td>
 
                                 {{-- TRẠNG THÁI --}}
-                                <td>
-                                    <span class="status-pill {{ $q->status_badge_class }}">
-                                        @if (!$isReported)
-                                            <span class="status-dot"></span>
-                                        @endif
-                                        {{ $q->status_label }}
+                                <td style="text-align: center; white-space: nowrap;">
+                                    @php
+                                        $stUpper = strtoupper((string) $q->status);
+                                        $stConfig = match ($stUpper) {
+                                            'ACTIVE' => ['bg' => '#ecfdf5', 'color' => '#047857', 'border' => '#a7f3d0', 'dot' => '#10b981'],
+                                            'PENDING' => ['bg' => '#fffbeb', 'color' => '#b45309', 'border' => '#fde68a', 'dot' => '#f59e0b'],
+                                            'REPORTED' => ['bg' => '#fef2f2', 'color' => '#b91c1c', 'border' => '#fecaca', 'dot' => '#ef4444'],
+                                            'ARCHIVED' => ['bg' => '#f5f3ff', 'color' => '#5b21b6', 'border' => '#ddd6fe', 'dot' => '#7c3aed'],
+                                            default => ['bg' => '#f1f5f9', 'color' => '#475569', 'border' => '#cbd5e1', 'dot' => '#64748b'],
+                                        };
+                                    @endphp
+                                    <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 9999px; font-size: 12px; font-weight: 700; white-space: nowrap; background: {{ $stConfig['bg'] }}; color: {{ $stConfig['color'] }}; border: 1px solid {{ $stConfig['border'] }};">
+                                        <span style="width: 6px; height: 6px; border-radius: 9999px; background: {{ $stConfig['dot'] }}; flex-shrink: 0;"></span>
+                                        <span>{{ $q->status_label }}</span>
                                     </span>
                                 </td>
 
                                 {{-- THAO TÁC --}}
                                 <td class="admin-actions-cell">
                                     <div class="user-actions-cell">
-                                        @if ($isReported)
-                                            {{-- Nút sửa lỗi trực tiếp (Wrench tool) --}}
-                                            <button type="button"
-                                                    class="action-icon-btn danger"
-                                                    title="Xử lý báo cáo lỗi đáp án"
-                                                    onclick='openEditQuestionModal(@json($q))'>
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
-                                                </svg>
-                                            </button>
-                                        @elseif ($isPending)
+                                        {{-- Nút Xem trước mô phỏng đề thi (luôn sẵn sàng cho mọi trạng thái) --}}
+                                        <button type="button"
+                                                class="action-icon-btn"
+                                                title="Xem trước mô phỏng đề thi"
+                                                onclick='openPreviewModal(@json($q->toPreviewPayload()))'>
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                <circle cx="12" cy="12" r="3"></circle>
+                                            </svg>
+                                        </button>
+
+                                        @if ($isPending)
                                             {{-- Nút duyệt nhanh (Check icon) --}}
-                                            <form method="POST" action="{{ route('admin.questions.toggle-status', $q->question_id) }}" style="display: inline; margin: 0;">
-                                                @csrf
-                                                @method('PATCH')
-                                                <input type="hidden" name="status" value="ACTIVE">
-                                                <button type="submit" class="action-icon-btn" style="color: #059669;" title="Duyệt câu hỏi này">
-                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                                        <polyline points="20 6 9 17 4 12"></polyline>
-                                                    </svg>
-                                                </button>
-                                            </form>
-                                        @else
-                                            {{-- Nút Xem / Preview (Eye icon) --}}
                                             <button type="button"
                                                     class="action-icon-btn"
-                                                    title="Xem chi tiết câu hỏi"
-                                                    onclick='openPreviewModal(@json($q))'>
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                                    <circle cx="12" cy="12" r="3"></circle>
+                                                    style="color: #059669;"
+                                                    title="Duyệt câu hỏi này"
+                                                    onclick="submitSingleQuestionAction('{{ route('admin.questions.toggle-status', $q->question_id) }}', 'PATCH', 'ACTIVE')">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                                    <polyline points="20 6 9 17 4 12"></polyline>
                                                 </svg>
                                             </button>
                                         @endif
@@ -528,17 +661,16 @@
                                         </button>
 
                                         {{-- Nút Xóa (3 dots / trash) --}}
-                                        <form method="POST" action="{{ route('admin.questions.destroy', $q->question_id) }}" style="display: inline; margin: 0;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa câu hỏi #Q-{{ $q->question_id }}?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="action-icon-btn danger" title="Xóa câu hỏi">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                    <circle cx="12" cy="12" r="1"></circle>
-                                                    <circle cx="12" cy="5" r="1"></circle>
-                                                    <circle cx="12" cy="19" r="1"></circle>
-                                                </svg>
-                                            </button>
-                                        </form>
+                                        <button type="button"
+                                                class="action-icon-btn danger"
+                                                title="Xóa câu hỏi"
+                                                onclick="if (confirm('Bạn có chắc chắn muốn xóa câu hỏi #Q-{{ $q->question_id }}?')) { submitSingleQuestionAction('{{ route('admin.questions.destroy', $q->question_id) }}', 'DELETE'); }">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <circle cx="12" cy="12" r="1"></circle>
+                                                <circle cx="12" cy="5" r="1"></circle>
+                                                <circle cx="12" cy="19" r="1"></circle>
+                                            </svg>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -565,7 +697,7 @@
             <div class="user-table-footer">
                 <div class="user-footer-left">
                     <span>
-                        Hiển thị 1–{{ $questions->count() }} trong tổng số {{ number_format($stats['total']) }} câu hỏi
+                        Hiển thị {{ $questions->firstItem() ?? 0 }}-{{ $questions->lastItem() ?? 0 }} trong tổng số {{ number_format($questions->total()) }} câu hỏi
                     </span>
 
                     <div class="user-per-page-select">
@@ -686,22 +818,29 @@
         </div>
     </form>
 
-    {{-- 7. Hai thẻ tính năng bên dưới cùng (Bottom Feature Cards - Khớp ảnh mẫu) --}}
+    {{-- Form ẩn độc lập để thực hiện Xóa / Duyệt nhanh từng dòng (tránh lồng form bên trong #bulk-action-form) --}}
+    <form id="single-question-action-form" method="POST" action="" style="display: none;">
+        @csrf
+        <input type="hidden" name="_method" id="single-question-method" value="POST">
+        <input type="hidden" name="status" id="single-question-status" value="">
+    </form>
+
+    {{-- 7. Hai thẻ thống kê thực tế bên dưới cùng --}}
     <div class="qbank-feature-grid">
-        {{-- Thẻ 1: Kiểm chuẩn chất lượng AI --}}
+        {{-- Thẻ 1: Trạng thái xuất bản thực tế --}}
         <div class="qbank-feature-card">
             <div class="qbank-feat-icon icon-purple">
                 <span>A</span>
             </div>
             <div>
-                <h3 class="qbank-feat-title">Kiểm chuẩn chất lượng AI</h3>
+                <h3 class="qbank-feat-title">Tổng quan trạng thái Ngân hàng</h3>
                 <p class="qbank-feat-desc">
-                    Tự động quét định kỳ phát hiện 100% ngữ pháp và cấu trúc đáp án trùng lặp trước khi công bố bài thi thật.
+                    Hiện có <strong>{{ number_format($stats['active_count'] ?? 0) }}</strong> câu hỏi đã xuất bản (ACTIVE) và <strong>{{ number_format($stats['draft_count'] ?? 0) }}</strong> bản nháp (DRAFT) trong cơ sở dữ liệu.
                 </p>
             </div>
         </div>
 
-        {{-- Thẻ 2: Kho Media Giọng đọc Đa quốc gia --}}
+        {{-- Thẻ 2: Kho Audio TTS thực tế --}}
         <div class="qbank-feature-card">
             <div class="qbank-feat-icon icon-teal">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -713,9 +852,9 @@
                 </svg>
             </div>
             <div>
-                <h3 class="qbank-feat-title">Kho Media Giọng đọc Đa quốc gia</h3>
+                <h3 class="qbank-feat-title">Kho Audio Listening thực tế</h3>
                 <p class="qbank-feat-desc">
-                    8,210 audio chuẩn giọng Anh-Mỹ (US), Anh-Anh (UK), Úc (AU) và Canada với chuẩn sample rate 44.1kHz.
+                    Đã lưu trữ <strong>{{ number_format($stats['audio_ready'] ?? 0) }}</strong> tệp âm thanh MP3 thực tế trong hệ thống (hỗ trợ sinh hàng loạt qua nút Sinh Audio TTS).
                 </p>
             </div>
         </div>
@@ -836,8 +975,9 @@
                     <div class="form-group-admin">
                         <label>Độ khó</label>
                         <select id="edit_difficulty" name="difficulty" class="form-control-admin" required>
+                            <option value="UNSET">Chưa phân loại</option>
                             <option value="EASY">Cơ bản (Dưới 500)</option>
-                            <option value="MEDIUM">Trung bình (500 – 750)</option>
+                            <option value="MEDIUM">Trung bình (500 - 750)</option>
                             <option value="HARD">Nâng cao (750+)</option>
                         </select>
                     </div>
@@ -853,8 +993,23 @@
                 </div>
 
                 <div class="form-group-admin">
-                    <label>Giải thích & Đáp án chuẩn</label>
+                    <label>Giải thích &amp; Đáp án chuẩn</label>
                     <textarea id="edit_explanation" name="explanation" class="form-control-admin" rows="2"></textarea>
+                </div>
+
+                <div style="border-top: 1px solid #edf0f7; padding-top: 12px; margin-top: 10px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px;">
+                        <label style="margin: 0;">Audio Listening (TTS MP3)</label>
+                        <button type="button" id="edit_btn_gen_tts" class="btn-admin-action" style="padding: 4px 10px; font-size: 12px; color: #0369a1; border-color: #bae6fd; background: #f0f9ff;" onclick="generateTtsInEditModal()">
+                            Sinh Audio TTS
+                        </button>
+                    </div>
+                    <input type="hidden" id="edit_question_id" value="">
+                    <input type="hidden" id="edit_audio_url" name="audio_url" value="">
+                    <div id="edit_audio_preview_wrap" style="display: none; margin-top: 6px;">
+                        <audio id="edit_audio_player" controls style="width: 100%; height: 34px;"></audio>
+                    </div>
+                    <div id="edit_tts_status" style="font-size: 12px; color: #64748b; margin-top: 4px;"></div>
                 </div>
             </div>
             <div class="admin-modal-footer">
@@ -865,131 +1020,421 @@
     </div>
 </div>
 
-{{-- MODAL 3: XEM TRƯỚC CÂU HỎI (PREVIEW) --}}
-<div id="modal-preview-question" class="admin-modal-backdrop">
-    <div class="admin-modal-box" style="max-width: 560px;">
-        <div class="admin-modal-header">
-            <h3 class="admin-modal-title" id="preview-modal-title">Xem trước câu hỏi</h3>
-            <button type="button" class="admin-modal-close" onclick="closeAdminModal('modal-preview-question')">&times;</button>
-        </div>
-        <div class="admin-modal-body">
-            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                <span class="q-part-pill" id="preview-part">Part 5</span>
-                <span class="q-source-pill" id="preview-source">ETS '24</span>
-                <span class="status-pill status-badge-active" id="preview-status" style="margin-left: auto;">• Hoạt động</span>
-            </div>
-            <div style="background-color: #f8fafc; border-radius: 12px; padding: 16px; border: 1px solid #e2e8f0; margin-bottom: 16px;">
-                <p id="preview-content" style="font-size: 14px; color: #0f172a; line-height: 1.5; margin: 0;"></p>
-            </div>
-            <div style="font-size: 13px;">
-                <strong>Giải thích / Đáp án:</strong>
-                <p id="preview-explanation" style="color: #64748b; margin: 4px 0 0 0; line-height: 1.4;"></p>
-            </div>
-        </div>
-        <div class="admin-modal-footer">
-            <button type="button" class="btn-admin-action" onclick="closeAdminModal('modal-preview-question')">Đóng</button>
-        </div>
-    </div>
-</div>
+{{-- MODAL 3: XEM TRƯỚC MÔ PHỎNG ĐỀ THI TOEIC THẬT --}}
+@include('admin.questions.partials.preview-modal')
 
-{{-- MODAL 4: NHẬP EXCEL / JSON --}}
+{{-- MODAL 4: NHẬP WORD (.DOCX) / EXCEL / JSON --}}
 <div id="modal-import-qbank" class="admin-modal-backdrop">
-    <div class="admin-modal-box">
+    <div class="admin-modal-box" style="max-width: 580px;">
         <div class="admin-modal-header">
-            <h3 class="admin-modal-title">Nhập dữ liệu Đề thi & Câu hỏi</h3>
+            <h3 class="admin-modal-title">Nhập dữ liệu Đề thi &amp; Câu hỏi (.docx, .csv, .json)</h3>
             <button type="button" class="admin-modal-close" onclick="closeAdminModal('modal-import-qbank')">&times;</button>
         </div>
         <form method="POST" action="{{ route('admin.questions.import') }}" enctype="multipart/form-data">
             @csrf
             <div class="admin-modal-body">
                 <p style="font-size: 13.5px; color: #475569; margin-top: 0;">
-                    Hỗ trợ tệp <strong>.CSV, .TXT hoặc .JSON</strong> theo chuẩn format đề thi quốc tế StudyPREP.
+                    Hỗ trợ tệp <strong>Word (.docx), .CSV, .TXT hoặc .JSON</strong> cho cả 4 kỹ năng TOEIC (Listening, Reading, Speaking, Writing), tự động gộp bản dịch song ngữ và trích xuất ảnh nhúng.
                 </p>
-                <div class="form-group-admin">
-                    <label>Chọn tệp dữ liệu</label>
-                    <input type="file" name="import_file" accept=".csv,.txt,.json" class="form-control-admin" required>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px;">
+                    <a href="{{ route('admin.questions.sample-docx', ['skill' => 'all']) }}" class="btn-admin-action" style="display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 5px 10px; text-decoration: none; color: #4338ca; border-color: #c7d2fe; background: #eef2ff;">
+                        <span>Mẫu Full 4 kỹ năng</span>
+                    </a>
+                    <a href="{{ route('admin.questions.sample-docx', ['skill' => 'listening']) }}" class="btn-admin-action" style="font-size: 12px; padding: 5px 10px; text-decoration: none; color: #0369a1; border-color: #bae6fd; background: #e0f2fe;">Listening</a>
+                    <a href="{{ route('admin.questions.sample-docx', ['skill' => 'reading']) }}" class="btn-admin-action" style="font-size: 12px; padding: 5px 10px; text-decoration: none; color: #047857; border-color: #a7f3d0; background: #d1fae5;">Reading</a>
+                    <a href="{{ route('admin.questions.sample-docx', ['skill' => 'speaking']) }}" class="btn-admin-action" style="font-size: 12px; padding: 5px 10px; text-decoration: none; color: #b45309; border-color: #fde68a; background: #fef3c7;">Speaking</a>
+                    <a href="{{ route('admin.questions.sample-docx', ['skill' => 'writing']) }}" class="btn-admin-action" style="font-size: 12px; padding: 5px 10px; text-decoration: none; color: #6d28d9; border-color: #ddd6fe; background: #ede9fe;">Writing</a>
                 </div>
-                <div style="background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 10px; padding: 12px; font-size: 12.5px; color: #64748b;">
-                    Định dạng hỗ trợ: Bộ đề thi ETS, Hacker TOEIC hoặc trích xuất từ đề thi AI Audit.
+                <div class="form-group-admin">
+                    <label>Chọn tệp dữ liệu (.docx, .csv, .json)</label>
+                    <input type="file" name="import_file" accept=".docx,.csv,.txt,.json,.xlsx" class="form-control-admin" required>
+                </div>
+                <div class="form-group-admin">
+                    <label>Chế độ &amp; Kỹ năng nhận diện</label>
+                    <select name="import_scope" class="form-control-admin">
+                        @include('admin.questions.partials.import-scope-options')
+                    </select>
+                </div>
+                <div class="form-group-admin">
+                    <label>Trạng thái câu hỏi sau khi nhập</label>
+                    <select name="publish_status" class="form-control-admin">
+                        <option value="live" selected>Hoạt động ngay (ACTIVE - Tính ngay vào tiến độ Đề thi)</option>
+                        <option value="draft">Lưu bản nháp (DRAFT - Chờ duyệt, chưa tính vào tiến độ Đề thi)</option>
+                    </select>
+                </div>
+                <div style="background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 10px; padding: 12px; font-size: 12.5px; color: #64748b; line-height: 1.55;">
+                    <strong>Hỗ trợ đầy đủ 15 Part/Task TOEIC ETS:</strong><br>
+                    <code>[Part 1–4]</code> Listening &bull; <code>[Part 5–7]</code> Reading &bull; <code>[Speaking Task 1–5]</code> &bull; <code>[Writing Task 1–3]</code>.<br>
+                    Hỗ trợ đáp án dạng <code>A.</code> / <code>(A)</code> / <code>→</code> và gộp bản dịch tiếng Việt tự động.
                 </div>
             </div>
             <div class="admin-modal-footer">
                 <button type="button" class="btn-admin-action" onclick="closeAdminModal('modal-import-qbank')">Hủy</button>
-                <button type="submit" class="btn-admin-primary">Tải lên & Đồng bộ</button>
+                <button type="submit" class="btn-admin-primary">Tải lên &amp; Đồng bộ</button>
             </div>
         </form>
+    </div>
+</div>
+
+{{-- MODAL 5: CHỌN ĐỀ THI ĐỂ GẮN CÂU HỎI (HƯỚNG 1) --}}
+<div id="modal-assign-test" class="admin-modal-backdrop">
+    <div class="admin-modal-box" style="max-width: 520px;">
+        <div class="admin-modal-header">
+            <h3 class="admin-modal-title">Gắn câu hỏi vào Đề thi TOEIC</h3>
+            <button type="button" class="admin-modal-close" onclick="closeAdminModal('modal-assign-test')">&times;</button>
+        </div>
+        <div class="admin-modal-body">
+            <p style="font-size: 13.5px; color: #475569; margin-top: 0;">
+                Bạn đã chọn <strong id="assign-count-display" style="color: #4338ca;">0</strong> câu hỏi từ Ngân hàng câu hỏi. Vui lòng chọn Đề thi đích bên dưới để gắn:
+            </p>
+
+            @if (isset($availableTests) && $availableTests->isNotEmpty())
+                <div class="form-group-admin">
+                    <label>Chọn Đề thi TOEIC <span style="color: #dc2626;">*</span></label>
+                    <select id="modal-select-test-id" class="form-control-admin" style="width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 14px;">
+                        @foreach ($availableTests as $testItem)
+                            <option value="{{ $testItem->test_form_id }}" {{ ($targetTest?->test_form_id === $testItem->test_form_id) ? 'selected' : '' }}>
+                                [{{ $testItem->test_code }}] {{ $testItem->title }} (Hiện có {{ $testItem->questions_count ?? 0 }} câu)
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #334155; margin-top: 12px; cursor: pointer;">
+                    <input type="checkbox" id="modal-chk-redirect-test" {{ !empty($targetTest) ? 'checked' : '' }}>
+                    <span>Chuyển đến trang Chi tiết Đề thi ngay sau khi gắn xong</span>
+                </label>
+            @else
+                <div style="padding: 16px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; color: #b45309; font-size: 13.5px;">
+                    Hiện chưa có đề thi nào trong hệ thống. Vui lòng <a href="{{ route('admin.tests.index') }}" style="font-weight: 700; color: #4338ca;">Tạo đề thi mới tại Quản lý đề thi</a> trước khi gắn câu hỏi.
+                </div>
+            @endif
+        </div>
+        <div class="admin-modal-footer">
+            <button type="button" class="btn-admin-action" onclick="closeAdminModal('modal-assign-test')">Hủy</button>
+            @if (isset($availableTests) && $availableTests->isNotEmpty())
+                <button type="button" class="btn-admin-primary" onclick="confirmAssignQuestionsToTest()">Xác nhận gắn vào Đề thi</button>
+            @endif
+        </div>
+    </div>
+</div>
+
+{{-- MODAL 6: TIẾN ĐỘ SINH AUDIO TTS THEO LÔ --}}
+<div id="modal-batch-tts-progress" class="admin-modal-backdrop">
+    <div class="admin-modal-box" style="max-width: 480px;">
+        <div class="admin-modal-header">
+            <h3 class="admin-modal-title">Đang sinh Audio TTS tự động</h3>
+            <button type="button" class="admin-modal-close" id="batch-tts-close-x" onclick="closeAdminModal('modal-batch-tts-progress')">&times;</button>
+        </div>
+        <div class="admin-modal-body">
+            <p id="batch-tts-summary" style="font-size: 13.5px; color: #334155; margin-top: 0;">
+                Đang chuẩn bị danh sách câu hỏi Listening...
+            </p>
+            <div style="width: 100%; height: 12px; background: #e2e8f0; border-radius: 999px; overflow: hidden; margin-bottom: 10px;">
+                <div id="batch-tts-bar" style="width: 0%; height: 100%; background: #0284c7; border-radius: 999px; transition: width 0.3s ease;"></div>
+            </div>
+            <div id="batch-tts-detail" style="font-size: 12.5px; color: #64748b;"></div>
+        </div>
+        <div class="admin-modal-footer">
+            <button type="button" id="batch-tts-done-btn" class="btn-admin-primary" style="display: none;" onclick="location.reload()">Hoàn tất &amp; Tải lại trang</button>
+        </div>
     </div>
 </div>
 @endsection
 
 @push('scripts')
 <script>
-    // Đếm số lượng câu hỏi được chọn
-    function updateSelectionCount() {
-        var count = document.querySelectorAll('.q-row-cb:checked').length;
-        var badge = document.getElementById('selected-badge');
-        if (badge) badge.innerText = count;
+    function openAdminModal(id) {
+        var modal = document.getElementById(id);
+        if (modal) modal.classList.add('open');
     }
 
-    // Chọn tất cả câu hỏi trên trang
+    function closeAdminModal(id) {
+        var modal = document.getElementById(id);
+        if (modal) modal.classList.remove('open');
+    }
+
+    var totalMatchingQuestions = {{ (int) $questions->total() }};
+    var isAllMatchingSelected = false;
+
+    function getSelectedCount() {
+        if (isAllMatchingSelected) {
+            return totalMatchingQuestions;
+        }
+        return document.querySelectorAll('.q-row-cb:checked').length;
+    }
+
+    function renderSelectionState() {
+        var rows = document.querySelectorAll('.q-row-cb');
+        var checkedCount = document.querySelectorAll('.q-row-cb:checked').length;
+        var count = getSelectedCount();
+
+        var selectAllInput = document.getElementById('bulk-select-all');
+        if (selectAllInput) {
+            selectAllInput.value = isAllMatchingSelected ? '1' : '0';
+        }
+
+        var badge = document.getElementById('selected-badge');
+        if (badge) {
+            badge.innerText = count;
+        }
+
+        var labelEl = document.getElementById('selected-label');
+        if (labelEl) {
+            labelEl.innerText = (isAllMatchingSelected && totalMatchingQuestions > rows.length)
+                ? 'câu hỏi đã chọn (toàn bộ danh sách)'
+                : 'câu hỏi đã chọn';
+        }
+
+        var selectAllLink = document.getElementById('select-all-matching-link');
+        var selectPageLink = document.getElementById('select-page-only-link');
+        var clearLink = document.getElementById('clear-selection-link');
+
+        if (selectAllLink) {
+            selectAllLink.style.display = (totalMatchingQuestions > 0 && !isAllMatchingSelected) ? 'inline' : 'none';
+        }
+        if (selectPageLink) {
+            selectPageLink.style.display = (isAllMatchingSelected && totalMatchingQuestions > rows.length) ? 'inline' : 'none';
+        }
+        if (clearLink) {
+            clearLink.style.display = (count > 0) ? 'inline' : 'none';
+        }
+
+        var checkAllEl = document.getElementById('check-all-q');
+        if (checkAllEl) {
+            checkAllEl.checked = rows.length > 0 && (isAllMatchingSelected || checkedCount === rows.length);
+        }
+    }
+
+    // Đếm số lượng câu hỏi được chọn khi tích từng dòng
+    function updateSelectionCount() {
+        isAllMatchingSelected = false;
+        renderSelectionState();
+    }
+
+    // Chọn toàn bộ tất cả câu hỏi khớp bộ lọc hiện tại (không bị giới hạn theo trang)
+    function selectAllMatchingQuestions() {
+        if (totalMatchingQuestions <= 0) {
+            return;
+        }
+        isAllMatchingSelected = true;
+        document.querySelectorAll('.q-row-cb').forEach(function(cb) {
+            cb.checked = true;
+        });
+        renderSelectionState();
+    }
+
+    // Chuyển về chỉ chọn các câu trên trang hiện tại
+    function selectCurrentPageOnly() {
+        isAllMatchingSelected = false;
+        document.querySelectorAll('.q-row-cb').forEach(function(cb) {
+            cb.checked = true;
+        });
+        renderSelectionState();
+    }
+
+    // Bỏ chọn tất cả
+    function clearAllSelectedQuestions() {
+        isAllMatchingSelected = false;
+        document.querySelectorAll('.q-row-cb').forEach(function(cb) {
+            cb.checked = false;
+        });
+        renderSelectionState();
+    }
+
+    // Tích ô "Chọn tất cả" ở đầu bảng -> chọn toàn bộ câu hỏi trong danh sách hiện tại
     var checkAllQ = document.getElementById('check-all-q');
     if (checkAllQ) {
         checkAllQ.addEventListener('change', function() {
-            var checked = this.checked;
-            document.querySelectorAll('.q-row-cb').forEach(function(cb) {
-                cb.checked = checked;
-            });
-            updateSelectionCount();
+            if (this.checked) {
+                selectAllMatchingQuestions();
+            } else {
+                clearAllSelectedQuestions();
+            }
         });
-    }
-
-    function selectAllQuestionsOnPage() {
-        if (checkAllQ) {
-            checkAllQ.checked = true;
-            document.querySelectorAll('.q-row-cb').forEach(function(cb) {
-                cb.checked = true;
-            });
-            updateSelectionCount();
-        }
     }
 
     // Xử lý gửi hành động hàng loạt
     function submitBulkAction(actionType) {
-        var count = document.querySelectorAll('.q-row-cb:checked').length;
+        var count = getSelectedCount();
         if (count === 0) {
             alert('Vui lòng tích chọn ít nhất một câu hỏi trong danh sách.');
             return;
         }
 
-        var label = actionType === 'delete' ? 'XÓA' : (actionType === 'approve' ? 'PHÊ DUYỆT' : 'GẮN VÀO ĐỀ THI');
-        if (confirm('Bạn có chắc chắn muốn ' + label + ' ' + count + ' câu hỏi đã chọn?')) {
+        if (actionType === 'assign') {
+            var countEl = document.getElementById('assign-count-display');
+            if (countEl) countEl.innerText = count;
+            openAdminModal('modal-assign-test');
+            return;
+        }
+
+        var label = actionType === 'delete' ? 'XÓA' : 'PHÊ DUYỆT';
+        var scopeText = isAllMatchingSelected ? ' (toàn bộ danh sách hiện tại)' : '';
+        if (confirm('Bạn có chắc chắn muốn ' + label + ' ' + count + ' câu hỏi đã chọn' + scopeText + '?')) {
             document.getElementById('bulk-action-type').value = actionType;
             document.getElementById('bulk-action-form').submit();
         }
     }
 
+    function confirmAssignQuestionsToTest() {
+        var selectEl = document.getElementById('modal-select-test-id');
+        if (!selectEl || !selectEl.value) {
+            alert('Vui lòng chọn một Đề thi để gắn câu hỏi.');
+            return;
+        }
+        var redirectChk = document.getElementById('modal-chk-redirect-test');
+        document.getElementById('bulk-assign-test-id').value = selectEl.value;
+        document.getElementById('bulk-redirect-to-test').value = (redirectChk && redirectChk.checked) ? '1' : '0';
+        document.getElementById('bulk-action-type').value = 'assign';
+        document.getElementById('bulk-action-form').submit();
+    }
+
+    function submitSingleQuestionAction(actionUrl, httpMethod, statusVal) {
+        var form = document.getElementById('single-question-action-form');
+        var methodInput = document.getElementById('single-question-method');
+        var statusInput = document.getElementById('single-question-status');
+        if (!form || !methodInput) return;
+
+        form.action = actionUrl;
+        methodInput.value = httpMethod || 'POST';
+        if (statusInput) {
+            statusInput.value = statusVal || '';
+        }
+        form.submit();
+    }
+
     // Mở modal Edit câu hỏi
     function openEditQuestionModal(q) {
         var form = document.getElementById('form-edit-question');
-        form.action = '/admin/questions/' + q.question_id;
+        form.action = '{{ url('/admin/questions') }}/' + q.question_id;
         document.getElementById('edit-modal-title').innerText = 'Cập nhật câu hỏi #Q-' + q.question_id;
+        document.getElementById('edit_question_id').value = q.question_id;
         document.getElementById('edit_section_id').value = q.section_id || '5';
         document.getElementById('edit_content').value = q.content || '';
         document.getElementById('edit_difficulty').value = q.difficulty || 'MEDIUM';
         document.getElementById('edit_status').value = q.status || 'ACTIVE';
         document.getElementById('edit_explanation').value = q.explanation || '';
+
+        var qSet = q.question_set || null;
+        var existingAudio = qSet ? (qSet.resolved_audio_url || '') : '';
+        document.getElementById('edit_audio_url').value = qSet ? (qSet.audio_url || '') : '';
+        var audioWrap = document.getElementById('edit_audio_preview_wrap');
+        var audioPlayer = document.getElementById('edit_audio_player');
+        var ttsStatus = document.getElementById('edit_tts_status');
+        if (audioWrap && audioPlayer) {
+            if (existingAudio) {
+                audioPlayer.src = existingAudio;
+                audioWrap.style.display = 'block';
+                if (ttsStatus) ttsStatus.textContent = 'Đã có file MP3 đính kèm.';
+            } else {
+                audioPlayer.removeAttribute('src');
+                audioWrap.style.display = 'none';
+                if (ttsStatus) ttsStatus.textContent = '';
+            }
+        }
         openAdminModal('modal-edit-question');
     }
 
-    // Mở modal Preview câu hỏi
-    function openPreviewModal(q) {
-        document.getElementById('preview-modal-title').innerText = 'Chi tiết #Q-' + q.question_id;
-        document.getElementById('preview-part').innerText = q.part_badge || 'Part';
-        document.getElementById('preview-source').innerText = q.source_tag || 'ETS';
-        document.getElementById('preview-status').innerText = '• ' + (q.status_label || 'Hoạt động');
-        document.getElementById('preview-content').innerText = q.content || '';
-        document.getElementById('preview-explanation').innerText = q.explanation || 'Không có giải thích chi tiết.';
-        openAdminModal('modal-preview-question');
+    function generateTtsInEditModal() {
+        var qId = document.getElementById('edit_question_id').value;
+        var btn = document.getElementById('edit_btn_gen_tts');
+        var statusEl = document.getElementById('edit_tts_status');
+        if (!qId) return;
+
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Đang sinh...';
+        }
+        if (statusEl) statusEl.textContent = 'Đang gọi TextToSpeechService...';
+
+        fetch('{{ url('/api/admin/questions/generate-tts') }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ question_id: Number(qId) })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'Sinh Audio TTS';
+            }
+            if (res && res.success && res.audio_url) {
+                document.getElementById('edit_audio_url').value = res.audio_url;
+                var audioWrap = document.getElementById('edit_audio_preview_wrap');
+                var audioPlayer = document.getElementById('edit_audio_player');
+                if (audioWrap && audioPlayer) {
+                    audioPlayer.src = res.audio_url;
+                    audioWrap.style.display = 'block';
+                }
+                if (statusEl) statusEl.textContent = 'Sinh audio MP3 thành công (' + (res.duration_estimate || 5) + 's)!';
+            } else {
+                if (statusEl) statusEl.textContent = (res && res.message) ? res.message : 'Không thể sinh audio.';
+            }
+        })
+        .catch(function() {
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'Sinh Audio TTS';
+            }
+            if (statusEl) statusEl.textContent = 'Lỗi kết nối khi sinh audio.';
+        });
+    }
+
+    async function startBatchGenerateTts() {
+        var checkedBoxes = Array.from(document.querySelectorAll('.q-row-cb:checked'));
+        if (checkedBoxes.length === 0) {
+            alert('Vui lòng tích chọn ít nhất một câu hỏi Listening để sinh Audio TTS.');
+            return;
+        }
+
+        var selectedIds = checkedBoxes.map(function(cb) { return Number(cb.value); });
+        if (!confirm('Sinh Audio MP3 tự động cho ' + selectedIds.length + ' câu hỏi đã chọn (xử lý an toàn từng lô 5 câu)?')) {
+            return;
+        }
+
+        var summaryEl = document.getElementById('batch-tts-summary');
+        var barEl = document.getElementById('batch-tts-bar');
+        var detailEl = document.getElementById('batch-tts-detail');
+        var doneBtn = document.getElementById('batch-tts-done-btn');
+
+        if (doneBtn) doneBtn.style.display = 'none';
+        if (barEl) barEl.style.width = '5%';
+        if (summaryEl) summaryEl.textContent = 'Đang xử lý ' + selectedIds.length + ' câu hỏi theo từng lô 5 câu...';
+        if (detailEl) detailEl.textContent = '';
+        openAdminModal('modal-batch-tts-progress');
+
+        var totalSucceeded = 0;
+        var totalFailed = 0;
+        var chunkSize = 5;
+
+        for (var i = 0; i < selectedIds.length; i += chunkSize) {
+            var chunk = selectedIds.slice(i, i + chunkSize);
+            try {
+                var resp = await fetch('{{ url('/api/admin/questions/batch-generate-tts') }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ question_ids: chunk })
+                });
+                var data = await resp.json();
+                totalSucceeded += Number(data.succeeded || 0);
+                totalFailed += Number(data.failed || 0);
+            } catch (e) {
+                totalFailed += chunk.length;
+            }
+
+            var processedCount = Math.min(selectedIds.length, i + chunk.length);
+            var pct = Math.round((processedCount / selectedIds.length) * 100);
+            if (barEl) barEl.style.width = pct + '%';
+            if (detailEl) {
+                detailEl.textContent = 'Tiến độ: ' + processedCount + '/' + selectedIds.length + ' câu (' + totalSucceeded + ' nhóm thành công, ' + totalFailed + ' lỗi).';
+            }
+        }
+
+        if (summaryEl) {
+            summaryEl.textContent = 'Hoàn tất sinh Audio TTS! Thành công: ' + totalSucceeded + ' nhóm, Thất bại: ' + totalFailed + '.';
+        }
+        if (doneBtn) doneBtn.style.display = 'inline-flex';
     }
 </script>
 @endpush

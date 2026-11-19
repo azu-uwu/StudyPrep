@@ -50,7 +50,10 @@ class TextToSpeechService
         $chunks = $this->splitTextIntoChunks($cleanedText);
 
         $combinedMp3Data = '';
-        foreach ($chunks as $chunk) {
+        foreach ($chunks as $idx => $chunk) {
+            if ($idx > 0) {
+                usleep(300000);
+            }
             $chunkAudio = $this->fetchTtsAudioChunk($chunk, $lang);
             if ($chunkAudio !== '') {
                 $combinedMp3Data .= $chunkAudio;
@@ -74,8 +77,9 @@ class TextToSpeechService
 
         File::put($fullFilePath, $combinedMp3Data);
 
-        // URL công khai truy cập file audio
-        $audioUrl = '/storage/'.$folderRelative.'/'.$filename;
+        // Đường dẫn tương đối lưu DB (không có dấu / đầu để tương thích thư mục con)
+        $relativePath = 'storage/'.$folderRelative.'/'.$filename;
+        $audioUrl = asset($relativePath);
         $fileSize = strlen($combinedMp3Data);
 
         // Ước lượng thời lượng (MP3 ~ 16-24kbps hoặc dựa trên độ dài từ: trung bình 130 từ/phút)
@@ -84,6 +88,7 @@ class TextToSpeechService
 
         return [
             'audio_url' => $audioUrl,
+            'relative_path' => $relativePath,
             'file_path' => $fullFilePath,
             'file_size' => $fileSize,
             'duration_estimate' => $durationSeconds,
@@ -111,12 +116,9 @@ class TextToSpeechService
 
         $question = null;
         if ($questionId) {
-            $question = Question::find($questionId);
+            $question = Question::with(['section', 'options', 'questionSet.questions.options', 'questionSet.questions.section'])->find($questionId);
             if ($question) {
                 $part = $partNumber ?? $question->part_number ?? $this->detectPartFromSection($question->section_id) ?? 1;
-                if (! $textToRead) {
-                    $textToRead = $question->content;
-                }
                 $filenamePrefix = 'part'.$part.'_q'.$questionId;
             }
         }
@@ -124,12 +126,19 @@ class TextToSpeechService
         $questionSet = null;
         if ($questionSetId || ($question && $question->question_set_id)) {
             $setId = $questionSetId ?? $question->question_set_id;
-            $questionSet = QuestionSet::find($setId);
-            if ($questionSet && ! $textToRead) {
-                $textToRead = $questionSet->transcript ?: $questionSet->stimulus_text;
-            }
+            $questionSet = ($question && $question->questionSet && (int) $question->questionSet->question_set_id === (int) $setId)
+                ? $question->questionSet
+                : QuestionSet::with(['questions.options', 'questions.section'])->find($setId);
             if ($questionSet && ! $filenamePrefix) {
                 $filenamePrefix = 'part'.$part.'_set'.$setId;
+            }
+        }
+
+        if (! $textToRead) {
+            if ($questionSet) {
+                $textToRead = $this->buildToeicListeningScript($questionSet);
+            } elseif ($question) {
+                $textToRead = $this->buildScriptFromSingleQuestion($question, $part);
             }
         }
 
@@ -138,28 +147,194 @@ class TextToSpeechService
         }
 
         $result = $this->generateAudio($textToRead, $part, $filenamePrefix);
-        $audioUrl = $result['audio_url'];
+        $relativePath = $result['relative_path'];
 
-        // Cập nhật CSDL
-        if ($question) {
-            $question->audio_url = $audioUrl;
-            if ($part && empty($question->part_number)) {
-                $question->part_number = $part;
-            }
-            $question->save();
-        }
-
+        // Lưu đường dẫn audio MP3 vào cột riêng audio_url (không ghi đè ảnh media_url)
         if ($questionSet) {
-            $questionSet->media_url = $audioUrl;
-            $questionSet->media_type = 'AUDIO';
+            $questionSet->audio_url = $relativePath;
+            if (empty($questionSet->media_url) && empty($questionSet->media_type)) {
+                $questionSet->media_type = 'AUDIO';
+            }
+            if (empty($questionSet->transcript)) {
+                $questionSet->transcript = $textToRead;
+            }
             $questionSet->save();
+        } elseif ($question) {
+            $newSet = QuestionSet::query()->create([
+                'title' => 'Audio TTS #Q-'.$question->question_id,
+                'audio_url' => $relativePath,
+                'media_type' => 'AUDIO',
+                'transcript' => $textToRead,
+            ]);
+            $question->question_set_id = $newSet->question_set_id;
+            $question->save();
+            $questionSet = $newSet;
         }
 
         return array_merge($result, [
             'question_id' => $questionId,
-            'question_set_id' => $questionSetId ?? ($question ? $question->question_set_id : null),
+            'question_set_id' => $questionSet?->question_set_id ?? $questionSetId,
             'part_number' => $part,
         ]);
+    }
+
+    /**
+     * Ghép kịch bản đọc chuẩn TOEIC cho một QuestionSet theo từng Part (1, 2, 3, 4).
+     */
+    public function buildToeicListeningScript(QuestionSet $set): string
+    {
+        $set->loadMissing(['questions.options', 'questions.section']);
+        $questions = $set->questions->sortBy('question_id')->values();
+        $firstQuestion = $questions->first();
+
+        $partCode = strtoupper((string) ($firstQuestion?->section?->code ?? ''));
+        $partNumber = $this->detectPartFromSection($firstQuestion?->section_id) ?? 0;
+
+        if ($partCode === 'PART1' || $partNumber === 1) {
+            if ($firstQuestion) {
+                $script = $this->buildScriptFromSingleQuestion($firstQuestion, 1);
+                if ($script !== '') {
+                    return $script;
+                }
+            }
+        }
+
+        if ($partCode === 'PART2' || $partNumber === 2) {
+            if ($firstQuestion) {
+                $script = $this->buildScriptFromSingleQuestion($firstQuestion, 2);
+                if ($script !== '') {
+                    return $script;
+                }
+            }
+        }
+
+        $rawTranscript = trim((string) ($set->transcript ?: $set->stimulus_text ?: ''));
+        if ($rawTranscript !== '') {
+            return $this->cleanTranscriptForSpeech($rawTranscript);
+        }
+
+        if ($firstQuestion) {
+            return $this->cleanTranscriptForSpeech((string) $firstQuestion->content);
+        }
+
+        return '';
+    }
+
+    /**
+     * Sinh kịch bản đọc chuẩn cho 1 câu hỏi đơn lẻ (Part 1 hoặc Part 2).
+     */
+    protected function buildScriptFromSingleQuestion(Question $question, int $partNumber): string
+    {
+        $question->loadMissing('options');
+        $options = $question->options->sortBy('label')->values();
+
+        if ($partNumber === 1) {
+            $lines = [];
+            foreach ($options as $opt) {
+                $optText = trim((string) $opt->content);
+                if ($optText !== '' && preg_match('/^Option\s+[A-D]$/i', $optText) !== 1) {
+                    $lines[] = "({$opt->label}) {$optText}.";
+                }
+            }
+            if (! empty($lines)) {
+                return $this->cleanTranscriptForSpeech(implode(' ', $lines));
+            }
+        }
+
+        if ($partNumber === 2) {
+            $parts = [];
+            $stem = trim((string) $question->content);
+            if ($stem !== '') {
+                $parts[] = rtrim($stem, '.?!').(str_ends_with($stem, '?') ? '' : '?');
+            }
+            foreach ($options as $opt) {
+                $optText = trim((string) $opt->content);
+                if ($optText !== '' && preg_match('/^Option\s+[A-D]$/i', $optText) !== 1) {
+                    $parts[] = "({$opt->label}) {$optText}.";
+                }
+            }
+            if (! empty($parts)) {
+                return $this->cleanTranscriptForSpeech(implode(' ', $parts));
+            }
+        }
+
+        return $this->cleanTranscriptForSpeech((string) $question->content);
+    }
+
+    /**
+     * Sinh audio MP3 theo lô an toàn (tối đa $maxGroups nhóm mỗi lần gọi, nghỉ 300ms giữa các request tránh HTTP 429).
+     *
+     * @param  array<int>  $questionIds
+     * @return array{processed: int, succeeded: int, failed: int, results: array<int, array<string, mixed>>}
+     */
+    public function generateBatchForQuestions(array $questionIds, int $maxGroups = 5): array
+    {
+        $cleanIds = array_values(array_unique(array_filter(array_map('intval', $questionIds), static fn (int $id): bool => $id > 0)));
+        if (empty($cleanIds)) {
+            return ['processed' => 0, 'succeeded' => 0, 'failed' => 0, 'results' => []];
+        }
+
+        $questions = Question::with(['section', 'options', 'questionSet.questions.options', 'questionSet.questions.section'])
+            ->whereIn('question_id', $cleanIds)
+            ->orderBy('question_id')
+            ->get();
+
+        // Gom nhóm theo question_set_id để tránh sinh trùng nhiều lần cho cùng 1 đoạn hội thoại/bài nói Part 3/4
+        $groups = [];
+        foreach ($questions as $q) {
+            $groupKey = $q->question_set_id ? 'set_'.$q->question_set_id : 'q_'.$q->question_id;
+            if (! isset($groups[$groupKey])) {
+                $groups[$groupKey] = $q;
+            }
+        }
+
+        $targetGroups = array_slice(array_values($groups), 0, max(1, $maxGroups));
+        $succeeded = 0;
+        $failed = 0;
+        $results = [];
+
+        foreach ($targetGroups as $idx => $q) {
+            if ($idx > 0) {
+                usleep(300000);
+            }
+
+            $partNumber = $this->detectPartFromSection($q->section_id) ?? 1;
+            if ($partNumber < 1 || $partNumber > 4) {
+                $partNumber = 1;
+            }
+
+            try {
+                $res = $this->generateAndSaveToDatabase(
+                    $q->question_id,
+                    $q->question_set_id ? (int) $q->question_set_id : null,
+                    null,
+                    $partNumber
+                );
+                $succeeded++;
+                $results[] = [
+                    'question_id' => $q->question_id,
+                    'question_set_id' => $res['question_set_id'],
+                    'success' => true,
+                    'audio_url' => $res['audio_url'],
+                    'file_size' => $res['file_size'],
+                ];
+            } catch (\Throwable $e) {
+                $failed++;
+                $results[] = [
+                    'question_id' => $q->question_id,
+                    'question_set_id' => $q->question_set_id,
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                ];
+            }
+        }
+
+        return [
+            'processed' => count($targetGroups),
+            'succeeded' => $succeeded,
+            'failed' => $failed,
+            'results' => $results,
+        ];
     }
 
     /**

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -233,20 +234,41 @@ class UserController extends Controller
             return redirect()->back()->with('error', 'Bạn không thể tự khóa tài khoản đang đăng nhập.');
         }
 
-        if ($user->isLocked()) {
-            $user->status = 'ACTIVE';
-            $user->locked_until = null;
-            $user->failed_login_attempts = 0;
-            $user->save();
+        DB::transaction(function () use ($user) {
+            $lockedUser = User::where('user_id', $user->user_id)->lockForUpdate()->firstOrFail();
+            $adminId = auth()->id() ?? 1;
 
-            return redirect()->back()->with('success', "Đã mở khóa thành công tài khoản '{$user->full_name}'.");
-        }
+            if ($lockedUser->isLocked()) {
+                $lockedUser->status = 'ACTIVE';
+                $lockedUser->locked_until = null;
+                $lockedUser->failed_login_attempts = 0;
+                $lockedUser->save();
 
-        $user->status = 'LOCKED';
-        $user->locked_until = now()->addDays(30);
-        $user->save();
+                DB::table('activity_log')->insert([
+                    'user_id' => $adminId,
+                    'action' => 'USER_UNLOCKED',
+                    'description' => "Mở khóa tài khoản {$lockedUser->email} (ID #{$lockedUser->user_id})",
+                    'created_at' => now(),
+                ]);
+            } else {
+                $lockedUser->status = 'LOCKED';
+                $lockedUser->locked_until = now()->addDays(30);
+                $lockedUser->save();
 
-        return redirect()->back()->with('success', "Đã khóa tài khoản '{$user->full_name}'.");
+                DB::table('activity_log')->insert([
+                    'user_id' => $adminId,
+                    'action' => 'USER_LOCKED',
+                    'description' => "Khóa tài khoản {$lockedUser->email} (ID #{$lockedUser->user_id})",
+                    'created_at' => now(),
+                ]);
+            }
+        });
+
+        $message = $user->fresh()->isLocked()
+            ? "Đã khóa tài khoản '{$user->full_name}'."
+            : "Đã mở khóa thành công tài khoản '{$user->full_name}'.";
+
+        return redirect()->back()->with('success', $message);
     }
 
     /**

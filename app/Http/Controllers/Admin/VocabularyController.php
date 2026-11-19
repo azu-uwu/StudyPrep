@@ -497,9 +497,8 @@ class VocabularyController extends Controller
     public function import(Request $request): RedirectResponse
     {
         $topicId = (int) $request->input('topic_id', 0);
-        if ($topicId <= 0) {
-            $defaultTopic = Topic::first();
-            $topicId = $defaultTopic ? $defaultTopic->topic_id : 1;
+        if ($topicId <= 0 || ! Topic::where('topic_id', $topicId)->exists()) {
+            return redirect()->back()->with('info', 'Vui lòng chọn bộ chủ đề từ vựng hợp lệ trước khi nhập.');
         }
 
         $mode = $request->input('import_mode', 'skip');

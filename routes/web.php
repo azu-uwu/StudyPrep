@@ -106,7 +106,13 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         // Quản lý đề thi
         Route::get('/tests', [TestController::class, 'index'])->name('tests.index');
         Route::post('/tests', [TestController::class, 'store'])->name('tests.store');
-        Route::get('/tests/{id}', [TestController::class, 'show'])->name('tests.show');
+        Route::get('/tests/{id}', [TestController::class, 'show'])->whereNumber('id')->name('tests.show');
+        Route::put('/tests/{id}', [TestController::class, 'update'])->whereNumber('id')->name('tests.update');
+        Route::delete('/tests/{id}', [TestController::class, 'destroy'])->whereNumber('id')->name('tests.destroy');
+        Route::post('/tests/{id}/save', [TestController::class, 'saveState'])->whereNumber('id')->name('tests.save');
+        Route::post('/tests/{id}/questions', [TestController::class, 'attachQuestions'])->whereNumber('id')->name('tests.questions.attach');
+        Route::put('/tests/{id}/questions/{questionId}', [TestController::class, 'updateQuestion'])->whereNumber(['id', 'questionId'])->name('tests.questions.update');
+        Route::delete('/tests/{id}/questions/{questionId}', [TestController::class, 'detachQuestion'])->whereNumber(['id', 'questionId'])->name('tests.questions.detach');
         Route::redirect('/de-thi', '/admin/tests');
 
         // Ngân hàng câu hỏi
@@ -115,13 +121,15 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::post('/questions', [QuestionController::class, 'store'])->name('questions.store');
         Route::get('/questions/group/create', [QuestionController::class, 'createGroup'])->name('questions.group.create');
         Route::post('/questions/group', [QuestionController::class, 'storeGroup'])->name('questions.group.store');
-        Route::put('/questions/{question}', [QuestionController::class, 'update'])->name('questions.update');
-        Route::patch('/questions/{question}/status', [QuestionController::class, 'toggleStatus'])->name('questions.toggle-status');
-        Route::delete('/questions/{question}', [QuestionController::class, 'destroy'])->name('questions.destroy');
-        Route::post('/questions/bulk-action', [QuestionController::class, 'bulkAction'])->name('questions.bulk-action');
+        Route::get('/questions/bulk-action', fn () => redirect()->route('admin.questions.index'));
+        Route::match(['post', 'delete', 'patch'], '/questions/bulk-action', [QuestionController::class, 'bulkAction'])->name('questions.bulk-action');
         Route::get('/questions/export', [QuestionController::class, 'export'])->name('questions.export');
+        Route::get('/questions/sample-docx', [QuestionController::class, 'sampleDocx'])->name('questions.sample-docx');
         Route::get('/questions/bulk-import', [QuestionController::class, 'importView'])->name('questions.bulk-import');
         Route::post('/questions/import', [QuestionController::class, 'import'])->name('questions.import');
+        Route::put('/questions/{question}', [QuestionController::class, 'update'])->whereNumber('question')->name('questions.update');
+        Route::patch('/questions/{question}/status', [QuestionController::class, 'toggleStatus'])->whereNumber('question')->name('questions.toggle-status');
+        Route::delete('/questions/{question}', [QuestionController::class, 'destroy'])->whereNumber('question')->name('questions.destroy');
         Route::redirect('/ngan-hang-cau-hoi', '/admin/questions');
 
         // Từ vựng & Flashcards

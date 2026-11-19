@@ -14,663 +14,481 @@
 
 @section('content')
 <div class="qimport-container">
-    {{-- Form gửi lệnh nạp hàng loạt --}}
-    <form action="{{ route('admin.questions.import') }}" method="POST" id="bulkImportForm">
-        @csrf
-        <input type="hidden" name="bulk_confirm" value="1">
-        <input type="hidden" name="action_type" value="bulk_import">
-        <input type="hidden" name="publish_status" id="publishStatusInput" value="draft">
-        <input type="hidden" name="selected_count" id="selectedCountInput" value="116">
 
-        {{-- 1. HEADER --}}
-        <div class="qimport-header">
+    {{-- Thông báo kết quả sau khi Import / Chỉnh sửa / Xóa --}}
+    @if (session('success'))
+        <div class="alert-admin-success" style="display: flex; align-items: center; gap: 10px; background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 12px 18px; border-radius: 12px; margin-bottom: 20px; font-size: 14px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            <span>{{ session('success') }}</span>
+        </div>
+    @endif
+
+    @if (isset($errors) && $errors->any())
+        <div class="alert-admin-error" style="background: #fee2e2; border: 1px solid #fecaca; color: #991b1b; padding: 12px 18px; border-radius: 12px; margin-bottom: 20px; font-size: 14px;">
+            <strong>Đã có lỗi xảy ra:</strong>
+            <ul style="margin: 6px 0 0 18px; padding: 0;">
+                @foreach ($errors->all() as $err)
+                    <li>{{ $err }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    {{-- 1. HEADER --}}
+    <div class="qimport-header" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px;">
+        <div>
             <div class="qimport-title-row">
                 <h1 class="qimport-page-title">Nhập câu hỏi TOEIC hàng loạt</h1>
                 <span class="qimport-badge-code">#IMPORT-2025-04</span>
             </div>
             <div class="qimport-subtext">
-                Excel, CSV, JSON & ETS Zip Media
+                Tải lên tệp Word (.docx), CSV hoặc JSON -> Hệ thống tự động bóc tách và hiển thị danh sách câu hỏi để bạn Xem trước, Chỉnh sửa hoặc Xóa ngay bên dưới.
             </div>
         </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <a href="{{ route('admin.questions.sample-docx') }}" class="btn-admin-action" style="display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 10px; background: #eef2ff; color: #4338ca; border: 1.5px solid #c7d2fe; font-weight: 700; font-size: 13.5px; text-decoration: none;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>Tải file Word mẫu (.docx)</span>
+            </a>
 
-        {{-- 2. STEPPER COMPONENT (4 BƯỚC) --}}
-        <div class="qimport-stepper">
-            {{-- Bước 1: Hoàn thành --}}
-            <div class="qimport-step-card completed">
-                <div class="qimport-step-num">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                </div>
-                <div class="qimport-step-meta">
-                    <span class="qimport-step-tag">BƯỚC 1</span>
-                    <span class="qimport-step-name">Tải lên tệp & Media</span>
-                </div>
-            </div>
-
-            {{-- Bước 2: Hoàn thành --}}
-            <div class="qimport-step-card completed">
-                <div class="qimport-step-num">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                </div>
-                <div class="qimport-step-meta">
-                    <span class="qimport-step-tag">BƯỚC 2</span>
-                    <span class="qimport-step-name">Ánh xạ trường dữ liệu</span>
-                </div>
-            </div>
-
-            {{-- Bước 3: Đang thực hiện (Active) --}}
-            <div class="qimport-step-card active">
-                <div class="qimport-step-num">3</div>
-                <div class="qimport-step-meta">
-                    <span class="qimport-step-tag">BƯỚC 3</span>
-                    <span class="qimport-step-name">Kiểm tra hợp lệ & Xem trước</span>
-                </div>
-            </div>
-
-            {{-- Bước 4: Chưa thực hiện --}}
-            <div class="qimport-step-card pending">
-                <div class="qimport-step-num">4</div>
-                <div class="qimport-step-meta">
-                    <span class="qimport-step-tag">BƯỚC 4</span>
-                    <span class="qimport-step-name">Hoàn thành & Lưu ngân hàng</span>
-                </div>
-            </div>
+            <a href="{{ route('admin.questions.index') }}" class="btn-admin-action" style="text-decoration: none;">
+                <span>&larr; Quay lại Ngân hàng câu hỏi</span>
+            </a>
         </div>
+    </div>
 
-        {{-- 3. TOP 2-COLUMN GRID: TỆP NGUỒN VÀ CẤU HÌNH ĐÍCH ĐẾN --}}
-        <div class="qimport-top-grid">
-            {{-- Cột trái: Tệp nguồn & Dữ liệu đính kèm --}}
+    {{-- 2. FORM TẢI LÊN FILE & CẤU HÌNH ĐÍCH ĐẾN (Đã bỏ thanh Stepper rườm rà) --}}
+    <form action="{{ route('admin.questions.import') }}" method="POST" enctype="multipart/form-data" id="bulkImportForm">
+        @csrf
+        <input type="hidden" name="bulk_confirm" value="1">
+        <input type="hidden" name="action_type" value="bulk_import">
+        <input type="hidden" name="return_to_import_view" value="1">
+        <input type="hidden" name="publish_status" id="publishStatusInput" value="live">
+
+        <div class="qimport-top-grid" style="margin-bottom: 24px;">
+            {{-- Cột trái: Chọn tệp Word (.docx) / CSV / JSON --}}
             <div class="qimport-card">
                 <h2 class="qimport-card-title">
                     <span class="qimport-bar-accent"></span>
-                    <span>Tệp nguồn & Dữ liệu đính kèm</span>
+                    <span>Chọn tệp câu hỏi cần nhập (.docx, .csv, .json)</span>
                 </h2>
 
-                {{-- Hai thẻ tệp đã nạp --}}
-                <div class="qimport-files-row">
-                    {{-- File 1: Excel --}}
-                    <div class="qimport-file-box">
-                        <div class="qimport-file-icon">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                <polyline points="14 2 14 8 20 8"></polyline>
-                                <line x1="8" y1="13" x2="16" y2="13"></line>
-                                <line x1="8" y1="17" x2="16" y2="17"></line>
-                                <polyline points="10 9 9 9 8 9"></polyline>
-                            </svg>
-                        </div>
-                        <div class="qimport-file-body">
-                            <div class="qimport-file-name-row">
-                                <span class="qimport-file-name" title="ETS_2024_Test05_Batch.xlsx">ETS_2024_Test05_Batch.xlsx</span>
-                                <span class="qimport-file-check" title="Đã xác thực hợp lệ">
-                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                        <polyline points="20 6 9 17 4 12"></polyline>
-                                    </svg>
-                                </span>
-                            </div>
-                            <span class="qimport-file-meta">2.4 MB • 120 câu hỏi TOEIC</span>
-                            <div class="qimport-file-badges">
-                                <span class="qimport-badge-pill purple">Part 1-7</span>
-                                <span class="qimport-badge-time">Đã nạp 2 phút trước</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- File 2: ZIP Media --}}
-                    <div class="qimport-file-box">
-                        <div class="qimport-file-icon zip">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="21 8 21 21 3 21 3 8"></polyline>
-                                <rect x="1" y="3" width="22" height="5"></rect>
-                                <line x1="10" y1="12" x2="14" y2="12"></line>
-                            </svg>
-                        </div>
-                        <div class="qimport-file-body">
-                            <div class="qimport-file-name-row">
-                                <span class="qimport-file-name" title="ETS_Audio_Part1_Part4.zip">ETS_Audio_Part1_Part4.zip</span>
-                            </div>
-                            <span class="qimport-file-meta">45.8 MB • 48 tệp MP3 & Hình ảnh</span>
-                            <div class="qimport-file-badges">
-                                <span class="qimport-badge-pill green">100% khớp mã ID</span>
-                                <span class="qimport-badge-time">Đã giải nén tạm</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- 4 Checkboxes tùy chọn thông minh --}}
-                <div class="qimport-checkboxes-grid">
-                    <label class="qimport-chk-item">
-                        <input type="checkbox" name="opt_auto_part" value="1" checked>
-                        <span>Tự động phân tách Part dựa trên cấu trúc đề ETS</span>
-                    </label>
-                    <label class="qimport-chk-item">
-                        <input type="checkbox" name="opt_ai_difficulty" value="1" checked>
-                        <span>Tự động gắn nhãn độ khó bằng StudyPREP AI Engine</span>
-                    </label>
-                    <label class="qimport-chk-item">
-                        <input type="checkbox" name="opt_skip_duplicates" value="1" checked>
-                        <span>Bỏ qua câu hỏi trùng lặp theo mã Hash</span>
-                    </label>
-                    <label class="qimport-chk-item">
-                        <input type="checkbox" name="opt_flashcards" value="1" checked>
-                        <span>Khởi tạo bộ thẻ Flashcards từ từ vựng nổi bật</span>
-                    </label>
-                </div>
-            </div>
-
-            {{-- Cột phải: Cấu hình Đích đến --}}
-            <div class="qimport-card">
-                <h2 class="qimport-card-title">
-                    <span class="qimport-bar-accent green"></span>
-                    <span>Cấu hình Đích đến</span>
-                </h2>
-
-                <div class="qimport-dest-field">
-                    <label class="qimport-dest-label">Bộ đề / Khóa học mục tiêu</label>
-                    <select name="target_set" class="qimport-dest-select">
-                        <option value="ETS_2024_T05" selected>ETS TOEIC 2024 - Test 05 (Mới khởi tạo)</option>
-                        <option value="ETS_2024_T04">ETS TOEIC 2024 - Test 04</option>
-                        <option value="ETS_2024_T03">ETS TOEIC 2024 - Test 03</option>
-                    </select>
-                </div>
-
-                <div class="qimport-dest-field">
-                    <label class="qimport-dest-label">Chuyên viên kiểm duyệt nội dung</label>
-                    <div class="qimport-reviewer-card">
-                        <div class="qimport-reviewer-avatar">HT</div>
-                        <div class="qimport-reviewer-info">
-                            <span class="qimport-reviewer-name">ThS. Hoàng Minh Tuấn</span>
-                            <span class="qimport-reviewer-role">Lead TOEIC Specialist • ETS Master</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="qimport-dest-field">
-                    <label class="qimport-dest-label">Trạng thái phát hành sau khi nhập</label>
-                    <div class="qimport-radio-wrap">
-                        {{-- Option 1: Draft --}}
-                        <label class="qimport-radio-card active" id="radioCardDraft">
-                            <input type="radio" name="publish_mode" value="draft" checked onchange="switchPublishMode('draft')">
-                            <div class="qimport-radio-text">
-                                <span class="qimport-radio-title">Lưu bản nháp (Draft)</span>
-                                <span class="qimport-radio-desc">Chờ chuyên môn kiểm tra trước khi học viên có thể làm bài</span>
-                            </div>
-                        </label>
-
-                        {{-- Option 2: Live --}}
-                        <label class="qimport-radio-card" id="radioCardLive">
-                            <input type="radio" name="publish_mode" value="live" onchange="switchPublishMode('live')">
-                            <div class="qimport-radio-text">
-                                <span class="qimport-radio-title">Xuất bản trực tiếp (Live Bank)</span>
-                                <span class="qimport-radio-desc">Kích hoạt ngay cho hệ thống tạo đề thi thử trực tuyến</span>
-                            </div>
-                        </label>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {{-- 4. SECTION 2: ÁNH XẠ TRƯỜNG DỮ LIỆU (FIELD MAPPING) --}}
-        <div class="qimport-mapping-card">
-            <div class="qimport-section-header">
-                <div class="qimport-section-title-wrap">
-                    <h2 class="qimport-section-title">
-                        <span class="qimport-bar-accent"></span>
-                        <span>Ánh xạ trường dữ liệu (Field Mapping)</span>
-                    </h2>
-                    <p class="qimport-section-desc">Tự động đối chiếu các cột trong tệp Excel với schema CSDL StudyPREP</p>
-                </div>
-                <div class="qimport-sync-pill">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                    <span>14/14 trường khớp 100%</span>
-                </div>
-            </div>
-
-            <div class="qimport-mapping-grid">
-                {{-- Card 1 --}}
-                <div class="qimport-map-item">
-                    <span class="qimport-map-col-label">CỘT A • MÃ ĐỀ/CÂU</span>
-                    <div class="qimport-map-key-row">
-                        <span class="qimport-map-key">question_code</span>
-                        <span class="qimport-map-arrow">⇄</span>
-                    </div>
-                    <a class="qimport-map-sublink" onclick="alert('Đã map với field ID duy nhất của câu hỏi')">Mã định danh duy nhất</a>
-                </div>
-
-                {{-- Card 2 --}}
-                <div class="qimport-map-item">
-                    <span class="qimport-map-col-label">CỘT B • KỸ NĂNG/PART</span>
-                    <div class="qimport-map-key-row">
-                        <span class="qimport-map-key">toeic_part</span>
-                        <span class="qimport-map-arrow">⇄</span>
-                    </div>
-                    <a class="qimport-map-sublink" onclick="alert('Phân loại Part 1 đến Part 7')">Part 1 đến Part 7</a>
-                </div>
-
-                {{-- Card 3 --}}
-                <div class="qimport-map-item">
-                    <span class="qimport-map-col-label">CỘT C • NỘI DUNG/PASSAGE</span>
-                    <div class="qimport-map-key-row">
-                        <span class="qimport-map-key">question_body</span>
-                        <span class="qimport-map-arrow">⇄</span>
-                    </div>
-                    <a class="qimport-map-sublink" onclick="alert('Nội dung đề bài hoặc transcript hội thoại')">Transcript / Đề bài</a>
-                </div>
-
-                {{-- Card 4 --}}
-                <div class="qimport-map-item">
-                    <span class="qimport-map-col-label">CỘT D–G • LỰA CHỌN A,B,C,D</span>
-                    <div class="qimport-map-key-row">
-                        <span class="qimport-map-key">option_a_d</span>
-                        <span class="qimport-map-arrow">⇄</span>
-                    </div>
-                    <a class="qimport-map-sublink" onclick="alert('4 phương án trắc nghiệm A, B, C, D')">4 Phương án trả lời</a>
-                </div>
-
-                {{-- Card 5 --}}
-                <div class="qimport-map-item">
-                    <span class="qimport-map-col-label">CỘT H • ĐÁP ÁN CHUẨN</span>
-                    <div class="qimport-map-key-row">
-                        <span class="qimport-map-key">correct_key</span>
-                        <span class="qimport-map-arrow">⇄</span>
-                    </div>
-                    <a class="qimport-map-sublink" onclick="alert('Khóa đáp án chính xác A, B, C hoặc D')">A / B / C / D</a>
-                </div>
-
-                {{-- Card 6 --}}
-                <div class="qimport-map-item">
-                    <span class="qimport-map-col-label">CỘT I • GIẢI THÍCH CHI TIẾT</span>
-                    <div class="qimport-map-key-row">
-                        <span class="qimport-map-key">explanation</span>
-                        <span class="qimport-map-arrow">⇄</span>
-                    </div>
-                    <a class="qimport-map-sublink" onclick="alert('Dịch nghĩa câu và phân tích ngữ pháp')">Dịch nghĩa + Ngữ pháp</a>
-                </div>
-
-                {{-- Card 7 --}}
-                <div class="qimport-map-item">
-                    <span class="qimport-map-col-label">CỘT J • TỆP AUDIO/ẢNH</span>
-                    <div class="qimport-map-key-row">
-                        <span class="qimport-map-key">media_asset</span>
-                        <span class="qimport-map-arrow">⇄</span>
-                    </div>
-                    <a class="qimport-map-sublink" onclick="alert('Khớp tên file đính kèm trong tệp ZIP')">Tên tệp trong ZIP</a>
-                </div>
-
-                {{-- Card 8 --}}
-                <div class="qimport-map-item">
-                    <span class="qimport-map-col-label">CỘT K • THẺ PHÂN LOẠI</span>
-                    <div class="qimport-map-key-row">
-                        <span class="qimport-map-key">tag_grammar</span>
-                        <span class="qimport-map-arrow">⇄</span>
-                    </div>
-                    <a class="qimport-map-sublink" onclick="alert('Gắn thẻ chủ điểm ngữ pháp và từ vựng')">Chủ điểm ngữ pháp</a>
-                </div>
-            </div>
-        </div>
-
-        {{-- 5. SECTION 3: KIỂM TRA HỢP LỆ & XEM TRƯỚC DỮ LIỆU --}}
-        <div class="qimport-preview-card">
-            <div class="qimport-section-header">
-                <div class="qimport-section-title-wrap">
-                    <h2 class="qimport-section-title">
-                        <span>Kiểm tra hợp lệ & Xem trước dữ liệu</span>
-                    </h2>
-                    <p class="qimport-section-desc">Phát hiện tự động các điểm bất thường trước khi ghi vào kho cơ sở dữ liệu chính</p>
-                </div>
-                <button type="button" class="qimport-export-log-btn" onclick="exportAuditLog()">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                        <polyline points="10 9 9 9 8 9"></polyline>
-                    </svg>
-                    <span>Xuất nhật ký kiểm thử (log)</span>
-                </button>
-            </div>
-
-            {{-- 4 Thẻ chỉ số tổng kết --}}
-            <div class="qimport-stat-grid">
-                {{-- Thẻ 1: Tổng số --}}
-                <div class="qimport-stat-box stat-total">
-                    <div class="qimport-stat-icon-wrap">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                            <line x1="9" y1="9" x2="15" y2="9"></line>
-                            <line x1="9" y1="13" x2="15" y2="13"></line>
-                            <line x1="9" y1="17" x2="11" y2="17"></line>
+                <div style="background: #f8fafc; border: 2px dashed #818cf8; border-radius: 14px; padding: 24px 20px; text-align: center; margin-bottom: 16px;">
+                    <div style="width: 48px; height: 48px; border-radius: 12px; background: #eef2ff; color: #4338ca; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="12" y1="18" x2="12" y2="12"></line>
+                            <line x1="9" y1="15" x2="15" y2="15"></line>
                         </svg>
                     </div>
-                    <div class="qimport-stat-data">
-                        <span class="qimport-stat-label">TỔNG SỐ PHÁT HIỆN</span>
-                        <span class="qimport-stat-value" id="statTotalVal">120 câu</span>
+                    <div style="font-size: 14.5px; font-weight: 700; color: #1e1b4b; margin-bottom: 6px;">
+                        Tải lên tệp Word (.docx), CSV hoặc JSON của bạn
                     </div>
+                    <div style="font-size: 12.5px; color: #64748b; margin-bottom: 14px;">
+                        Hỗ trợ bóc tách tự động cả câu hỏi đơn và câu hỏi theo đoạn văn từ file Word
+                    </div>
+                    <input type="file" name="import_file" id="docxFileInput" accept=".docx,.csv,.txt,.json,.xlsx" class="form-control-admin" style="max-width: 420px; margin: 0 auto; background: #fff; padding: 9px 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 13.5px;" onchange="onWordFileSelected(this)">
                 </div>
 
-                {{-- Thẻ 2: Hợp lệ --}}
-                <div class="qimport-stat-box stat-valid">
-                    <div class="qimport-stat-icon-wrap">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                    </div>
-                    <div class="qimport-stat-data">
-                        <span class="qimport-stat-label">HỢP LỆ SẴN SÀNG</span>
-                        <div class="qimport-stat-value">
-                            <span id="statValidVal">116 câu</span>
-                            <span class="qimport-stat-pct" id="statValidPct">(96.7%)</span>
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; font-size: 12.5px; color: #475569; line-height: 1.6;">
+                    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px;">
+                        <strong style="color: #0f172a;">Tải file Word mẫu &amp; Cấu trúc chuẩn 4 kỹ năng ETS:</strong>
+                        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                            <a href="{{ route('admin.questions.sample-docx', ['skill' => 'all']) }}" style="font-size: 11.5px; font-weight: 700; color: #4338ca; background: #eef2ff; border: 1px solid #c7d2fe; padding: 3px 9px; border-radius: 999px; text-decoration: none;">Full 4 kỹ năng</a>
+                            <a href="{{ route('admin.questions.sample-docx', ['skill' => 'listening']) }}" style="font-size: 11.5px; font-weight: 700; color: #0369a1; background: #e0f2fe; border: 1px solid #bae6fd; padding: 3px 9px; border-radius: 999px; text-decoration: none;">Listening</a>
+                            <a href="{{ route('admin.questions.sample-docx', ['skill' => 'reading']) }}" style="font-size: 11.5px; font-weight: 700; color: #047857; background: #d1fae5; border: 1px solid #a7f3d0; padding: 3px 9px; border-radius: 999px; text-decoration: none;">Reading</a>
+                            <a href="{{ route('admin.questions.sample-docx', ['skill' => 'speaking']) }}" style="font-size: 11.5px; font-weight: 700; color: #b45309; background: #fef3c7; border: 1px solid #fde68a; padding: 3px 9px; border-radius: 999px; text-decoration: none;">Speaking</a>
+                            <a href="{{ route('admin.questions.sample-docx', ['skill' => 'writing']) }}" style="font-size: 11.5px; font-weight: 700; color: #6d28d9; background: #ede9fe; border: 1px solid #ddd6fe; padding: 3px 9px; border-radius: 999px; text-decoration: none;">Writing</a>
                         </div>
                     </div>
-                </div>
 
-                {{-- Thẻ 3: Cảnh báo --}}
-                <div class="qimport-stat-box stat-warning">
-                    <div class="qimport-stat-icon-wrap">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                            <line x1="12" y1="9" x2="12" y2="13"></line>
-                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                        </svg>
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+                        <button type="button" class="tpl-skill-tab active" data-skill="listening" onclick="switchTemplateTab('listening', this)" style="padding: 4px 10px; border-radius: 7px; border: 1px solid #0284c7; background: #0284c7; color: #fff; font-size: 12px; font-weight: 700; cursor: pointer;">Listening (P1–P4)</button>
+                        <button type="button" class="tpl-skill-tab" data-skill="reading" onclick="switchTemplateTab('reading', this)" style="padding: 4px 10px; border-radius: 7px; border: 1px solid #cbd5e1; background: #f8fafc; color: #334155; font-size: 12px; font-weight: 700; cursor: pointer;">Reading (P5–P7)</button>
+                        <button type="button" class="tpl-skill-tab" data-skill="speaking" onclick="switchTemplateTab('speaking', this)" style="padding: 4px 10px; border-radius: 7px; border: 1px solid #cbd5e1; background: #f8fafc; color: #334155; font-size: 12px; font-weight: 700; cursor: pointer;">Speaking (T1–T5)</button>
+                        <button type="button" class="tpl-skill-tab" data-skill="writing" onclick="switchTemplateTab('writing', this)" style="padding: 4px 10px; border-radius: 7px; border: 1px solid #cbd5e1; background: #f8fafc; color: #334155; font-size: 12px; font-weight: 700; cursor: pointer;">Writing (T1–T3)</button>
                     </div>
-                    <div class="qimport-stat-data">
-                        <span class="qimport-stat-label">CẢNH BÁO XEM XÉT</span>
-                        <div class="qimport-stat-value">
-                            <span id="statWarnVal">3 câu</span>
-                            <span class="qimport-stat-pct" id="statWarnPct">(2.5%)</span>
-                        </div>
-                    </div>
-                </div>
 
-                {{-- Thẻ 4: Lỗi chặn --}}
-                <div class="qimport-stat-box stat-error">
-                    <div class="qimport-stat-icon-wrap">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="15" y1="9" x2="9" y2="15"></line>
-                            <line x1="9" y1="9" x2="15" y2="15"></line>
-                        </svg>
+                    <div id="tpl-panel-listening" class="tpl-skill-panel" style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; background: #f8fafc; padding: 10px 12px; border-radius: 8px; line-height: 1.55;">
+                        [Part 1] (Chèn ảnh ngay trên câu hỏi)<br>
+                        Câu 1: Look at the picture and choose the correct statement.<br>
+                        (A) A woman is typing on a laptop. &nbsp; (B) ... &nbsp; (C) ... &nbsp; (D) ...<br>
+                        Đáp án: A | (Hỗ trợ bản dịch tiếng Việt hoặc dấu → bên dưới)<br>
+                        [Part 2] — Tự động giới hạn đúng 3 phương án (A), (B), (C).<br>
+                        [Part 3] / [Part 4] — Ghi Transcript: ... rồi liệt kê 3 câu hỏi cùng nhóm.
                     </div>
-                    <div class="qimport-stat-data">
-                        <span class="qimport-stat-label">LỖI KHÔNG THỂ NẠP</span>
-                        <div class="qimport-stat-value">
-                            <span id="statErrVal">1 câu</span>
-                            <span class="qimport-stat-pct" id="statErrPct">(0.8%)</span>
-                        </div>
+                    <div id="tpl-panel-reading" class="tpl-skill-panel" style="display: none; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; background: #f8fafc; padding: 10px 12px; border-radius: 8px; line-height: 1.55;">
+                        [Part 5]<br>
+                        Câu 101: Ms. Tanaka requested that all department heads submit ------- Friday.<br>
+                        A. until &nbsp;&nbsp; B. before &nbsp;&nbsp; C. since &nbsp;&nbsp; D. toward<br>
+                        Đáp án: B | Giải thích: Dùng giới từ before trước mốc thời gian.<br>
+                        [Part 6] / [Part 7] — Ghi Đoạn văn: ... (nhiều dòng) rồi liệt kê các câu hỏi thuộc đoạn.
+                    </div>
+                    <div id="tpl-panel-speaking" class="tpl-skill-panel" style="display: none; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; background: #f8fafc; padding: 10px 12px; border-radius: 8px; line-height: 1.55;">
+                        [Speaking Task 1: Read a Text Aloud] (Câu 1–2)<br>
+                        Đoạn văn: Welcome to the annual Tech Innovation Expo...<br>
+                        Câu 1: Read the announcement aloud clearly.<br>
+                        [Speaking Task 2: Describe a Picture] (Chèn ảnh + Câu 3–4)<br>
+                        [Speaking Task 3–5] — Ghi Bảng thông tin / Đề bài + Gợi ý trả lời (không tạo phương án A–D).
+                    </div>
+                    <div id="tpl-panel-writing" class="tpl-skill-panel" style="display: none; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; background: #f8fafc; padding: 10px 12px; border-radius: 8px; line-height: 1.55;">
+                        [Writing Task 1: Write a Sentence Based on a Picture] (Chèn ảnh + 2 từ khóa)<br>
+                        Câu 1: Write ONE sentence based on the picture using: (woman / laptop).<br>
+                        [Writing Task 2: Respond to a Written Request] — Ghi Email: ... + Yêu cầu phản hồi.<br>
+                        [Writing Task 3: Write an Opinion Essay] — Ghi Đề bài luận + Dàn ý / Bài mẫu.
                     </div>
                 </div>
             </div>
 
-            {{-- Bộ lọc xem trước (Filter Tabs) --}}
-            <div class="qimport-filter-tabs">
-                <button type="button" class="qimport-filter-tab active" id="tabAll" onclick="filterTable('all')">Tất cả (120)</button>
-                <button type="button" class="qimport-filter-tab" id="tabValid" onclick="filterTable('valid')">Hợp lệ (116)</button>
-                <button type="button" class="qimport-filter-tab" id="tabWarn" onclick="filterTable('warn')">Cảnh báo (3)</button>
-                <button type="button" class="qimport-filter-tab" id="tabErr" onclick="filterTable('err')">Có lỗi chặn (1)</button>
-            </div>
-
-            {{-- Bảng xem trước dữ liệu (Preview Table) --}}
-            <div class="qimport-table-wrap">
-                <table class="qimport-table" id="previewTable">
-                    <thead>
-                        <tr>
-                            <th style="width: 38px;">
-                                <input type="checkbox" id="masterCheckbox" checked onchange="toggleMasterCheck(this)" style="accent-color: #4f46e5; cursor: pointer;">
-                            </th>
-                            <th style="width: 110px;">DÒNG / ID</th>
-                            <th style="width: 170px;">PART / KỸ NĂNG</th>
-                            <th>TRÍCH ĐOẠN NỘI DUNG CÂU HỎI</th>
-                            <th style="width: 70px; text-align: center;">ĐÁP ÁN</th>
-                            <th style="width: 200px;">TRẠNG THÁI XÁC THỰC</th>
-                            <th style="width: 110px; text-align: center;">THAO TÁC</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {{-- HÀNG 1: Hợp lệ 100% --}}
-                        <tr class="qimport-row row-valid" id="row1">
-                            <td>
-                                <input type="checkbox" class="qimport-row-chk" checked onchange="updateCheckedCount()" style="accent-color: #4f46e5;">
-                            </td>
-                            <td>
-                                <span class="qimport-cell-id">#01 / Q-101</span>
-                            </td>
-                            <td>
-                                <div class="qimport-cell-part">
-                                    <span class="qimport-part-badge">Part 5</span>
-                                    <span class="qimport-part-sub">Ngữ pháp / Reading</span>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="qimport-content-cell">
-                                    <span class="qimport-content-title">Ms. Tanaka requested that all department heads submit</span>
-                                    <span class="qimport-content-choices">(A) until • (B) before • (C) since • (D) toward</span>
-                                </div>
-                            </td>
-                            <td style="text-align: center;">
-                                <span class="qimport-key-badge">B</span>
-                            </td>
-                            <td>
-                                <span class="qimport-status-pill valid">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                        <polyline points="20 6 9 17 4 12"></polyline>
-                                    </svg>
-                                    <span>Hợp lệ 100%</span>
-                                </span>
-                            </td>
-                            <td>
-                                <div class="qimport-row-actions" style="justify-content: center;">
-                                    <button type="button" class="qimport-icon-btn" title="Chỉnh sửa dòng">
-                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                        </svg>
-                                    </button>
-                                    <button type="button" class="qimport-icon-btn" title="Xem chi tiết">
-                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <circle cx="12" cy="12" r="10"></circle>
-                                            <line x1="12" y1="16" x2="12" y2="12"></line>
-                                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-
-                        {{-- HÀNG 2: Hợp lệ (Đã nối Media) --}}
-                        <tr class="qimport-row row-valid" id="row2">
-                            <td>
-                                <input type="checkbox" class="qimport-row-chk" checked onchange="updateCheckedCount()" style="accent-color: #4f46e5;">
-                            </td>
-                            <td>
-                                <span class="qimport-cell-id">#02 / Q-001</span>
-                            </td>
-                            <td>
-                                <div class="qimport-cell-part">
-                                    <span class="qimport-part-badge">Part 1</span>
-                                    <span class="qimport-part-sub">Photographs / Audio</span>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="qimport-content-cell">
-                                    <span class="qimport-content-title" style="display: flex; align-items: center; gap: 6px;">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                                            <polyline points="21 15 16 10 5 21"></polyline>
-                                        </svg>
-                                        <span>ETS_2024_P1_01.png • Audio_01.mp3 (0:14s)</span>
-                                    </span>
-                                    <span class="qimport-content-choices">[A] A man is holding a briefcase. [B] A man is boarding a train.</span>
-                                </div>
-                            </td>
-                            <td style="text-align: center;">
-                                <span class="qimport-key-badge">A</span>
-                            </td>
-                            <td>
-                                <span class="qimport-status-pill valid">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                        <polyline points="20 6 9 17 4 12"></polyline>
-                                    </svg>
-                                    <span>Hợp lệ (Đã nối Media)</span>
-                                </span>
-                            </td>
-                            <td>
-                                <div class="qimport-row-actions" style="justify-content: center;">
-                                    <button type="button" class="qimport-icon-btn" title="Nghe âm thanh" onclick="alert('Đang phát Audio_01.mp3')">
-                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                                        </svg>
-                                    </button>
-                                    <button type="button" class="qimport-icon-btn" title="Chỉnh sửa dòng">
-                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-
-                        {{-- HÀNG 3: Cảnh báo (Thiếu bản dịch) --}}
-                        <tr class="qimport-row row-warning" id="row3">
-                            <td>
-                                <input type="checkbox" class="qimport-row-chk" checked onchange="updateCheckedCount()" style="accent-color: #4f46e5;">
-                            </td>
-                            <td>
-                                <span class="qimport-cell-id">#24 / Q-147</span>
-                            </td>
-                            <td>
-                                <div class="qimport-cell-part">
-                                    <span class="qimport-part-badge">Part 7</span>
-                                    <span class="qimport-part-sub">Single Passage</span>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="qimport-content-cell">
-                                    <span class="qimport-content-title">What is indicated about the newly scheduled..</span>
-                                    <span class="qimport-content-note-warn" id="row3WarnNote">Cảnh báo: Cột I (Giải thích chi tiết & Bản dịch) đang để trống</span>
-                                </div>
-                            </td>
-                            <td style="text-align: center;">
-                                <span class="qimport-key-badge">C</span>
-                            </td>
-                            <td>
-                                <span class="qimport-status-pill warn" id="row3StatusPill">
-                                    <span>• Thiếu bản dịch + AI sẵn sàng điền</span>
-                                </span>
-                            </td>
-                            <td style="text-align: center;">
-                                <button type="button" class="qimport-btn-fix" id="btnAiFix" onclick="fixRow3Ai()">
-                                    AI Auto-Fix
-                                </button>
-                            </td>
-                        </tr>
-
-                        {{-- HÀNG 4: Lỗi chặn (Thiếu Key) --}}
-                        <tr class="qimport-row row-error" id="row4">
-                            <td>
-                                <input type="checkbox" class="qimport-row-chk" id="row4Chk" onchange="updateCheckedCount()" style="accent-color: #be123c;">
-                            </td>
-                            <td>
-                                <span class="qimport-cell-id">#42 / Q-122</span>
-                            </td>
-                            <td>
-                                <div class="qimport-cell-part">
-                                    <span class="qimport-part-badge red" id="row4BadgePart">Part 5</span>
-                                    <span class="qimport-part-sub">Incomplete Sentences</span>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="qimport-content-cell">
-                                    <span class="qimport-content-title">Neither the director _______ the supervisors were...</span>
-                                    <span class="qimport-content-note-err" id="row4ErrNote">Lỗi chặn: Cột H (Đáp án đúng) đang trống. Không thể xác thực chấm điểm.</span>
-                                </div>
-                            </td>
-                            <td style="text-align: center;">
-                                <span class="qimport-key-badge err" id="row4KeyBadge">?</span>
-                            </td>
-                            <td>
-                                <span class="qimport-status-pill err" id="row4StatusPill">
-                                    <span>• Lỗi chặn (Thiếu Key)</span>
-                                </span>
-                            </td>
-                            <td style="text-align: center;">
-                                <button type="button" class="qimport-btn-fix err" id="btnFixKey" onclick="fixRow4Key()">
-                                    Bổ sung Key
-                                </button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            {{-- Phân trang & Thống kê hiển thị --}}
-            <div class="qimport-table-footer">
+            {{-- Cột phải: Cấu hình Đích đến & Nút Thực hiện Import --}}
+            <div class="qimport-card" style="display: flex; flex-direction: column; justify-content: space-between;">
                 <div>
-                    Hiển thị 1 - 4 của 120 câu hỏi • <a href="javascript:void(0)" onclick="filterTable('valid')" style="color: #2563eb; font-weight: 600; text-decoration: none;">Đã chọn <span id="labelCheckedCount">116</span> câu hợp lệ</a>
-                </div>
-                <div class="qimport-pagination">
-                    <button type="button" class="qimport-page-btn" title="Trang trước">&lt;</button>
-                    <button type="button" class="qimport-page-btn active">1</button>
-                    <button type="button" class="qimport-page-btn">2</button>
-                    <button type="button" class="qimport-page-btn">3</button>
-                    <span style="color: #94a3b8; padding: 0 4px;">...</span>
-                    <button type="button" class="qimport-page-btn">12</button>
-                    <button type="button" class="qimport-page-btn" title="Trang sau">&gt;</button>
-                </div>
-            </div>
-        </div>
+                    <h2 class="qimport-card-title">
+                        <span class="qimport-bar-accent green"></span>
+                        <span>Cấu hình Đích đến &amp; Xuất bản</span>
+                    </h2>
 
-        {{-- 6. STICKY BOTTOM ACTION BAR --}}
-        <div class="qimport-bottom-bar">
-            <div class="qimport-bottom-left">
-                <div class="qimport-bottom-icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                    </svg>
+                    <div class="qimport-dest-field">
+                        <label class="qimport-dest-label">Gắn trực tiếp vào Đề thi (Tùy chọn)</label>
+                        <select name="target_test_id" class="qimport-dest-select">
+                            <option value="">- Chỉ lưu vào Ngân hàng câu hỏi chung -</option>
+                            @if (isset($availableTests) && $availableTests->isNotEmpty())
+                                @foreach ($availableTests as $testOption)
+                                    <option value="{{ $testOption->test_form_id }}">
+                                        [{{ str_replace(['—', '–'], '-', $testOption->test_code) }}] {{ $testOption->title }}
+                                    </option>
+                                @endforeach
+                            @endif
+                        </select>
+                    </div>
+
+                    <div class="qimport-dest-field">
+                        <label class="qimport-dest-label">Chế độ &amp; Kỹ năng nhận diện</label>
+                        <select name="import_scope" class="qimport-dest-select">
+                            @include('admin.questions.partials.import-scope-options')
+                        </select>
+                        <div style="font-size: 11.5px; color: #64748b; margin-top: 5px; line-height: 1.45;">
+                            Mặc định <strong>AUTO</strong> tự động nhận diện đủ 4 kỹ năng &amp; 15 Part/Task TOEIC ETS theo tiêu đề trong file. Chọn nhóm cố định nếu file không ghi tiêu đề Part.
+                        </div>
+                    </div>
+
+                    <div class="qimport-dest-field">
+                        <label class="qimport-dest-label">Trạng thái câu hỏi sau khi nhập</label>
+                        <div class="qimport-radio-wrap">
+                            <label class="qimport-radio-card active" id="radioCardLive">
+                                <input type="radio" name="publish_mode" value="live" checked onchange="switchPublishMode('live')">
+                                <div class="qimport-radio-text">
+                                    <span class="qimport-radio-title">Xuất bản ngay (ACTIVE)</span>
+                                    <span class="qimport-radio-desc">Được tính ngay vào tiến độ hoàn thiện Đề thi (/admin/tests) và sẵn sàng cho học viên</span>
+                                </div>
+                            </label>
+
+                            <label class="qimport-radio-card" id="radioCardDraft">
+                                <input type="radio" name="publish_mode" value="draft" onchange="switchPublishMode('draft')">
+                                <div class="qimport-radio-text">
+                                    <span class="qimport-radio-title">Lưu bản nháp (DRAFT)</span>
+                                    <span class="qimport-radio-desc">Chờ rà soát/duyệt lại — chưa được tính vào chỉ tiêu hoàn thiện đề thi cho đến khi duyệt sang ACTIVE</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
                 </div>
-                <div class="qimport-bottom-info">
-                    <span class="qimport-bottom-headline" id="bottomHeadline">Sẵn sàng nạp 116 / 120 câu hỏi TOEIC vào Ngân hàng</span>
-                    <span class="qimport-bottom-sub" id="bottomSubtext">Đã loại trừ 1 câu lỗi cấu trúc • 3 câu cảnh báo sẽ được AI tự hoàn thiện</span>
+
+                <div style="padding-top: 16px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="submit" class="qimport-btn-submit" id="btnSubmitBulk" style="width: 100%; justify-content: center; padding: 12px 20px; font-size: 14.5px;">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        <span id="btnSubmitText">Tải lên &amp; Nhập câu hỏi</span>
+                    </button>
                 </div>
-            </div>
-            <div class="qimport-bottom-actions">
-                <a href="{{ route('admin.questions.index') }}" class="qimport-btn-cancel">
-                    Hủy bỏ
-                </a>
-                <button type="button" class="qimport-btn-draft" onclick="saveDraftConfig()">
-                    Lưu cấu hình nhập
-                </button>
-                <button type="submit" class="qimport-btn-submit" id="btnSubmitBulk">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    <span id="btnSubmitText">Bắt đầu Nhập 116 câu hỏi</span>
-                </button>
             </div>
         </div>
     </form>
+
+    {{-- 3. DANH SÁCH CÂU HỎI VỪA IMPORT (CHỈ HIỂN THỊ SAU KHI IMPORT XONG ĐỂ XEM TRƯỚC, CHỈNH SỬA, XÓA) --}}
+    @if (isset($importedQuestions) && $importedQuestions->isNotEmpty())
+        <div class="user-table-card" style="margin-top: 8px;">
+            <div style="padding: 18px 22px; border-bottom: 1px solid #e2e8f0; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;">
+                <div>
+                    <h2 style="font-size: 17px; font-weight: 800; color: #0f172a; margin: 0;">
+                        Danh sách câu hỏi vừa Import ({{ $importedQuestions->count() }} câu)
+                    </h2>
+                    <p style="font-size: 13px; color: #64748b; margin: 4px 0 0 0;">
+                        Bạn có thể <strong>Xem trước</strong>, <strong>Chỉnh sửa</strong> lại nội dung/đáp án hoặc <strong>Xóa</strong> trực tiếp bất kỳ câu hỏi nào bên dưới.
+                    </p>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <a href="{{ route('admin.questions.index') }}" class="btn-admin-primary" style="text-decoration: none;">
+                        <span>Hoàn tất &amp; Xem trong Ngân hàng câu hỏi &rarr;</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="user-table-scroll">
+                <table class="user-data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 140px;">MÃ ID &amp; PART</th>
+                            <th>NỘI DUNG CÂU HỎI &amp; ĐÁP ÁN</th>
+                            <th style="width: 150px;">KỸ NĂNG</th>
+                            <th style="width: 120px;">ĐỘ KHÓ</th>
+                            <th style="width: 130px;">TRẠNG THÁI</th>
+                            <th class="admin-actions-heading" style="width: 120px;">THAO TÁC</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($importedQuestions as $q)
+                            @php
+                                $options = $q->options;
+                                $isConstructive = in_array($q->skill_key, ['speaking', 'writing'], true);
+                                $groupCount = $q->group_questions_count;
+                                $hasImageMedia = $q->questionSet?->resolved_media_url && (strtolower((string) $q->questionSet->media_type) === 'image' || preg_match('/\.(png|jpe?g|gif|webp|bmp)$/i', $q->questionSet->resolved_media_url));
+                            @endphp
+                            <tr>
+                                <td>
+                                    <div class="q-id-text">{{ $q->question_code_display }}</div>
+                                    <div class="q-badges-row" style="flex-wrap: wrap; gap: 4px;">
+                                        <span class="q-part-pill">{{ $q->part_badge }}</span>
+                                        @if ($groupCount > 1)
+                                            <span style="display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 999px; font-size: 11px; font-weight: 700; background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe;">
+                                                Cụm {{ $groupCount }} câu
+                                            </span>
+                                        @endif
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="q-content-text">{{ $q->content }}</div>
+                                    @if ($q->questionSet?->resolved_media_url)
+                                        @if ($hasImageMedia)
+                                            <img src="{{ $q->questionSet->resolved_media_url }}" alt="Question media" style="max-width: 180px; max-height: 100px; margin-top: 8px; border-radius: 8px; border: 1px solid #e2e8f0; object-fit: contain; display: block;">
+                                        @else
+                                            <audio controls preload="none" src="{{ $q->questionSet->resolved_media_url }}" style="max-width: 240px; height: 32px; margin-top: 8px; display: block;"></audio>
+                                        @endif
+                                    @endif
+                                    @if ($isConstructive)
+                                        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;">
+                                            <span style="font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: {{ $q->skill_key === 'speaking' ? '#fef3c7' : '#ede9fe' }}; color: {{ $q->skill_key === 'speaking' ? '#b45309' : '#6d28d9' }};">
+                                                {{ $q->skill_key === 'speaking' ? 'Speaking Task (Không trắc nghiệm)' : 'Writing Task (Tự luận)' }}
+                                            </span>
+                                            @if ($hasImageMedia)
+                                                <span class="q-opt-options">Kèm tranh minh họa</span>
+                                            @endif
+                                            @if ($q->questionSet?->stimulus_text)
+                                                <span class="q-opt-options">Ngữ liệu: {{ \Illuminate\Support\Str::limit(preg_replace('/\s+/', ' ', $q->questionSet->stimulus_text), 75) }}</span>
+                                            @endif
+                                        </div>
+                                    @elseif ($options->isNotEmpty())
+                                        <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;">
+                                            @foreach ($options as $option)
+                                                <span class="{{ $option->is_correct ? 'q-ans-pill' : 'q-opt-options' }}">
+                                                    {{ $option->label }}. {{ $option->content }}
+                                                </span>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                    @if ($q->explanation)
+                                        <div class="q-opt-options" style="display: block; margin-top: 6px; white-space: pre-line;">
+                                            {{ \Illuminate\Support\Str::limit($q->explanation, 180) }}
+                                        </div>
+                                    @endif
+                                </td>
+                                <td>
+                                    <div style="font-weight: 700; color: #0f172a; font-size: 13.5px;">
+                                        {{ $q->skill_display }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span style="font-size: 12px; font-weight: 700; color: #475569;">{{ $q->difficulty }}</span>
+                                </td>
+                                <td>
+                                    <span class="status-pill {{ $q->status_badge_class }}">
+                                        <span class="status-dot"></span>
+                                        {{ $q->status_label }}
+                                    </span>
+                                </td>
+                                <td class="admin-actions-cell">
+                                    <div class="user-actions-cell">
+                                        {{-- Nút Xem trước mô phỏng đề thi thật --}}
+                                        <button type="button"
+                                                class="action-icon-btn"
+                                                title="Xem trước mô phỏng đề thi"
+                                                onclick='openPreviewModal(@json($q->toPreviewPayload()))'>
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                <circle cx="12" cy="12" r="3"></circle>
+                                            </svg>
+                                        </button>
+
+                                        {{-- Nút Chỉnh sửa (Kế thừa từ Ngân hàng câu hỏi) --}}
+                                        <button type="button"
+                                                class="action-icon-btn"
+                                                title="Chỉnh sửa câu hỏi"
+                                                onclick='openEditQuestionModal(@json($q))'>
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M12 20h9"></path>
+                                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                                            </svg>
+                                        </button>
+
+                                        {{-- Nút Xóa câu hỏi --}}
+                                        <button type="button"
+                                                class="action-icon-btn danger"
+                                                title="Xóa câu hỏi này"
+                                                onclick="if (confirm('Bạn có chắc chắn muốn xóa câu hỏi {{ $q->question_code_display }}?')) { deleteImportedQuestion('{{ route('admin.questions.destroy', $q->question_id) }}'); }">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
 </div>
+
+{{-- Form ẩn xóa câu hỏi vừa import --}}
+<form id="delete-imported-q-form" method="POST" action="" style="display: none;">
+    @csrf
+    @method('DELETE')
+    <input type="hidden" name="redirect_back" value="1">
+</form>
+
+{{-- MODAL CHỈNH SỬA CÂU HỎI (Kế thừa từ Ngân hàng câu hỏi) --}}
+<div id="modal-edit-question" class="admin-modal-backdrop">
+    <div class="admin-modal-box" style="max-width: 600px;">
+        <div class="admin-modal-header">
+            <h3 class="admin-modal-title" id="edit-modal-title">Cập nhật câu hỏi</h3>
+            <button type="button" class="admin-modal-close" onclick="closeAdminModal('modal-edit-question')">&times;</button>
+        </div>
+        <form id="form-edit-question" method="POST" action="">
+            @csrf
+            @method('PUT')
+            <input type="hidden" name="redirect_back" value="1">
+            <div class="admin-modal-body">
+                <div class="form-group-admin">
+                    <label>Phần thi (Part / Task)</label>
+                    <select id="edit_section_id" name="section_id" class="form-control-admin" required>
+                        @foreach ($sections as $sec)
+                            <option value="{{ $sec->section_id }}">{{ str_replace(['—', '–'], '-', $sec->name) }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="form-group-admin">
+                    <label>Nội dung câu hỏi <span style="color: #dc2626;">*</span></label>
+                    <textarea id="edit_content" name="content" class="form-control-admin" rows="3" required></textarea>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="form-group-admin">
+                        <label>Độ khó</label>
+                        <select id="edit_difficulty" name="difficulty" class="form-control-admin" required>
+                            <option value="EASY">Cơ bản (Dưới 500)</option>
+                            <option value="MEDIUM">Trung bình (500 - 750)</option>
+                            <option value="HARD">Nâng cao (750+)</option>
+                        </select>
+                    </div>
+                    <div class="form-group-admin">
+                        <label>Trạng thái</label>
+                        <select id="edit_status" name="status" class="form-control-admin" required>
+                            <option value="ACTIVE">Hoạt động (Active)</option>
+                            <option value="PENDING">Chờ duyệt (Pending)</option>
+                            <option value="DRAFT">Bản nháp (Draft)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="border-top: 1px solid #edf0f7; padding-top: 12px; margin-top: 8px; margin-bottom: 12px;">
+                    <label style="font-weight: 700; font-size: 13px; margin-bottom: 8px; display: block;">4 Phương án trắc nghiệm (A, B, C, D):</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <input type="text" name="opt_a" id="edit_opt_a" class="form-control-admin" placeholder="Phương án A">
+                        <input type="text" name="opt_b" id="edit_opt_b" class="form-control-admin" placeholder="Phương án B">
+                        <input type="text" name="opt_c" id="edit_opt_c" class="form-control-admin" placeholder="Phương án C">
+                        <input type="text" name="opt_d" id="edit_opt_d" class="form-control-admin" placeholder="Phương án D">
+                    </div>
+                    <div class="form-group-admin" style="margin-top: 10px; margin-bottom: 0;">
+                        <label>Đáp án đúng:</label>
+                        <select name="correct_option" id="edit_correct_option" class="form-control-admin">
+                            <option value="A">Phương án A</option>
+                            <option value="B">Phương án B</option>
+                            <option value="C">Phương án C</option>
+                            <option value="D">Phương án D</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group-admin">
+                    <label>Giải thích &amp; Đáp án chuẩn</label>
+                    <textarea id="edit_explanation" name="explanation" class="form-control-admin" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="admin-modal-footer">
+                <button type="button" class="btn-admin-action" onclick="closeAdminModal('modal-edit-question')">Hủy</button>
+                <button type="submit" class="btn-admin-primary">Lưu thay đổi</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- MODAL XEM TRƯỚC MÔ PHỎNG ĐỀ THI TOEIC THẬT --}}
+@include('admin.questions.partials.preview-modal')
 @endsection
 
 @push('scripts')
 <script>
-    var currentValidCount = 116;
-    var currentWarnCount = 3;
-    var currentErrCount = 1;
+    function openAdminModal(id) {
+        var modal = document.getElementById(id);
+        if (modal) modal.classList.add('open');
+    }
 
-    // 1. Chuyển đổi chế độ phát hành (Draft vs Live)
+    function closeAdminModal(id) {
+        var modal = document.getElementById(id);
+        if (modal) modal.classList.remove('open');
+    }
+
+    function switchTemplateTab(skill, btn) {
+        document.querySelectorAll('.tpl-skill-panel').forEach(function (panel) {
+            panel.style.display = 'none';
+        });
+        var target = document.getElementById('tpl-panel-' + skill);
+        if (target) target.style.display = 'block';
+
+        var colorMap = {
+            listening: '#0284c7',
+            reading: '#059669',
+            speaking: '#d97706',
+            writing: '#7c3aed'
+        };
+        document.querySelectorAll('.tpl-skill-tab').forEach(function (tab) {
+            tab.style.background = '#f8fafc';
+            tab.style.color = '#334155';
+            tab.style.borderColor = '#cbd5e1';
+        });
+        if (btn) {
+            var activeColor = colorMap[skill] || '#4f46e5';
+            btn.style.background = activeColor;
+            btn.style.color = '#ffffff';
+            btn.style.borderColor = activeColor;
+        }
+    }
+
     function switchPublishMode(mode) {
         document.getElementById('publishStatusInput').value = mode;
         var cardDraft = document.getElementById('radioCardDraft');
@@ -681,200 +499,49 @@
         }
     }
 
-    // 2. Lọc bảng theo tab
-    function filterTable(filter) {
-        ['tabAll', 'tabValid', 'tabWarn', 'tabErr'].forEach(function(id) {
-            var el = document.getElementById(id);
-            if (el) el.classList.remove('active');
-        });
-
-        if (filter === 'all') document.getElementById('tabAll').classList.add('active');
-        if (filter === 'valid') document.getElementById('tabValid').classList.add('active');
-        if (filter === 'warn') document.getElementById('tabWarn').classList.add('active');
-        if (filter === 'err') document.getElementById('tabErr').classList.add('active');
-
-        var rows = document.querySelectorAll('.qimport-row');
-        rows.forEach(function(row) {
-            if (filter === 'all') {
-                row.style.display = '';
-            } else if (filter === 'valid') {
-                row.style.display = row.classList.contains('row-valid') ? '' : 'none';
-            } else if (filter === 'warn') {
-                row.style.display = row.classList.contains('row-warning') ? '' : 'none';
-            } else if (filter === 'err') {
-                row.style.display = row.classList.contains('row-error') ? '' : 'none';
+    function onWordFileSelected(input) {
+        if (input.files && input.files[0]) {
+            var fileName = input.files[0].name;
+            var btnText = document.getElementById('btnSubmitText');
+            if (btnText) {
+                btnText.textContent = 'Nhập câu hỏi từ tệp ' + fileName;
             }
-        });
+        }
     }
 
-    // 3. Tự động sửa cảnh báo bằng AI (Row 3)
-    function fixRow3Ai() {
-        var row = document.getElementById('row3');
-        var note = document.getElementById('row3WarnNote');
-        var pill = document.getElementById('row3StatusPill');
-        var btn = document.getElementById('btnAiFix');
-        if (!row || !pill) return;
+    function openEditQuestionModal(q) {
+        var form = document.getElementById('form-edit-question');
+        form.action = '{{ url('/admin/questions') }}/' + q.question_id;
+        document.getElementById('edit-modal-title').innerText = 'Cập nhật câu hỏi #Q-' + q.question_id;
+        document.getElementById('edit_section_id').value = q.section_id || '5';
+        document.getElementById('edit_content').value = q.content || '';
+        document.getElementById('edit_difficulty').value = q.difficulty || 'MEDIUM';
+        document.getElementById('edit_status').value = q.status || 'ACTIVE';
+        document.getElementById('edit_explanation').value = q.explanation || '';
 
-        btn.disabled = true;
-        btn.textContent = 'Đang xử lý AI...';
+        var optMap = { A: '', B: '', C: '', D: '' };
+        var correctOpt = 'B';
+        if (Array.isArray(q.options)) {
+            q.options.forEach(function(o) {
+                if (o.label && optMap.hasOwnProperty(o.label)) {
+                    optMap[o.label] = o.content || '';
+                    if (o.is_correct) correctOpt = o.label;
+                }
+            });
+        }
+        document.getElementById('edit_opt_a').value = optMap.A;
+        document.getElementById('edit_opt_b').value = optMap.B;
+        document.getElementById('edit_opt_c').value = optMap.C;
+        document.getElementById('edit_opt_d').value = optMap.D;
+        document.getElementById('edit_correct_option').value = correctOpt;
 
-        setTimeout(function() {
-            row.classList.remove('row-warning');
-            row.classList.add('row-valid');
-
-            if (note) {
-                note.textContent = 'Đã tạo bản dịch & giải thích chi tiết bởi StudyPREP AI Engine.';
-                note.className = 'qimport-content-choices';
-                note.style.color = '#059669';
-            }
-
-            pill.className = 'qimport-status-pill valid';
-            pill.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span>Hợp lệ 100% (Đã AI Fix)</span>';
-
-            btn.textContent = 'Đã hoàn tất';
-            btn.style.color = '#059669';
-            btn.style.borderColor = '#a7f3d0';
-
-            currentWarnCount = Math.max(0, currentWarnCount - 1);
-            currentValidCount++;
-            updateStatsUI();
-        }, 350);
+        openAdminModal('modal-edit-question');
     }
 
-    // 4. Bổ sung Key cho dòng 4
-    function fixRow4Key() {
-        var key = prompt('Nhập phương án đúng (A, B, C hoặc D):', 'B');
-        if (!key) return;
-        key = key.trim().toUpperCase();
-        if (!['A', 'B', 'C', 'D'].includes(key)) {
-            alert('Phương án phải là A, B, C hoặc D');
-            return;
-        }
-
-        var row = document.getElementById('row4');
-        var keyBadge = document.getElementById('row4KeyBadge');
-        var errNote = document.getElementById('row4ErrNote');
-        var pill = document.getElementById('row4StatusPill');
-        var btn = document.getElementById('btnFixKey');
-        var partBadge = document.getElementById('row4BadgePart');
-        var chk = document.getElementById('row4Chk');
-
-        if (!row) return;
-
-        row.classList.remove('row-error');
-        row.classList.add('row-valid');
-
-        if (keyBadge) {
-            keyBadge.textContent = key;
-            keyBadge.classList.remove('err');
-        }
-
-        if (partBadge) {
-            partBadge.classList.remove('red');
-        }
-
-        if (errNote) {
-            errNote.textContent = 'Đã cập nhật đáp án chuẩn: (' + key + '). Sẵn sàng chấm điểm.';
-            errNote.className = 'qimport-content-choices';
-            errNote.style.color = '#059669';
-        }
-
-        if (pill) {
-            pill.className = 'qimport-status-pill valid';
-            pill.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span>Hợp lệ (Đã bổ sung Key)</span>';
-        }
-
-        if (btn) {
-            btn.textContent = 'Đã bổ sung';
-            btn.className = 'qimport-btn-fix';
-            btn.style.color = '#059669';
-            btn.style.borderColor = '#a7f3d0';
-            btn.disabled = true;
-        }
-
-        if (chk) {
-            chk.checked = true;
-        }
-
-        currentErrCount = Math.max(0, currentErrCount - 1);
-        currentValidCount++;
-        updateStatsUI();
-    }
-
-    // 5. Cập nhật các chỉ số và thanh bottom bar
-    function updateStatsUI() {
-        var validEl = document.getElementById('statValidVal');
-        var warnEl = document.getElementById('statWarnVal');
-        var errEl = document.getElementById('statErrVal');
-        var tabWarn = document.getElementById('tabWarn');
-        var tabErr = document.getElementById('tabErr');
-        var tabValid = document.getElementById('tabValid');
-
-        if (validEl) validEl.textContent = currentValidCount + ' câu';
-        if (warnEl) warnEl.textContent = currentWarnCount + ' câu';
-        if (errEl) errEl.textContent = currentErrCount + ' câu';
-
-        if (tabValid) tabValid.textContent = 'Hợp lệ (' + currentValidCount + ')';
-        if (tabWarn) tabWarn.textContent = 'Cảnh báo (' + currentWarnCount + ')';
-        if (tabErr) tabErr.textContent = 'Có lỗi chặn (' + currentErrCount + ')';
-
-        var headline = document.getElementById('bottomHeadline');
-        var subtext = document.getElementById('bottomSubtext');
-        var btnText = document.getElementById('btnSubmitText');
-        var labelChecked = document.getElementById('labelCheckedCount');
-        var selectedInput = document.getElementById('selectedCountInput');
-
-        if (headline) headline.textContent = 'Sẵn sàng nạp ' + currentValidCount + ' / 120 câu hỏi TOEIC vào Ngân hàng';
-        if (subtext) {
-            subtext.textContent = 'Đã loại trừ ' + currentErrCount + ' câu lỗi cấu trúc • ' + currentWarnCount + ' câu cảnh báo sẽ được AI tự hoàn thiện';
-        }
-        if (btnText) btnText.textContent = 'Bắt đầu Nhập ' + currentValidCount + ' câu hỏi';
-        if (labelChecked) labelChecked.textContent = currentValidCount;
-        if (selectedInput) selectedInput.value = currentValidCount;
-    }
-
-    // 6. Master Checkbox
-    function toggleMasterCheck(master) {
-        var chks = document.querySelectorAll('.qimport-row-chk');
-        chks.forEach(function(chk) {
-            chk.checked = master.checked;
-        });
-        updateCheckedCount();
-    }
-
-    function updateCheckedCount() {
-        var checked = document.querySelectorAll('.qimport-row-chk:checked').length;
-        var labelChecked = document.getElementById('labelCheckedCount');
-        if (labelChecked) labelChecked.textContent = checked;
-    }
-
-    // 7. Xuất nhật ký kiểm thử
-    function exportAuditLog() {
-        var logContent = "=== NHẬT KÝ KIỂM THỬ NHẬP CÂU HỎI HÀNG LOẠT ===\n" +
-            "Mã phiên nạp: #IMPORT-2025-04\n" +
-            "Thời gian: " + new Date().toLocaleString() + "\n" +
-            "Tệp nguồn: ETS_2024_Test05_Batch.xlsx (2.4 MB)\n" +
-            "Tệp media: ETS_Audio_Part1_Part4.zip (45.8 MB)\n" +
-            "Tổng số câu phát hiện: 120 câu\n" +
-            "Số câu hợp lệ 100%: " + currentValidCount + " câu\n" +
-            "Số câu cảnh báo: " + currentWarnCount + " câu\n" +
-            "Số câu lỗi cấu trúc/thiếu đáp án: " + currentErrCount + " câu\n" +
-            "Trạng thái kiểm định: Sẵn sàng đồng bộ CSDL.\n";
-
-        var blob = new Blob([logContent], { type: 'text/plain;charset=utf-8' });
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = 'audit_log_import_2025_04.txt';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
-
-    // 8. Lưu cấu hình nháp
-    function saveDraftConfig() {
-        alert('Đã lưu cấu hình ánh xạ trường và danh sách câu hỏi kiểm thử dưới dạng bản nháp!');
+    function deleteImportedQuestion(actionUrl) {
+        var form = document.getElementById('delete-imported-q-form');
+        form.action = actionUrl;
+        form.submit();
     }
 </script>
 @endpush

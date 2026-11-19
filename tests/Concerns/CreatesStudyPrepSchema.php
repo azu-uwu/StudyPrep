@@ -52,6 +52,7 @@ trait CreatesStudyPrepSchema
             $table->string('title', 255);
             $table->text('stimulus_text')->nullable();
             $table->string('media_url', 500)->nullable();
+            $table->string('audio_url', 500)->nullable();
             $table->string('media_type', 20)->nullable();
             $table->text('transcript')->nullable();
         });
@@ -155,6 +156,14 @@ trait CreatesStudyPrepSchema
             $table->text('example_en')->nullable();
             $table->text('example_vi')->nullable();
             $table->string('image_url', 500)->nullable();
+        });
+
+        Schema::create('activity_log', function (Blueprint $table): void {
+            $table->id('activity_id');
+            $table->unsignedBigInteger('user_id');
+            $table->string('action', 50);
+            $table->text('description')->nullable();
+            $table->timestamp('created_at')->useCurrent();
         });
     }
 }
