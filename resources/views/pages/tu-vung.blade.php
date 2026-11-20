@@ -172,12 +172,26 @@
                    class="tv-my-topic-card tv-tactile-card"
                    aria-label="{{ $topic['name'] }}"
                    style="text-decoration: none;">
-                    <div class="tv-my-topic-icon">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    
+                    <div class="tv-generated-cover tv-generated-cover--personal">
+                        <span class="tv-generated-cover__label">
+                            {{ $topic['thumbnail_label'] ?? mb_strtoupper($topic['name']) }}
+                        </span>
+                        <svg width="42" height="34" viewBox="0 0 44 36"
+                            fill="none" xmlns="http://www.w3.org/2000/svg"
+                            aria-hidden="true">
+                            <rect x="6" y="24" width="32" height="6" rx="2" fill="#0284C7"/>
+                            <rect x="8" y="20" width="28" height="4" rx="1.5" fill="#38BDF8"/>
+                            <path d="M22 6L40 14L22 22L4 14L22 6Z" fill="#0076FE"/>
+                            <path d="M12 18V25C12 28 22 30 22 30C22 30 32 28 32 25V18"
+                                stroke="#0053BF" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M40 14V22" stroke="#F59E0B"
+                                stroke-width="2" stroke-linecap="round"/>
+                            <circle cx="40" cy="23" r="1.5" fill="#F59E0B"/>
                         </svg>
                     </div>
+
                     <div>
                         <div style="font-weight: 700; color: #111C2D; font-size: 15px;">{{ $topic['name'] }}</div>
                         <div style="color: #64748B; font-size: 13px; margin-top: 2px;">{{ $topic['total_vocabularies'] }} từ</div>
@@ -215,10 +229,28 @@
                              alt="{{ $topic['name'] }}"
                              class="lt-vocab-cover"
                              loading="lazy">
+                    
                     @else
-                        <div class="tv-default-badge-cover">
-                            <span class="tv-badge-cover-title">{{ $topic['thumbnail_label'] ?? 'TOEIC' }}</span>
+                        <div class="tv-generated-cover tv-generated-cover--popular">
+                            <span class="tv-generated-cover__label">
+                                {{ $topic['thumbnail_label'] ?? mb_strtoupper($topic['name']) }}
+                            </span>
+                            <svg width="42" height="34" viewBox="0 0 44 36"
+                                fill="none" xmlns="http://www.w3.org/2000/svg"
+                                aria-hidden="true">
+                                <rect x="6" y="24" width="32" height="6" rx="2" fill="#0284C7"/>
+                                <rect x="8" y="20" width="28" height="4" rx="1.5" fill="#38BDF8"/>
+                                <path d="M22 6L40 14L22 22L4 14L22 6Z" fill="#0076FE"/>
+                                <path d="M12 18V25C12 28 22 30 22 30C22 30 32 28 32 25V18"
+                                    stroke="#0053BF" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M40 14V22" stroke="#F59E0B"
+                                    stroke-width="2" stroke-linecap="round"/>
+                                <circle cx="40" cy="23" r="1.5" fill="#F59E0B"/>
+                            </svg>
                         </div>
+
+
                     @endif
                 </div>
                 <span class="lt-vocab-name">{!! nl2br(e($topic['display_name'] ?? $topic['name'])) !!}</span>
@@ -517,22 +549,52 @@
                     }
                 }
 
+
+                function createTopicCoverHtml(topic) {
+                    const label = escapeHtml(
+                        topic.thumbnail_label || topic.name || 'TOEIC'
+                    );
+
+                    return `
+                        <div class="tv-generated-cover tv-generated-cover--personal">
+                            <span class="tv-generated-cover__label">${label}</span>
+                            <svg width="42" height="34" viewBox="0 0 44 36"
+                                fill="none" xmlns="http://www.w3.org/2000/svg"
+                                aria-hidden="true">
+                                <rect x="6" y="24" width="32" height="6"
+                                    rx="2" fill="#0284C7"/>
+                                <rect x="8" y="20" width="28" height="4"
+                                    rx="1.5" fill="#38BDF8"/>
+                                <path d="M22 6L40 14L22 22L4 14L22 6Z"
+                                    fill="#0076FE"/>
+                                <path d="M12 18V25C12 28 22 30 22 30C22 30 32 28 32 25V18"
+                                    stroke="#0053BF" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M40 14V22" stroke="#F59E0B"
+                                    stroke-width="2" stroke-linecap="round"/>
+                                <circle cx="40" cy="23" r="1.5" fill="#F59E0B"/>
+                            </svg>
+                        </div>
+                    `;
+                }
+
+
                 // Tạo card cho chủ đề mới vừa tạo
                 var card = document.createElement('a');
                 card.href = topic.url || ('/tu-vung/' + topic.topic_id);
                 card.className = 'tv-my-topic-card tv-tactile-card';
                 card.setAttribute('aria-label', topic.name);
                 card.style.textDecoration = 'none';
+                  
                 card.innerHTML = `
-                    <div class="tv-my-topic-icon">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                        </svg>
-                    </div>
+                    ${createTopicCoverHtml(topic)}
                     <div>
-                        <div style="font-weight: 700; color: #111C2D; font-size: 15px;">${escapeHtml(topic.name)}</div>
-                        <div style="color: #64748B; font-size: 13px; margin-top: 2px;">0 từ</div>
+                        <div style="font-weight: 700; color: #111C2D; font-size: 15px;">
+                            ${escapeHtml(topic.name)}
+                        </div>
+                        <div style="color: #64748B; font-size: 13px; margin-top: 2px;">
+                            0 từ
+                        </div>
                     </div>
                 `;
 

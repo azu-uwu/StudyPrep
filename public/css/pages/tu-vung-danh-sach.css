@@ -11,6 +11,13 @@
     font-family: var(--sp-font-family, 'Nunito', sans-serif);
 }
 
+.tv-list-container button,
+.tv-list-container input,
+.tv-list-container select,
+.tv-list-container textarea {
+    font-family: var(--sp-font-family, 'Nunito', sans-serif);
+}
+
 /* ===== 2. HEADER TRANG: NÚT QUAY LẠI & TIÊU ĐỀ ===== */
 .tv-list-header {
     display: flex;
@@ -204,6 +211,7 @@
     display: none;
     flex-direction: column;
     gap: 3px;
+    font-family: var(--sp-font-family, 'Nunito', sans-serif);
 }
 
 .tv-topic-dropdown.show {
@@ -225,7 +233,7 @@
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.15s ease;
-    font-family: inherit;
+    font-family: var(--sp-font-family, 'Nunito', sans-serif);
 }
 
 .tv-topic-dropdown-item:hover {
@@ -591,6 +599,7 @@
     padding: 0 8px;
     overflow-x: auto;
     scrollbar-width: none;
+    font-family: var(--sp-font-family, 'Nunito', sans-serif);
 }
 
 .tv-filter-tabs::-webkit-scrollbar {
@@ -612,6 +621,7 @@
     white-space: nowrap;
     transition: all 0.15s ease;
     border-bottom: 2.5px solid transparent;
+    font-family: var(--sp-font-family, 'Nunito', sans-serif);
 }
 
 .tv-filter-tab-btn:hover {
@@ -636,6 +646,7 @@
     font-weight: 800;
     color: #64748B;
     transition: all 0.15s ease;
+    font-family: var(--sp-font-family, 'Nunito', sans-serif);
 }
 
 .tv-filter-tab-btn.is-active .tv-tab-count-badge {
@@ -669,6 +680,7 @@
     padding: 6px 8px;
     border-radius: 8px;
     transition: background-color 0.15s ease;
+    font-family: var(--sp-font-family, 'Nunito', sans-serif);
 }
 
 .tv-sort-btn:hover {
@@ -688,6 +700,7 @@
     min-width: 150px;
     z-index: 100;
     display: none;
+    font-family: var(--sp-font-family, 'Nunito', sans-serif);
 }
 
 .tv-sort-dropdown.show {
@@ -708,6 +721,7 @@
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.15s ease;
+    font-family: var(--sp-font-family, 'Nunito', sans-serif);
 }
 
 .tv-sort-item:hover,
@@ -809,6 +823,7 @@
     min-width: 190px;
     z-index: 150;
     display: none;
+    font-family: var(--sp-font-family, 'Nunito', sans-serif);
 }
 
 .tv-vocab-dropdown.show {
@@ -831,6 +846,7 @@
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.15s ease;
+    font-family: var(--sp-font-family, 'Nunito', sans-serif);
 }
 
 .tv-vocab-dropdown-item:hover {
@@ -1072,6 +1088,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    font-family: var(--sp-font-family, 'Nunito', sans-serif);
 }
 
 .tv-toast-popup.show {

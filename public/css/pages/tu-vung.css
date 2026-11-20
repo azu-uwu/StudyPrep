@@ -411,6 +411,74 @@ a.lt-link-all:hover {
     flex: none;
 }
 
+
+/* Hình minh họa tự động cho các chủ đề từ vựng */
+.tv-generated-cover {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    background: linear-gradient(145deg, #e0f2fe, #bae6fd);
+    border-radius: 14px;
+    padding: 6px;
+    box-sizing: border-box;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.tv-generated-cover__label {
+    font-size: 9px;
+    font-weight: 800;
+    line-height: 1.2;
+    color: #0369a1;
+    text-align: center;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    max-width: 100%;
+}
+
+.tv-generated-cover svg {
+    flex-shrink: 0;
+    max-width: 80%;
+}
+
+/* Chủ đề cá nhân */
+.tv-generated-cover--personal {
+    width: 76px;
+    height: 76px;
+    box-shadow: 0 3px 8px rgba(0, 118, 254, 0.08);
+}
+
+/* Chủ đề phổ biến */
+.tv-generated-cover--popular {
+    width: 100%;
+    aspect-ratio: 470 / 410;
+    border-radius: 17px;
+}
+
+.tv-generated-cover--popular .tv-generated-cover__label {
+    font-size: 12px;
+}
+
+.tv-generated-cover--popular svg {
+    width: 72px;
+    height: auto;
+    max-width: 45%;
+}
+
+@media (max-width: 480px) {
+    .tv-generated-cover--personal {
+        width: 64px;
+        height: 64px;
+    }
+}
+
 /* Toast notification */
 .tv-toast {
     position: fixed;
@@ -482,7 +550,8 @@ a.lt-link-all:hover {
 }
 
 .tv-tactile-card:hover .lt-vocab-cover {
-    transform: none !important; /* Không phóng to/scale làm đổi layout */
+    transform: none !important;
+    /* Không phóng to/scale làm đổi layout */
 }
 
 /* Khi nhấn (:active hoặc .is-pressed): Card dịch xuống 3.5px và đáy shadow xẹp còn 1px (chuẩn sp-btn:active) */
