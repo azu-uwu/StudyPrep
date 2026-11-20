@@ -84,21 +84,47 @@
                 @endif
             </div>
 
-            {{-- Icon xóa chủ đề cá nhân (chỉ hiển thị khi thuộc về người dùng đang đăng nhập) --}}
+            {{-- Menu tùy chọn chủ đề cá nhân (chỉ hiển thị khi thuộc về người dùng đang đăng nhập) --}}
             @if($isPersonalTopic)
                 <div class="tv-topic-actions">
                     <button type="button"
-                            class="tv-topic-btn-delete"
-                            id="btnDeleteTopic"
-                            title="Xóa chủ đề"
-                            aria-label="Xóa chủ đề">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                            <line x1="10" y1="11" x2="10" y2="17"></line>
-                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                            class="tv-topic-menu-btn"
+                            id="btnTopicMenu"
+                            title="Tùy chọn chủ đề"
+                            aria-label="Tùy chọn chủ đề"
+                            onclick="toggleTopicMenu(event)">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <circle cx="12" cy="5" r="2.2" />
+                            <circle cx="12" cy="12" r="2.2" />
+                            <circle cx="12" cy="19" r="2.2" />
                         </svg>
                     </button>
+
+                    {{-- Dropdown tùy chọn: 1 là sửa, 2 là xóa --}}
+                    <div class="tv-topic-dropdown" id="topicDropdown">
+                        <button type="button"
+                                class="tv-topic-dropdown-item"
+                                data-sp-modal-open="modalEditTopic"
+                                onclick="closeTopicMenu()">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                            <span>Sửa chủ đề</span>
+                        </button>
+                        <button type="button"
+                                class="tv-topic-dropdown-item tv-topic-dropdown-item--danger"
+                                data-sp-modal-open="modalDeleteTopic"
+                                onclick="closeTopicMenu()">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                <line x1="10" y1="11" x2="10" y2="17"></line>
+                                <line x1="14" y1="11" x2="14" y2="17"></line>
+                            </svg>
+                            <span>Xóa chủ đề</span>
+                        </button>
+                    </div>
                 </div>
             @endif
         </div>
@@ -148,7 +174,7 @@
                 {{-- Nút hành động: "HỌC TỪ MỚI" & "THÊM TỪ VỰNG" (chỉ hiển thị cho chủ đề cá nhân do chính mình tạo) --}}
                 <div class="tv-progress-cta-wrap">
                     @if($isPersonalTopic)
-                        <x-button variant="neutral" size="medium" id="btnAddVocabulary" class="tv-btn-add-vocab" data-require-auth>
+                        <x-button variant="neutral" size="medium" id="btnAddVocabulary" class="tv-btn-add-vocab" data-sp-modal-open="modalCreateVocabulary">
                             + THÊM TỪ VỰNG
                         </x-button>
                     @endif
@@ -319,6 +345,237 @@
     @endif
 
 </div>
+
+@if($topic && $isPersonalTopic)
+    {{-- ===== MODAL THÊM TỪ VỰNG MỚI (BE-008.2.4 Frontend) ===== --}}
+    <x-modal id="modalCreateVocabulary" title="Thêm từ vựng mới" maxWidth="640px">
+        {{-- Biểu tượng đóng modal ở góc trên bên phải --}}
+        <button type="button" class="tv-modal-close-icon" data-sp-modal-close aria-label="Đóng modal" id="btnCloseVocabModal">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
+
+        <form id="formCreateVocabulary" onsubmit="return false;" novalidate>
+            {{-- Hàng 1: Từ tiếng Anh (bắt buộc) & Phiên âm (không bắt buộc) --}}
+            <div class="tv-form-grid-2col">
+                <x-input
+                    id="vocabWordInput"
+                    name="word"
+                    label="Từ tiếng Anh *"
+                    placeholder="Ví dụ: collaborate"
+                    maxlength="150"
+                    :show-count="true"
+                    size="md"
+                    autocomplete="off"
+                />
+
+                <x-input
+                    id="vocabPronunciationInput"
+                    name="pronunciation"
+                    label="Phiên âm"
+                    placeholder="Ví dụ: /kəˈlæb.ə.reɪt/"
+                    maxlength="150"
+                    size="md"
+                    autocomplete="off"
+                />
+            </div>
+
+            {{-- Hàng 2: Nghĩa tiếng Việt (bắt buộc) & Loại từ (không bắt buộc) --}}
+            <div class="tv-form-grid-2col">
+                <x-input
+                    id="vocabMeaningViInput"
+                    name="meaning_vi"
+                    label="Nghĩa tiếng Việt *"
+                    placeholder="Ví dụ: hợp tác, cộng tác"
+                    size="md"
+                    autocomplete="off"
+                />
+
+                <div class="sp-field" id="wrap-vocabPosInput">
+                    <label class="sp-label" for="vocabPosInput">
+                        <span>Loại từ</span>
+                    </label>
+                    <div class="sp-control sp-control--md tv-select-control">
+                        <select id="vocabPosInput" name="part_of_speech" class="sp-input tv-select-input">
+                            <option value="">-- Chọn loại từ (không bắt buộc) --</option>
+                            <option value="Noun">Danh từ (Noun)</option>
+                            <option value="Verb">Động từ (Verb)</option>
+                            <option value="Adjective">Tính từ (Adjective)</option>
+                            <option value="Adverb">Trạng từ (Adverb)</option>
+                            <option value="Preposition">Giới từ (Preposition)</option>
+                            <option value="Conjunction">Liên từ (Conjunction)</option>
+                            <option value="Pronoun">Đại từ (Pronoun)</option>
+                            <option value="Phrase">Cụm từ (Phrase)</option>
+                            <option value="Interjection">Thán từ (Interjection)</option>
+                        </select>
+                        <span class="tv-select-chevron" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </span>
+                    </div>
+                    <span id="vocabPosInput-desc" class="sp-caption" hidden></span>
+                </div>
+            </div>
+
+            {{-- Hàng 3: URL hình ảnh (không bắt buộc) --}}
+            <x-input
+                id="vocabImageUrlInput"
+                name="image_url"
+                label="URL hình ảnh"
+                placeholder="https://example.com/hinh-anh.jpg"
+                maxlength="500"
+                size="md"
+                autocomplete="off"
+            />
+
+            {{-- Hàng 4: Ví dụ tiếng Anh (không bắt buộc) --}}
+            <x-input
+                type="textarea"
+                id="vocabExampleEnInput"
+                name="example_en"
+                label="Ví dụ tiếng Anh"
+                placeholder="Ví dụ: They decided to collaborate on the research project."
+                rows="2"
+                size="md"
+            />
+
+            {{-- Hàng 5: Nghĩa của ví dụ (không bắt buộc) --}}
+            <x-input
+                type="textarea"
+                id="vocabExampleViInput"
+                name="example_vi"
+                label="Nghĩa của ví dụ"
+                placeholder="Ví dụ: Họ quyết định hợp tác trong dự án nghiên cứu."
+                rows="2"
+                size="md"
+            />
+
+            {{-- Thông báo phản hồi trạng thái dữ liệu Frontend --}}
+            <div id="createVocabNotice" class="tv-modal-notice" style="display: none;" role="status">
+                <div class="tv-modal-notice-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                </div>
+                <div class="tv-modal-notice-text">
+                    <div class="tv-modal-notice-title" id="createVocabNoticeTitle">Dữ liệu hợp lệ</div>
+                    <div class="tv-modal-notice-desc" id="createVocabNoticeDesc">Chức năng đang được hoàn thiện, sẵn sàng kết nối Backend (BE-008.2.4).</div>
+                </div>
+            </div>
+        </form>
+
+        <x-slot:actions>
+            <x-button variant="neutral" size="medium" data-sp-modal-close id="btnCancelCreateVocab">
+                Hủy
+            </x-button>
+            <x-button variant="primary" size="medium" id="btnSubmitCreateVocab">
+                + Thêm từ vựng
+            </x-button>
+        </x-slot:actions>
+    </x-modal>
+
+    {{-- ===== MODAL CHỈNH SỬA CHỦ ĐỀ CÁ NHÂN ===== --}}
+    <x-modal id="modalEditTopic" title="Chỉnh sửa chủ đề cá nhân" maxWidth="560px">
+        <div class="tv-edit-topic-group">
+            <label for="editTopicNameInput" class="tv-edit-topic-label">
+                Tên chủ đề <span class="tv-text-danger">*</span>
+            </label>
+            <input type="text"
+                   id="editTopicNameInput"
+                   class="tv-edit-topic-input"
+                   value="{{ $topic['name'] }}"
+                   placeholder="Nhập tên chủ đề..."
+                   maxlength="100">
+        </div>
+
+        <div class="tv-edit-topic-group" style="margin-bottom: 0;">
+            <div class="tv-edit-vocab-header">
+                <div>
+                    <label class="tv-edit-topic-label" style="margin-bottom: 2px;">
+                        Danh sách từ vựng trong chủ đề
+                    </label>
+                    <p class="tv-edit-topic-hint">Tích chọn các từ bạn muốn xóa khỏi chủ đề này:</p>
+                </div>
+                @if(count($vocabularies) > 0)
+                    <div class="tv-edit-vocab-quick-actions">
+                        <button type="button" class="tv-btn-select-action" onclick="toggleSelectAllVocabs(true)">Chọn tất cả</button>
+                        <span class="tv-quick-sep">•</span>
+                        <button type="button" class="tv-btn-select-action" onclick="toggleSelectAllVocabs(false)">Bỏ chọn</button>
+                    </div>
+                @endif
+            </div>
+
+            @if(count($vocabularies) > 0)
+                <div class="tv-edit-vocab-list" id="editVocabList">
+                    @foreach($vocabularies as $vocab)
+                        @php
+                            $vId = $vocab['vocabulary_id'] ?? $loop->index;
+                            $vWord = $vocab['word'] ?? '';
+                            $vPos = $vocab['part_of_speech'] ?? '';
+                            $vMeaning = $vocab['meaning_vi'] ?? '';
+                        @endphp
+                        <label class="tv-edit-vocab-item" for="select-vocab-{{ $vId }}" id="edit-vocab-item-{{ $vId }}">
+                            <input type="checkbox"
+                                   class="tv-edit-vocab-checkbox"
+                                   id="select-vocab-{{ $vId }}"
+                                   value="{{ $vId }}"
+                                   onchange="handleVocabCheckChange(this, '{{ $vId }}')">
+                            <div class="tv-edit-vocab-info">
+                                <div class="tv-edit-vocab-word-row">
+                                    <span class="tv-edit-vocab-word">{{ $vWord }}</span>
+                                    @if(!empty($vPos))
+                                        <span class="tv-edit-vocab-pos">{{ $vPos }}</span>
+                                    @endif
+                                </div>
+                                <div class="tv-edit-vocab-meaning">{{ $vMeaning }}</div>
+                            </div>
+                            <span class="tv-edit-vocab-tag-delete">Sẽ xóa</span>
+                        </label>
+                    @endforeach
+                </div>
+                <div class="tv-edit-vocab-footer-summary">
+                    <span id="selectedVocabCountText">Đã chọn: <strong>0</strong> từ để xóa</span>
+                </div>
+            @else
+                <div class="tv-edit-vocab-empty">
+                    <p>Chủ đề này hiện chưa có từ vựng nào.</p>
+                </div>
+            @endif
+        </div>
+
+        <x-slot:actions>
+            <x-button variant="neutral" data-sp-modal-close>
+                Hủy bỏ
+            </x-button>
+            <x-button variant="primary" id="btnSaveEditTopic" onclick="handleMockSaveEditTopic()">
+                Lưu thay đổi
+            </x-button>
+        </x-slot:actions>
+    </x-modal>
+
+    {{-- ===== MODAL XÁC NHẬN XÓA CHỦ ĐỀ CÁ NHÂN ===== --}}
+    <x-modal id="modalDeleteTopic" title="Xóa chủ đề cá nhân" maxWidth="460px">
+        <p style="margin: 0 0 14px; font-size: 15px; color: #334155; line-height: 1.5;">
+            Bạn có chắc chắn muốn xóa chủ đề <strong>"{{ $topic['name'] }}"</strong> không?
+        </p>
+        <div style="font-size: 13.5px; color: #991B1B; background: #FEF2F2; padding: 12px 14px; border-radius: 12px; border: 1px solid #FEE2E2; line-height: 1.5;">
+            <strong>Lưu ý:</strong> Toàn bộ từ vựng cá nhân và tiến độ học trong chủ đề này sẽ bị gỡ bỏ khỏi tài khoản của bạn.
+        </div>
+
+        <x-slot:actions>
+            <x-button variant="neutral" data-sp-modal-close>
+                Hủy bỏ
+            </x-button>
+            <x-button variant="danger" id="btnConfirmDeleteTopic" onclick="handleMockDeleteTopic()">
+                Xác nhận xóa
+            </x-button>
+        </x-slot:actions>
+    </x-modal>
+@endif
 
 {{-- Toast thông báo tương tác --}}
 <div class="tv-toast-popup" id="tvToastPopup" role="status" aria-live="polite">
@@ -542,6 +799,101 @@
         }, 2800);
     }
 
+    // 8. Tùy chọn chủ đề cá nhân (Menu 3 chấm & Modal)
+    function toggleTopicMenu(e) {
+        if (e) e.stopPropagation();
+        const dd = document.getElementById('topicDropdown');
+        if (dd) {
+            dd.classList.toggle('show');
+        }
+    }
+
+    function closeTopicMenu() {
+        const dd = document.getElementById('topicDropdown');
+        if (dd) {
+            dd.classList.remove('show');
+        }
+    }
+
+    function handleVocabCheckChange(checkbox, vocabId) {
+        const item = document.getElementById('edit-vocab-item-' + vocabId);
+        if (item) {
+            if (checkbox.checked) {
+                item.classList.add('is-selected');
+            } else {
+                item.classList.remove('is-selected');
+            }
+        }
+        updateSelectedVocabCount();
+    }
+
+    function toggleSelectAllVocabs(select) {
+        const checkboxes = document.querySelectorAll('.tv-edit-vocab-checkbox');
+        checkboxes.forEach(cb => {
+            cb.checked = select;
+            const item = cb.closest('.tv-edit-vocab-item');
+            if (item) {
+                if (select) {
+                    item.classList.add('is-selected');
+                } else {
+                    item.classList.remove('is-selected');
+                }
+            }
+        });
+        updateSelectedVocabCount();
+    }
+
+    function updateSelectedVocabCount() {
+        const count = document.querySelectorAll('.tv-edit-vocab-checkbox:checked').length;
+        const countText = document.getElementById('selectedVocabCountText');
+        if (countText) {
+            countText.innerHTML = 'Đã chọn: <strong>' + count + '</strong> từ để xóa';
+        }
+    }
+
+    function handleMockSaveEditTopic() {
+        const nameInput = document.getElementById('editTopicNameInput');
+        const newName = nameInput ? nameInput.value.trim() : '';
+        const count = document.querySelectorAll('.tv-edit-vocab-checkbox:checked').length;
+
+        if (!newName) {
+            alert('Vui lòng nhập tên chủ đề');
+            return;
+        }
+
+        // Cập nhật tên hiển thị trên giao diện (mô phỏng UI)
+        const topicNameEl = document.querySelector('.tv-topic-name');
+        if (topicNameEl) {
+            topicNameEl.textContent = newName;
+        }
+
+        // Đóng modal
+        const modal = document.getElementById('modalEditTopic');
+        if (modal) {
+            modal.hidden = true;
+            if (!document.querySelector('.sp-modal:not([hidden])')) {
+                document.body.style.overflow = '';
+            }
+        }
+
+        let msg = 'Đã cập nhật chủ đề: ' + newName;
+        if (count > 0) {
+            msg += ' (Đã chọn xóa ' + count + ' từ vựng)';
+        }
+        showToast(msg);
+    }
+
+    function handleMockDeleteTopic() {
+        const modal = document.getElementById('modalDeleteTopic');
+        if (modal) {
+            modal.hidden = true;
+            if (!document.querySelector('.sp-modal:not([hidden])')) {
+                document.body.style.overflow = '';
+            }
+        }
+        showToast('Đã xác nhận xóa chủ đề (Mô phỏng UI)');
+    }
+
     // Đóng dropdown khi click ra ngoài màn hình
     document.addEventListener('click', function (e) {
         if (!e.target.closest('.tv-sort-wrap')) {
@@ -550,6 +902,267 @@
         }
         if (!e.target.closest('.tv-vocab-actions')) {
             document.querySelectorAll('.tv-vocab-dropdown').forEach(m => m.classList.remove('show'));
+        }
+        if (!e.target.closest('.tv-topic-actions')) {
+            const topicDd = document.getElementById('topicDropdown');
+            if (topicDd) topicDd.classList.remove('show');
+        }
+    });
+
+    // ===== 9. QUẢN LÝ MODAL THÊM TỪ VỰNG CÁ NHÂN (BE-008.2.4 Frontend) =====
+    let vocabModalOpener = null;
+
+    function openCreateVocabModal() {
+        const modal = document.getElementById('modalCreateVocabulary');
+        if (!modal) return;
+        vocabModalOpener = document.getElementById('btnAddVocabulary') || document.activeElement;
+        resetCreateVocabForm();
+        modal.hidden = false;
+        document.body.style.overflow = 'hidden';
+        setTimeout(function () {
+            const wordInput = document.getElementById('vocabWordInput');
+            if (wordInput) wordInput.focus();
+        }, 120);
+    }
+
+    function closeCreateVocabModal() {
+        const modal = document.getElementById('modalCreateVocabulary');
+        if (!modal) return;
+        modal.hidden = true;
+        if (!document.querySelector('.sp-modal:not([hidden])')) {
+            document.body.style.overflow = '';
+        }
+        resetCreateVocabForm();
+        if (vocabModalOpener && typeof vocabModalOpener.focus === 'function') {
+            vocabModalOpener.focus();
+        }
+    }
+
+    function resetCreateVocabForm() {
+        const form = document.getElementById('formCreateVocabulary');
+        if (form) {
+            form.reset();
+        }
+        ['vocabWordInput', 'vocabPronunciationInput', 'vocabMeaningViInput', 'vocabPosInput', 'vocabImageUrlInput', 'vocabExampleEnInput', 'vocabExampleViInput'].forEach(function (id) {
+            const el = document.getElementById(id);
+            if (el) clearVocabFieldError(el);
+        });
+
+        const notice = document.getElementById('createVocabNotice');
+        if (notice) {
+            notice.style.display = 'none';
+            notice.className = 'tv-modal-notice';
+        }
+
+        const wordCount = document.getElementById('vocabWordInput-count');
+        if (wordCount) {
+            wordCount.textContent = '0 / 150 ky tu';
+        }
+    }
+
+    function setVocabFieldError(field, message) {
+        if (!field) return;
+        const control = field.closest('.sp-control');
+        const label = field.closest('.sp-field') ? field.closest('.sp-field').querySelector('.sp-label') : null;
+        const desc = document.getElementById(field.id + '-desc');
+
+        if (control) control.classList.add('has-error');
+        if (label) label.classList.add('sp-label--error');
+        if (desc) {
+            desc.textContent = '! ' + message;
+            desc.className = 'sp-caption sp-caption--error';
+            desc.hidden = false;
+        }
+    }
+
+    function clearVocabFieldError(field) {
+        if (!field) return;
+        const control = field.closest('.sp-control');
+        const label = field.closest('.sp-field') ? field.closest('.sp-field').querySelector('.sp-label') : null;
+        const desc = document.getElementById(field.id + '-desc');
+
+        if (control) control.classList.remove('has-error');
+        if (label) label.classList.remove('sp-label--error');
+        if (desc) {
+            desc.textContent = '';
+            desc.className = 'sp-caption';
+            desc.hidden = true;
+        }
+    }
+
+    function isValidHttpUrl(str) {
+        try {
+            const parsed = new URL(str);
+            return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+        } catch (_) {
+            return false;
+        }
+    }
+
+    function handleCreateVocabSubmit() {
+        const wordInput = document.getElementById('vocabWordInput');
+        const pronInput = document.getElementById('vocabPronunciationInput');
+        const meaningInput = document.getElementById('vocabMeaningViInput');
+        const posSelect = document.getElementById('vocabPosInput');
+        const imageUrlInput = document.getElementById('vocabImageUrlInput');
+        const notice = document.getElementById('createVocabNotice');
+        const noticeTitle = document.getElementById('createVocabNoticeTitle');
+        const noticeDesc = document.getElementById('createVocabNoticeDesc');
+
+        let isValid = true;
+        let firstErrorField = null;
+
+        // 1. word: bắt buộc, không được chỉ chứa khoảng trắng, tối đa 150 ký tự
+        const wordVal = wordInput ? wordInput.value.trim() : '';
+        if (!wordVal) {
+            setVocabFieldError(wordInput, 'Vui lòng nhập từ tiếng Anh.');
+            isValid = false;
+            if (!firstErrorField) firstErrorField = wordInput;
+        } else if (wordVal.length > 150) {
+            setVocabFieldError(wordInput, 'Từ tiếng Anh không được vượt quá 150 ký tự (hiện tại ' + wordVal.length + ' ký tự).');
+            isValid = false;
+            if (!firstErrorField) firstErrorField = wordInput;
+        } else {
+            clearVocabFieldError(wordInput);
+        }
+
+        // 2. meaning_vi: bắt buộc, không được chỉ chứa khoảng trắng
+        const meaningVal = meaningInput ? meaningInput.value.trim() : '';
+        if (!meaningVal) {
+            setVocabFieldError(meaningInput, 'Vui lòng nhập nghĩa tiếng Việt.');
+            isValid = false;
+            if (!firstErrorField) firstErrorField = meaningInput;
+        } else {
+            clearVocabFieldError(meaningInput);
+        }
+
+        // 3. pronunciation: không bắt buộc, tối đa 150 ký tự
+        const pronVal = pronInput ? pronInput.value.trim() : '';
+        if (pronVal.length > 150) {
+            setVocabFieldError(pronInput, 'Phiên âm không được vượt quá 150 ký tự.');
+            isValid = false;
+            if (!firstErrorField) firstErrorField = pronInput;
+        } else if (pronInput) {
+            clearVocabFieldError(pronInput);
+        }
+
+        // 4. part_of_speech: không bắt buộc, tối đa 30 ký tự
+        const posVal = posSelect ? posSelect.value.trim() : '';
+        if (posVal.length > 30) {
+            setVocabFieldError(posSelect, 'Loại từ không được vượt quá 30 ký tự.');
+            isValid = false;
+            if (!firstErrorField) firstErrorField = posSelect;
+        } else if (posSelect) {
+            clearVocabFieldError(posSelect);
+        }
+
+        // 5. image_url: không bắt buộc, tối đa 500 ký tự và phải là URL hợp lệ nếu có
+        const imageUrlVal = imageUrlInput ? imageUrlInput.value.trim() : '';
+        if (imageUrlVal.length > 500) {
+            setVocabFieldError(imageUrlInput, 'URL hình ảnh không được vượt quá 500 ký tự.');
+            isValid = false;
+            if (!firstErrorField) firstErrorField = imageUrlInput;
+        } else if (imageUrlVal.length > 0 && !isValidHttpUrl(imageUrlVal)) {
+            setVocabFieldError(imageUrlInput, 'URL hình ảnh không hợp lệ (phải bắt đầu bằng http:// hoặc https://).');
+            isValid = false;
+            if (!firstErrorField) firstErrorField = imageUrlInput;
+        } else if (imageUrlInput) {
+            clearVocabFieldError(imageUrlInput);
+        }
+
+        // Nếu có lỗi: giữ nguyên dữ liệu đã nhập, không đóng modal, focus trường lỗi đầu tiên
+        if (!isValid) {
+            if (notice) notice.style.display = 'none';
+            if (firstErrorField) firstErrorField.focus();
+            return;
+        }
+
+        // Hợp lệ: hiển thị thông báo "Chức năng đang được hoàn thiện", giữ nguyên nội dung Modal
+        // KHÔNG gửi request POST, KHÔNG ghi MySQL, KHÔNG tạo route mới, KHÔNG lưu localStorage/session, KHÔNG thêm từ giả
+        if (notice && noticeTitle && noticeDesc) {
+            notice.className = 'tv-modal-notice tv-modal-notice--info';
+            noticeTitle.textContent = 'Dữ liệu hợp lệ: "' + wordVal + '"';
+            noticeDesc.textContent = 'Chức năng đang được hoàn thiện, sẵn sàng kết nối Backend (BE-008.2.4).';
+            notice.style.display = 'flex';
+        }
+
+        showToast('Dữ liệu hợp lệ. Chức năng đang được hoàn thiện (BE-008.2.4).');
+    }
+
+    // Đăng ký sự kiện mở modal từ nút "+ THÊM TỪ VỰNG"
+    const btnAddVocab = document.getElementById('btnAddVocabulary');
+    if (btnAddVocab) {
+        btnAddVocab.addEventListener('click', function (e) {
+            e.preventDefault();
+            openCreateVocabModal();
+        });
+    }
+
+    // Đăng ký sự kiện đóng modal từ nút Hủy và biểu tượng X
+    const btnCancelCreateVocab = document.getElementById('btnCancelCreateVocab');
+    if (btnCancelCreateVocab) {
+        btnCancelCreateVocab.addEventListener('click', function (e) {
+            e.preventDefault();
+            closeCreateVocabModal();
+        });
+    }
+
+    const btnCloseVocabModal = document.getElementById('btnCloseVocabModal');
+    if (btnCloseVocabModal) {
+        btnCloseVocabModal.addEventListener('click', function (e) {
+            e.preventDefault();
+            closeCreateVocabModal();
+        });
+    }
+
+    // Đăng ký submit form khi nhấn nút "+ Thêm từ vựng"
+    const btnSubmitCreateVocab = document.getElementById('btnSubmitCreateVocab');
+    if (btnSubmitCreateVocab) {
+        btnSubmitCreateVocab.addEventListener('click', function (e) {
+            e.preventDefault();
+            handleCreateVocabSubmit();
+        });
+    }
+
+    // Đóng modal khi bấm phím Escape
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' || e.key === 'Esc') {
+            const modal = document.getElementById('modalCreateVocabulary');
+            if (modal && !modal.hidden) {
+                closeCreateVocabModal();
+            }
+        }
+    });
+
+    // Đóng modal khi click ra lớp nền mờ overlay
+    const vocabModalEl = document.getElementById('modalCreateVocabulary');
+    if (vocabModalEl) {
+        const backdrop = vocabModalEl.querySelector('.sp-modal__backdrop');
+        if (backdrop) {
+            backdrop.addEventListener('click', function () {
+                closeCreateVocabModal();
+            });
+        }
+    }
+
+    // Tự động xóa lỗi tức thì khi người dùng bắt đầu nhập giá trị hợp lệ
+    const liveCheckFields = [
+        { id: 'vocabWordInput', check: function (v) { return v.trim().length > 0 && v.trim().length <= 150; } },
+        { id: 'vocabMeaningViInput', check: function (v) { return v.trim().length > 0; } },
+        { id: 'vocabPronunciationInput', check: function (v) { return v.trim().length <= 150; } },
+        { id: 'vocabPosInput', check: function (v) { return v.trim().length <= 30; } },
+        { id: 'vocabImageUrlInput', check: function (v) { return v.trim().length === 0 || (v.trim().length <= 500 && isValidHttpUrl(v.trim())); } }
+    ];
+
+    liveCheckFields.forEach(function (item) {
+        const fieldEl = document.getElementById(item.id);
+        if (fieldEl) {
+            const evtName = fieldEl.tagName === 'SELECT' ? 'change' : 'input';
+            fieldEl.addEventListener(evtName, function () {
+                if (item.check(this.value)) {
+                    clearVocabFieldError(this);
+                }
+            });
         }
     });
 </script>

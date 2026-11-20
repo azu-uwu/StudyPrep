@@ -142,7 +142,7 @@
     <div class="lt-section-header">
         <h2 class="lt-section-title">Chủ đề của tôi</h2>
         @if(!empty($myList))
-            <a href="javascript:void(0)" class="lt-link-all" id="btnAddTopic" data-require-auth>
+            <a href="javascript:void(0)" class="lt-link-all" id="btnAddTopic" data-sp-modal-open="modalCreateTopic">
                 + Thêm chủ đề
             </a>
         @endif
@@ -160,7 +160,7 @@
                 </svg>
             </div>
             <p class="tv-empty-text">Bạn chưa có chủ đề nào</p>
-            <x-button variant="primary" size="medium" data-require-auth>
+            <x-button variant="primary" size="medium" id="btnCreateTopicEmpty" data-sp-modal-open="modalCreateTopic">
                 + Tạo chủ đề
             </x-button>
         </div>
@@ -227,6 +227,72 @@
     </div>
 </div>
 
+{{-- ===== MODAL THÊM CHỦ ĐỀ MỚI (Frontend form chuẩn bị cho Backend BE-008.2.1) ===== --}}
+<x-modal id="modalCreateTopic" title="Thêm chủ đề mới" maxWidth="480px">
+    {{-- Icon đóng modal ở góc trên bên phải --}}
+    <button type="button" class="tv-modal-close-icon" data-sp-modal-close aria-label="Đóng modal" id="btnModalCloseIcon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+    </button>
+
+    <form id="formCreateTopic" onsubmit="return false;" novalidate>
+        {{-- Tên chủ đề (Bắt buộc, tối đa 100 ký tự) --}}
+        <x-input
+            id="createTopicNameInput"
+            name="name"
+            label="Tên chủ đề *"
+            placeholder="Ví dụ: TOEIC 600 Essential Words, Kinh doanh..."
+            maxlength="100"
+            :show-count="true"
+            size="md"
+            autocomplete="off"
+        />
+
+        {{-- Mô tả (Không bắt buộc) --}}
+        <x-input
+            type="textarea"
+            id="createTopicDescInput"
+            name="description"
+            label="Mô tả"
+            placeholder="Nhập mô tả ngắn gọn về chủ đề này (không bắt buộc)..."
+            rows="3"
+            size="md"
+            maxlength="255"
+        />
+
+        {{-- Thông báo phản hồi Frontend (Hợp lệ / Chờ kết nối Backend BE-008.2.1) --}}
+        <div id="createTopicNotice" class="tv-modal-notice" style="display: none;" role="status">
+            <div class="tv-modal-notice-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+            </div>
+            <div class="tv-modal-notice-text">
+                <div class="tv-modal-notice-title" id="createTopicNoticeTitle">Dữ liệu hợp lệ</div>
+                <div class="tv-modal-notice-desc" id="createTopicNoticeDesc">Chức năng tạo chủ đề đang chờ kết nối Backend (BE-008.2.1) để lưu vào cơ sở dữ liệu.</div>
+            </div>
+        </div>
+    </form>
+
+    <x-slot:actions>
+        <x-button variant="neutral" size="medium" data-sp-modal-close id="btnCancelCreateTopic">
+            Hủy
+        </x-button>
+        <x-button variant="primary" size="medium" id="btnSubmitCreateTopic">
+            + Tạo chủ đề
+        </x-button>
+    </x-slot:actions>
+</x-modal>
+
+{{-- Toast thông báo nổi --}}
+<div class="tv-toast" id="tvToastPopup" role="status" aria-live="polite">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+    <span id="tvToastMessage">Thông báo</span>
+</div>
+
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -243,6 +309,209 @@
                     }
                 });
             });
+
+            // ===== QUẢN LÝ MODAL TẠO CHỦ ĐỀ CÁ NHÂN (BE-008.2.1 Frontend) =====
+            const modalEl = document.getElementById('modalCreateTopic');
+            const nameInput = document.getElementById('createTopicNameInput');
+            const descInput = document.getElementById('createTopicDescInput');
+            const btnSubmit = document.getElementById('btnSubmitCreateTopic');
+            const btnCancel = document.getElementById('btnCancelCreateTopic');
+            const btnCloseIcon = document.getElementById('btnModalCloseIcon');
+            const noticeEl = document.getElementById('createTopicNotice');
+            const noticeTitleEl = document.getElementById('createTopicNoticeTitle');
+            const noticeDescEl = document.getElementById('createTopicNoticeDesc');
+            const toastEl = document.getElementById('tvToastPopup');
+            const toastMsgEl = document.getElementById('tvToastMessage');
+
+            let toastTimer = null;
+
+            function showToast(message) {
+                if (!toastEl || !toastMsgEl) return;
+                toastMsgEl.textContent = message;
+                toastEl.classList.add('show');
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(function () {
+                    toastEl.classList.remove('show');
+                }, 3200);
+            }
+
+            function showInputError(input, message) {
+                const control = input.closest('.sp-control');
+                const label = input.closest('.sp-field') ? input.closest('.sp-field').querySelector('.sp-label') : null;
+                const desc = document.getElementById(input.id + '-desc');
+
+                if (control) control.classList.add('has-error');
+                if (label) label.classList.add('sp-label--error');
+                if (desc) {
+                    desc.textContent = '! ' + message;
+                    desc.className = 'sp-caption sp-caption--error';
+                    desc.hidden = false;
+                }
+            }
+
+            function clearInputError(input) {
+                const control = input.closest('.sp-control');
+                const label = input.closest('.sp-field') ? input.closest('.sp-field').querySelector('.sp-label') : null;
+                const desc = document.getElementById(input.id + '-desc');
+
+                if (control) control.classList.remove('has-error');
+                if (label) label.classList.remove('sp-label--error');
+                if (desc) {
+                    desc.textContent = '';
+                    desc.className = 'sp-caption';
+                    desc.hidden = true;
+                }
+            }
+
+            function resetCreateTopicForm() {
+                if (nameInput) {
+                    nameInput.value = '';
+                    clearInputError(nameInput);
+                }
+                if (descInput) {
+                    descInput.value = '';
+                    clearInputError(descInput);
+                }
+                if (noticeEl) {
+                    noticeEl.style.display = 'none';
+                    noticeEl.className = 'tv-modal-notice';
+                }
+                // Cập nhật bộ đếm ký tự
+                const nameCount = document.getElementById('createTopicNameInput-count');
+                if (nameCount) {
+                    nameCount.textContent = '0 / 100 ky tu';
+                }
+            }
+
+            function openCreateTopicModal() {
+                if (!modalEl) return;
+                resetCreateTopicForm();
+                modalEl.hidden = false;
+                document.body.style.overflow = 'hidden';
+                setTimeout(function () {
+                    if (nameInput) nameInput.focus();
+                }, 100);
+            }
+
+            function closeCreateTopicModal() {
+                if (!modalEl) return;
+                modalEl.hidden = true;
+                if (!document.querySelector('.sp-modal:not([hidden])')) {
+                    document.body.style.overflow = '';
+                }
+                resetCreateTopicForm();
+            }
+
+            // Gán sự kiện mở modal cho cả nút "+ Thêm chủ đề" và "+ Tạo chủ đề" (empty state)
+            const btnAddTopic = document.getElementById('btnAddTopic');
+            if (btnAddTopic) {
+                btnAddTopic.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    openCreateTopicModal();
+                });
+            }
+
+            const btnCreateTopicEmpty = document.getElementById('btnCreateTopicEmpty');
+            if (btnCreateTopicEmpty) {
+                btnCreateTopicEmpty.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    openCreateTopicModal();
+                });
+            }
+
+            // Xử lý đóng modal từ nút Hủy và Icon đóng
+            if (btnCancel) {
+                btnCancel.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    closeCreateTopicModal();
+                });
+            }
+
+            if (btnCloseIcon) {
+                btnCloseIcon.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    closeCreateTopicModal();
+                });
+            }
+
+            // Đóng modal khi bấm Escape
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' || e.key === 'Esc') {
+                    if (modalEl && !modalEl.hidden) {
+                        closeCreateTopicModal();
+                    }
+                }
+            });
+
+            // Đóng modal khi click ra lớp nền mờ (overlay)
+            if (modalEl) {
+                const backdrop = modalEl.querySelector('.sp-modal__backdrop');
+                if (backdrop) {
+                    backdrop.addEventListener('click', function () {
+                        closeCreateTopicModal();
+                    });
+                }
+            }
+
+            // Xóa lỗi tức thì khi người dùng bắt đầu nhập tên hợp lệ
+            if (nameInput) {
+                nameInput.addEventListener('input', function () {
+                    const val = this.value.trim();
+                    if (val.length > 0 && val.length <= 100) {
+                        clearInputError(this);
+                        if (noticeEl && noticeEl.classList.contains('tv-modal-notice--error')) {
+                            noticeEl.style.display = 'none';
+                        }
+                    }
+                });
+
+                nameInput.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (btnSubmit) btnSubmit.click();
+                    }
+                });
+            }
+
+            // Kiểm tra dữ liệu khi nhấn nút "+ Tạo chủ đề"
+            if (btnSubmit) {
+                btnSubmit.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    if (!nameInput) return;
+
+                    const rawName = nameInput.value;
+                    const trimmedName = rawName.trim();
+
+                    // 1. Kiểm tra bắt buộc: Tên chủ đề không để trống
+                    if (!trimmedName) {
+                        showInputError(nameInput, 'Vui lòng nhập tên chủ đề.');
+                        if (noticeEl) noticeEl.style.display = 'none';
+                        nameInput.focus();
+                        return;
+                    }
+
+                    // 2. Kiểm tra độ dài: tối đa 100 ký tự
+                    if (trimmedName.length > 100) {
+                        showInputError(nameInput, 'Tên chủ đề không được vượt quá 100 ký tự (hiện tại ' + trimmedName.length + ' ký tự).');
+                        if (noticeEl) noticeEl.style.display = 'none';
+                        nameInput.focus();
+                        return;
+                    }
+
+                    // Dữ liệu hợp lệ: xóa thông báo lỗi
+                    clearInputError(nameInput);
+
+                    // 3. Phản hồi Frontend (KHÔNG gửi dữ liệu backend, KHÔNG tạo chủ đề MySQL, KHÔNG thông báo thành công giả)
+                    if (noticeEl && noticeTitleEl && noticeDescEl) {
+                        noticeEl.className = 'tv-modal-notice tv-modal-notice--info';
+                        noticeTitleEl.textContent = 'Dữ liệu hợp lệ: "' + trimmedName + '"';
+                        noticeDescEl.textContent = 'Chức năng tạo chủ đề đang chờ kết nối Backend (BE-008.2.1) để lưu vào cơ sở dữ liệu.';
+                        noticeEl.style.display = 'flex';
+                    }
+
+                    showToast('Dữ liệu hợp lệ. Chức năng đang chờ kết nối Backend (BE-008.2.1).');
+                });
+            }
         });
     </script>
 @endpush

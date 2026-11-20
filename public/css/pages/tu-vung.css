@@ -550,3 +550,141 @@ a.lt-link-all:hover {
         font-size: 19px;
     }
 }
+
+/* ===== MODAL THÊM CHỦ ĐỀ MỚI (Frontend Form BE-008.2.1) ===== */
+.tv-modal-close-icon {
+    position: absolute;
+    top: 22px;
+    right: 22px;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    border-radius: 10px;
+    color: #64748B;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+    padding: 0;
+    z-index: 10;
+}
+
+.tv-modal-close-icon:hover {
+    background-color: #F1F5F9;
+    color: #0F172A;
+}
+
+.tv-modal-close-icon:active {
+    transform: scale(0.92);
+}
+
+.tv-modal-close-icon:focus-visible {
+    outline: 2px solid #0076FE;
+    outline-offset: 2px;
+}
+
+/* Thông báo trạng thái kiểm tra dữ liệu Frontend */
+.tv-modal-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    margin-top: 4px;
+    margin-bottom: 12px;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+
+.tv-modal-notice-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    margin-top: 1px;
+}
+
+.tv-modal-notice-text {
+    flex: 1;
+}
+
+.tv-modal-notice-title {
+    font-weight: 700;
+    font-size: 13.5px;
+    margin-bottom: 2px;
+}
+
+.tv-modal-notice-desc {
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.tv-modal-notice--info {
+    background-color: #EFF6FF;
+    border: 1px solid #BFDBFE;
+    color: #1D4ED8;
+}
+
+.tv-modal-notice--info .tv-modal-notice-icon {
+    color: #2563EB;
+}
+
+.tv-modal-notice--error {
+    background-color: #FEF2F2;
+    border: 1px solid #FECACA;
+    color: #B91C1C;
+}
+
+.tv-modal-notice--error .tv-modal-notice-icon {
+    color: #DC2626;
+}
+
+/* Tinh chỉnh Responsive cho Modal trên điện thoại */
+@media (max-width: 640px) {
+    #modalCreateTopic .sp-modal__card {
+        padding: 24px 20px 22px;
+        border-radius: 20px;
+    }
+
+    #modalCreateTopic .sp-modal__title {
+        font-size: 19px;
+        padding-right: 36px;
+    }
+
+    #modalCreateTopic .tv-modal-close-icon {
+        top: 18px;
+        right: 18px;
+        width: 32px;
+        height: 32px;
+    }
+}
+
+@media (max-width: 480px) {
+    #modalCreateTopic .sp-modal__card {
+        padding: 20px 16px 18px;
+        border-radius: 18px;
+    }
+
+    #modalCreateTopic .sp-modal__title {
+        font-size: 18px;
+        padding-right: 36px;
+    }
+
+    #modalCreateTopic .sp-modal__actions {
+        display: flex;
+        gap: 10px;
+        width: 100%;
+    }
+
+    #modalCreateTopic .sp-modal__actions .sp-btn {
+        flex: 1;
+        padding: 0 12px;
+        font-size: 14px;
+        text-align: center;
+    }
+}
