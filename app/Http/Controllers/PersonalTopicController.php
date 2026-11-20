@@ -312,6 +312,163 @@ class PersonalTopicController extends Controller
     }
 
     /**
+     * Chỉnh sửa một từ vựng trong chủ đề cá nhân của học viên đang đăng nhập (BE-008.2.5).
+     */
+    public function updateVocabulary(Request $request, int|string $topic, int|string $vocabulary): JsonResponse|RedirectResponse
+    {
+        $user = $request->user();
+
+        if (! $user) {
+            abort(401, 'Vui lòng đăng nhập để thực hiện chức năng này.');
+        }
+
+        if (method_exists($user, 'isLocked') && $user->isLocked()) {
+            abort(403, 'Tài khoản của bạn đã bị khóa.');
+        }
+
+        $topicModel = Topic::findOrFail((int) $topic);
+
+        // Kiểm tra phân quyền: Không cho phép sửa từ thuộc chủ đề hệ thống
+        if ($topicModel->user_id === null) {
+            abort(403, 'Không thể chỉnh sửa từ vựng thuộc chủ đề hệ thống.');
+        }
+
+        // Kiểm tra phân quyền: Không cho phép sửa từ thuộc chủ đề của học viên khác
+        $authUserId = (int) ($user->user_id ?? Auth::id());
+        if ((int) $topicModel->user_id !== $authUserId) {
+            abort(403, 'Bạn không có quyền chỉnh sửa từ vựng trong chủ đề này.');
+        }
+
+        // Tìm từ vựng thuộc đúng chủ đề cá nhân này (nếu không khớp hoặc không có thì 404)
+        $vocabModel = Vocabulary::where('topic_id', $topicModel->topic_id)
+            ->where('vocabulary_id', (int) $vocabulary)
+            ->firstOrFail();
+
+        // Chuẩn hóa dữ liệu đầu vào: trim khoảng trắng ở đầu và cuối chuỗi, chuỗi rỗng chuyển về null
+        $request->merge([
+            'word' => is_string($request->input('word')) ? trim($request->input('word')) : $request->input('word'),
+            'meaning_vi' => is_string($request->input('meaning_vi')) ? trim($request->input('meaning_vi')) : $request->input('meaning_vi'),
+            'part_of_speech' => is_string($request->input('part_of_speech')) && trim($request->input('part_of_speech')) !== '' ? trim($request->input('part_of_speech')) : null,
+            'pronunciation' => is_string($request->input('pronunciation')) && trim($request->input('pronunciation')) !== '' ? trim($request->input('pronunciation')) : null,
+            'example_en' => is_string($request->input('example_en')) && trim($request->input('example_en')) !== '' ? trim($request->input('example_en')) : null,
+            'example_vi' => is_string($request->input('example_vi')) && trim($request->input('example_vi')) !== '' ? trim($request->input('example_vi')) : null,
+            'image_url' => is_string($request->input('image_url')) && trim($request->input('image_url')) !== '' ? trim($request->input('image_url')) : null,
+        ]);
+
+        $validated = $request->validate([
+            'word' => ['required', 'string', 'max:150'],
+            'meaning_vi' => ['required', 'string'],
+            'part_of_speech' => ['nullable', 'string', 'max:30'],
+            'pronunciation' => ['nullable', 'string', 'max:150'],
+            'example_en' => ['nullable', 'string'],
+            'example_vi' => ['nullable', 'string'],
+            'image_url' => ['nullable', 'string', 'max:500', 'url'],
+        ], [
+            'word.required' => 'Vui lòng nhập từ tiếng Anh.',
+            'word.string' => 'Từ tiếng Anh phải là chuỗi ký tự.',
+            'word.max' => 'Từ tiếng Anh không được vượt quá 150 ký tự.',
+            'meaning_vi.required' => 'Vui lòng nhập nghĩa tiếng Việt.',
+            'meaning_vi.string' => 'Nghĩa tiếng Việt phải là chuỗi ký tự.',
+            'part_of_speech.string' => 'Loại từ phải là chuỗi ký tự.',
+            'part_of_speech.max' => 'Loại từ không được vượt quá 30 ký tự.',
+            'pronunciation.string' => 'Phiên âm phải là chuỗi ký tự.',
+            'pronunciation.max' => 'Phiên âm không được vượt quá 150 ký tự.',
+            'example_en.string' => 'Ví dụ tiếng Anh phải là chuỗi ký tự.',
+            'example_vi.string' => 'Nghĩa của ví dụ phải là chuỗi ký tự.',
+            'image_url.string' => 'URL hình ảnh phải là chuỗi ký tự.',
+            'image_url.max' => 'URL hình ảnh không được vượt quá 500 ký tự.',
+            'image_url.url' => 'URL hình ảnh không hợp lệ (phải bắt đầu bằng http:// hoặc https://).',
+        ]);
+
+        // Cập nhật bản ghi trong bảng vocabularies
+        // Tuyệt đối không thay đổi vocabulary_id, topic_id hoặc user_id
+        // Không sửa user_vocabulary, không sửa tiến độ hay năng lượng
+        $vocabModel->update([
+            'word' => $validated['word'],
+            'meaning_vi' => $validated['meaning_vi'],
+            'part_of_speech' => ! empty($validated['part_of_speech']) ? $validated['part_of_speech'] : null,
+            'pronunciation' => ! empty($validated['pronunciation']) ? $validated['pronunciation'] : null,
+            'example_en' => ! empty($validated['example_en']) ? $validated['example_en'] : null,
+            'example_vi' => ! empty($validated['example_vi']) ? $validated['example_vi'] : null,
+            'image_url' => ! empty($validated['image_url']) ? $validated['image_url'] : null,
+        ]);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Cập nhật từ vựng thành công!',
+                'vocabulary' => [
+                    'vocabulary_id' => $vocabModel->vocabulary_id,
+                    'topic_id' => $vocabModel->topic_id,
+                    'word' => $vocabModel->word,
+                    'meaning_vi' => $vocabModel->clean_meaning_vi,
+                    'part_of_speech' => $vocabModel->clean_pos,
+                    'pronunciation' => $vocabModel->pronunciation ?? '',
+                    'example_en' => $vocabModel->example_en ?? '',
+                    'example_vi' => $vocabModel->example_vi ?? '',
+                    'image_url' => $vocabModel->image_url,
+                    'cefr_level' => '',
+                    'status' => 'new',
+                ],
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Cập nhật từ vựng thành công!');
+    }
+
+    /**
+     * Xóa một từ vựng khỏi chủ đề cá nhân của học viên đang đăng nhập (BE-008.2.5).
+     */
+    public function destroyVocabulary(Request $request, int|string $topic, int|string $vocabulary): JsonResponse|RedirectResponse
+    {
+        $user = $request->user();
+
+        if (! $user) {
+            abort(401, 'Vui lòng đăng nhập để thực hiện chức năng này.');
+        }
+
+        if (method_exists($user, 'isLocked') && $user->isLocked()) {
+            abort(403, 'Tài khoản của bạn đã bị khóa.');
+        }
+
+        $topicModel = Topic::findOrFail((int) $topic);
+
+        // Kiểm tra phân quyền: Không cho phép xóa từ thuộc chủ đề hệ thống
+        if ($topicModel->user_id === null) {
+            abort(403, 'Không thể xóa từ vựng thuộc chủ đề hệ thống.');
+        }
+
+        // Kiểm tra phân quyền: Không cho phép xóa từ thuộc chủ đề của học viên khác
+        $authUserId = (int) ($user->user_id ?? Auth::id());
+        if ((int) $topicModel->user_id !== $authUserId) {
+            abort(403, 'Bạn không có quyền xóa từ vựng trong chủ đề này.');
+        }
+
+        // Tìm đúng từ vựng thuộc chủ đề này
+        $vocabModel = Vocabulary::where('topic_id', $topicModel->topic_id)
+            ->where('vocabulary_id', (int) $vocabulary)
+            ->firstOrFail();
+
+        $deletedId = $vocabModel->vocabulary_id;
+
+        // Xóa từ vựng. MySQL ON DELETE CASCADE sẽ tự động xóa tiến độ tương ứng trong user_vocabulary
+        $vocabModel->delete();
+
+        $remainingCount = $topicModel->vocabularies()->count();
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã xóa từ vựng thành công!',
+                'deleted_id' => $deletedId,
+                'remaining_count' => $remainingCount,
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Đã xóa từ vựng thành công!');
+    }
+
+    /**
      * Xóa chủ đề từ vựng cá nhân của học viên đang đăng nhập (BE-008.2.3).
      */
     public function destroy(Request $request, int|string $topic): JsonResponse|RedirectResponse

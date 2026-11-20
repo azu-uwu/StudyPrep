@@ -70,6 +70,8 @@ Route::post('/tu-vung/check-answer', [VocabularyPracticeController::class, 'chec
 Route::post('/tu-vung/chu-de', [PersonalTopicController::class, 'store'])->middleware('auth')->name('tu-vung.topics.store');
 Route::match(['put', 'patch'], '/tu-vung/chu-de/{topic}', [PersonalTopicController::class, 'update'])->middleware('auth')->name('tu-vung.topics.update');
 Route::post('/tu-vung/chu-de/{topic}/tu-vung', [PersonalTopicController::class, 'storeVocabulary'])->middleware('auth')->name('tu-vung.topics.vocabularies.store');
+Route::match(['put', 'patch'], '/tu-vung/chu-de/{topic}/tu-vung/{vocabulary}', [PersonalTopicController::class, 'updateVocabulary'])->middleware('auth')->name('tu-vung.topics.vocabularies.update');
+Route::delete('/tu-vung/chu-de/{topic}/tu-vung/{vocabulary}', [PersonalTopicController::class, 'destroyVocabulary'])->middleware('auth')->name('tu-vung.topics.vocabularies.destroy');
 Route::delete('/tu-vung/chu-de/{topic}/tu-vung', [PersonalTopicController::class, 'bulkDeleteVocabularies'])->middleware('auth')->name('tu-vung.topics.vocabularies.bulk-delete');
 Route::delete('/tu-vung/chu-de/{topic}', [PersonalTopicController::class, 'destroy'])->middleware('auth')->name('tu-vung.topics.destroy');
 Route::get('/tu-vung/{topicId}/chon-tu', [VocabularyPracticeController::class, 'selectWords'])->name('tu-vung.chon-tu');

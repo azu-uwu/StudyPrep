@@ -1,5 +1,6 @@
 @props([
     'vocab' => [],
+    'isPersonalTopic' => false,
 ])
 
 @php
@@ -43,6 +44,7 @@
          data-status="{{ $status }}"
          data-word="{{ strtolower($word) }}"
          data-cefr="{{ $cefr }}"
+         data-vocab="{{ json_encode($vocab, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) }}"
          id="vocab-card-{{ $vocabId }}">
 
     {{-- 1. Hàng đầu: Từ tiếng Anh & Nút tùy chọn (⋮) --}}
@@ -64,6 +66,25 @@
 
             {{-- Menu dropdown nhỏ khi bấm nút 3 chấm --}}
             <div class="tv-vocab-dropdown" id="vocabMenu-{{ $vocabId }}">
+                @if($isPersonalTopic)
+                    <button type="button" class="tv-vocab-dropdown-item" onclick="openEditVocabModal('{{ $vocabId }}')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                        <span>Sửa</span>
+                    </button>
+                    <button type="button" class="tv-vocab-dropdown-item tv-vocab-dropdown-item--danger" onclick="openDeleteVocabModal('{{ $vocabId }}')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                        <span>Xóa</span>
+                    </button>
+                    <hr class="tv-vocab-dropdown-divider" style="margin: 4px 0; border: none; border-top: 1px solid #EEF1F7;">
+                @endif
                 <button type="button" class="tv-vocab-dropdown-item" onclick="markVocabStatus('{{ $vocabId }}', 'mastered')">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
                     Đánh dấu Đã nắm vững
