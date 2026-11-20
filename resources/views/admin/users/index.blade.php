@@ -185,8 +185,7 @@
         <div class="user-filter-select-wrap">
             <select name="role" class="user-filter-select" onchange="this.form.submit()">
                 <option value="all" {{ $filters['role'] === 'all' ? 'selected' : '' }}>Tất cả vai trò</option>
-                <option value="learner" {{ $filters['role'] === 'learner' ? 'selected' : '' }}>Học viên</option>
-                <option value="user" {{ $filters['role'] === 'user' ? 'selected' : '' }}>Học viên</option>
+                <option value="student" {{ in_array($filters['role'], ['student', 'learner', 'user'], true) ? 'selected' : '' }}>Học viên</option>
                 <option value="teacher" {{ $filters['role'] === 'teacher' ? 'selected' : '' }}>Giảng viên TOEIC</option>
                 <option value="admin" {{ $filters['role'] === 'admin' ? 'selected' : '' }}>Quản trị viên</option>
             </select>
@@ -512,7 +511,7 @@
                 <div class="form-group-admin">
                     <label>Vai trò hệ thống <span style="color: #dc2626;">*</span></label>
                     <select name="role" class="form-control-admin" required>
-                        <option value="user">Học viên (User / Learner)</option>
+                        <option value="student">Học viên (Student)</option>
                         <option value="teacher">Giảng viên TOEIC & Chấm bài</option>
                         <option value="admin">Quản trị viên (Admin)</option>
                     </select>
@@ -560,7 +559,7 @@
                 <div class="form-group-admin">
                     <label>Vai trò hệ thống</label>
                     <select id="edit_role" name="role" class="form-control-admin" required>
-                        <option value="user">Học viên</option>
+                        <option value="student">Học viên</option>
                         <option value="teacher">Giảng viên TOEIC</option>
                         <option value="admin">Quản trị viên</option>
                     </select>

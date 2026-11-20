@@ -46,8 +46,8 @@ class UserController extends Controller
         }
 
         // 2. Lọc theo Vai trò
-        if (in_array($role, ['learner', 'user', 'student'], true)) {
-            $query->whereIn('role', ['learner', 'user', 'student']);
+        if (in_array($role, ['student', 'learner', 'user'], true)) {
+            $query->whereIn('role', ['student', 'learner', 'user']);
         } elseif (in_array($role, ['teacher', 'instructor', 'giang_vien'], true)) {
             $query->whereIn('role', ['teacher', 'instructor', 'giang_vien']);
         } elseif ($role === 'admin') {
@@ -123,7 +123,7 @@ class UserController extends Controller
             'full_name' => 'required|string|max:100',
             'email' => 'required|email|max:255|unique:users,email',
             'user_name' => 'nullable|string|max:100|unique:users,user_name',
-            'role' => 'required|in:user,learner,teacher,admin',
+            'role' => 'required|in:student,teacher,admin,user,learner',
             'status' => 'required|in:ACTIVE,PENDING,LOCKED',
             'password' => 'required|string|min:6',
         ], [
@@ -180,7 +180,7 @@ class UserController extends Controller
                 'max:255',
                 Rule::unique('users', 'email')->ignore($user->user_id, 'user_id'),
             ],
-            'role' => 'required|in:user,learner,teacher,admin',
+            'role' => 'required|in:student,teacher,admin,user,learner',
             'status' => 'required|in:ACTIVE,PENDING,LOCKED',
             'password' => 'nullable|string|min:6',
         ], [
@@ -384,7 +384,7 @@ class UserController extends Controller
                 continue;
             }
 
-            $role = in_array(strtolower(trim($row[2] ?? '')), ['teacher', 'giang_vien']) ? 'teacher' : 'user';
+            $role = in_array(strtolower(trim($row[2] ?? '')), ['teacher', 'giang_vien']) ? 'teacher' : 'student';
 
             User::create([
                 'full_name' => $name,

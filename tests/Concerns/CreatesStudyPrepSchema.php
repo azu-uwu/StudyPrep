@@ -16,7 +16,7 @@ trait CreatesStudyPrepSchema
             $table->string('password_hash');
             $table->string('full_name');
             $table->string('avatar_url', 500)->nullable();
-            $table->string('role', 20)->default('user');
+            $table->string('role', 20)->default('student');
             $table->integer('energy')->default(5);
             $table->timestamp('created_at')->useCurrent();
             $table->integer('failed_login_attempts')->default(0);

@@ -154,6 +154,43 @@
     letter-spacing: 0.2px;
 }
 
+/* Hành động cho card chủ đề (icon xóa chủ đề cá nhân) */
+.tv-topic-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.tv-topic-btn-delete {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #94A3B8;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    padding: 0;
+    outline: none;
+    font-family: inherit;
+}
+
+.tv-topic-btn-delete:hover {
+    color: #EF4444;
+    background-color: #FEF2F2;
+    border-color: #FEE2E2;
+}
+
+.tv-topic-btn-delete:active {
+    transform: scale(0.95);
+    background-color: #FEE2E2;
+}
+
 /* ===== 4. KHU VỰC TIẾN ĐỘ ===== */
 .tv-progress-section {
     margin-bottom: 24px;
@@ -271,16 +308,24 @@
     box-shadow: 0 2px 6px rgba(236, 72, 153, 0.35);
 }
 
-/* Button HỌC TỪ MỚI căn giữa */
+/* Button HỌC TỪ MỚI & THÊM TỪ VỰNG căn giữa */
 .tv-progress-cta-wrap {
     display: flex;
+    align-items: center;
     justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
     padding-top: 14px;
     border-top: 1px dashed var(--sp-border, #EEF1F7);
 }
 
-.tv-btn-learn {
+.tv-btn-learn,
+.tv-btn-add-vocab {
     letter-spacing: 0.5px;
+}
+
+.tv-btn-add-vocab {
+    color: #0076FE;
 }
 
 /* ===== 5. BỘ LỌC TỪ VỰNG (TẤT CẢ | NẮM VỮNG | DỄ QUÊN | BỎ QUA) ===== */
@@ -802,6 +847,11 @@
         gap: 14px;
     }
 
+    .tv-topic-btn-delete {
+        width: 36px;
+        height: 36px;
+    }
+
     .tv-topic-thumb-wrap {
         width: 68px;
         height: 68px;
@@ -822,5 +872,21 @@
 
     .tv-vocab-word {
         font-size: 20px;
+    }
+
+    .tv-progress-cta-wrap {
+        gap: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .tv-progress-cta-wrap {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .tv-progress-cta-wrap .sp-btn {
+        width: 100%;
     }
 }

@@ -28,7 +28,7 @@ class UserControllerTest extends TestCase
 
     public function test_student_cannot_access_user_management(): void
     {
-        $student = User::factory()->create(['role' => 'user']);
+        $student = User::factory()->create(['role' => 'student']);
 
         $response = $this->actingAs($student)->get(route('admin.users.index'));
 
@@ -61,7 +61,7 @@ class UserControllerTest extends TestCase
             'email' => 'minhanh@studyprep.edu.vn',
             'user_name' => 'minhanh',
             'password' => 'secret123',
-            'role' => 'user',
+            'role' => 'student',
             'status' => 'ACTIVE',
         ]);
 
@@ -69,7 +69,7 @@ class UserControllerTest extends TestCase
         $this->assertDatabaseHas('users', [
             'email' => 'minhanh@studyprep.edu.vn',
             'full_name' => 'Nguyễn Minh Anh',
-            'role' => 'user',
+            'role' => 'student',
             'status' => 'ACTIVE',
         ]);
     }
@@ -83,7 +83,7 @@ class UserControllerTest extends TestCase
             'full_name' => 'User Hai',
             'email' => 'existing@studyprep.com',
             'password' => 'secret123',
-            'role' => 'user',
+            'role' => 'student',
             'status' => 'ACTIVE',
         ]);
 

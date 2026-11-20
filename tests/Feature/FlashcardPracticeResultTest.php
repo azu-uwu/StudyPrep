@@ -33,7 +33,7 @@ class FlashcardPracticeResultTest extends TestCase
             'full_name' => 'Học viên Test 1',
             'email' => 'user1_test_'.uniqid().'@studyprep.test',
             'password_hash' => bcrypt('Password123!'),
-            'role' => 'user',
+            'role' => 'student',
             'energy' => 5,
         ]);
 
@@ -42,7 +42,7 @@ class FlashcardPracticeResultTest extends TestCase
             'full_name' => 'Học viên Test 2',
             'email' => 'user2_test_'.uniqid().'@studyprep.test',
             'password_hash' => bcrypt('Password123!'),
-            'role' => 'user',
+            'role' => 'student',
             'energy' => 5,
         ]);
 

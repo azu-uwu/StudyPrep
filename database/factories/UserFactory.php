@@ -21,7 +21,7 @@ class UserFactory extends Factory
             'password_hash' => 'password',
             'full_name' => fake()->name(),
             'avatar_url' => null,
-            'role' => 'user',
+            'role' => 'student',
             'energy' => 5,
             'created_at' => now(),
             'failed_login_attempts' => 0,

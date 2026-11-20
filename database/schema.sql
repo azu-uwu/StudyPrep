@@ -519,3 +519,5 @@ ALTER TABLE Users ADD COLUMN remember_token VARCHAR(100) NULL;
 -- update 3
 ALTER TABLE topics
 MODIFY COLUMN user_id BIGINT NULL DEFAULT NULL;
+
+-- update 4, sửa role mặ định user là student

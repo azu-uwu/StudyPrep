@@ -309,7 +309,7 @@ CREATE TABLE `users` (
   `password_hash` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `full_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `avatar_url` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `role` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'user',
+  `role` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'student',
   `energy` int NOT NULL DEFAULT '5',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `failed_login_attempts` int NOT NULL DEFAULT '0',

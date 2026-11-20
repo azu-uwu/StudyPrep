@@ -20,6 +20,15 @@
     </div>
 
     @if($topic)
+        @php
+            $currentTopicId = $topic['topic_id'] ?? $topicId ?? null;
+            $isPersonalTopic = false;
+            if (auth()->check() && !empty($currentTopicId)) {
+                $topicModel = \App\Models\Topic::find((int) $currentTopicId);
+                $isPersonalTopic = ($topicModel !== null && $topicModel->user_id !== null && (int) $topicModel->user_id === (int) auth()->id());
+            }
+        @endphp
+
         {{-- ===== 2. CARD THÔNG TIN CHỦ ĐỀ ===== --}}
         <div class="tv-topic-info-card">
             {{-- Thumbnail / Cover của chủ đề --}}
@@ -74,6 +83,24 @@
                     </div>
                 @endif
             </div>
+
+            {{-- Icon xóa chủ đề cá nhân (chỉ hiển thị khi thuộc về người dùng đang đăng nhập) --}}
+            @if($isPersonalTopic)
+                <div class="tv-topic-actions">
+                    <button type="button"
+                            class="tv-topic-btn-delete"
+                            id="btnDeleteTopic"
+                            title="Xóa chủ đề"
+                            aria-label="Xóa chủ đề">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                    </button>
+                </div>
+            @endif
         </div>
 
         {{-- ===== 3. KHU VỰC TIẾN ĐỘ ===== --}}
@@ -118,8 +145,13 @@
                     </div>
                 </div>
 
-                {{-- Nút "HỌC TỪ MỚI" sử dụng Button Component có sẵn --}}
+                {{-- Nút hành động: "HỌC TỪ MỚI" & "THÊM TỪ VỰNG" (chỉ hiển thị cho chủ đề cá nhân do chính mình tạo) --}}
                 <div class="tv-progress-cta-wrap">
+                    @if($isPersonalTopic)
+                        <x-button variant="neutral" size="medium" id="btnAddVocabulary" class="tv-btn-add-vocab" data-require-auth>
+                            + THÊM TỪ VỰNG
+                        </x-button>
+                    @endif
                     <x-button variant="primary" size="medium" id="btnLearnNew" class="tv-btn-learn" href="{{ route('tu-vung.chon-tu', ['topicId' => $topicId ?? ($topic['topic_id'] ?? 'test-1')]) }}" data-require-auth>
                         → HỌC TỪ MỚI
                     </x-button>

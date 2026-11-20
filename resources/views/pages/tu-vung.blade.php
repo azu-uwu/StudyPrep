@@ -135,17 +135,18 @@
 
 {{-- ===== SECTION 1: CHỦ ĐỀ CỦA TÔI (Đồng bộ cấu trúc .lt-section chuẩn) ===== --}}
 <div class="lt-section">
-    <div class="lt-section-header">
-        <h2 class="lt-section-title">Chủ đề của tôi</h2>
-        <a href="javascript:void(0)" class="lt-link-all" data-require-auth>
-            Xem tất cả
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </a>
-    </div>
-
     @php
         $myList = $myTopics ?? [];
     @endphp
+
+    <div class="lt-section-header">
+        <h2 class="lt-section-title">Chủ đề của tôi</h2>
+        @if(!empty($myList))
+            <a href="javascript:void(0)" class="lt-link-all" id="btnAddTopic" data-require-auth>
+                + Thêm chủ đề
+            </a>
+        @endif
+    </div>
 
     @if(empty($myList))
         {{-- Trạng thái rỗng --}}

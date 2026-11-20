@@ -45,7 +45,7 @@ class EnergyRecoveryTest extends TestCase
             'full_name' => 'Học viên Khác',
             'email' => 'other_'.uniqid().'@studyprep.test',
             'password_hash' => bcrypt('Password123!'),
-            'role' => 'user',
+            'role' => 'student',
             'energy' => 3,
         ]);
 
