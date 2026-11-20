@@ -302,11 +302,14 @@
     <div class="sp-header__actions">
 
         {{-- ===== Hien thi luot thi hien tai (FR-030: toi da 5 luot) ===== --}}
-        <div class="sp-attempt-pill" title="Số lượt thi thử khả dụng hiện tại: 5/5">
+        @php
+            $currentEnergy = Auth::user()?->energy ?? 0;
+        @endphp
+        <div class="sp-attempt-pill" title="Số lượt thi thử khả dụng hiện tại: {{ $currentEnergy }}/5">
             <svg viewBox="0 0 24 24" fill="currentColor">
                 <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
             </svg>
-            <span>5/5 Lượt thi</span>
+            <span>{{ $currentEnergy }}/5 Lượt thi</span>
         </div>
 
         {{-- ===== Setting: lien ket den trang Cai dat ===== --}}

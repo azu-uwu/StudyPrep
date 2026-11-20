@@ -490,6 +490,7 @@
                    value="{{ $topic['name'] }}"
                    placeholder="Nhập tên chủ đề..."
                    maxlength="100">
+            <div id="editTopicNameError" style="display: none; color: #DC2626; font-size: 12.5px; margin-top: 5px; font-weight: 600;"></div>
         </div>
 
         <div class="tv-edit-topic-group" style="margin-bottom: 0;">
@@ -501,7 +502,7 @@
                     <p class="tv-edit-topic-hint">Tích chọn các từ bạn muốn xóa khỏi chủ đề này:</p>
                 </div>
                 @if(count($vocabularies) > 0)
-                    <div class="tv-edit-vocab-quick-actions">
+                    <div class="tv-edit-vocab-quick-actions" id="editVocabQuickActions">
                         <button type="button" class="tv-btn-select-action" onclick="toggleSelectAllVocabs(true)">Chọn tất cả</button>
                         <span class="tv-quick-sep">•</span>
                         <button type="button" class="tv-btn-select-action" onclick="toggleSelectAllVocabs(false)">Bỏ chọn</button>
@@ -537,11 +538,18 @@
                         </label>
                     @endforeach
                 </div>
-                <div class="tv-edit-vocab-footer-summary">
+                <div class="tv-edit-vocab-footer-summary" style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
                     <span id="selectedVocabCountText">Đã chọn: <strong>0</strong> từ để xóa</span>
+                    <button type="button"
+                            id="btnTriggerDeleteVocabs"
+                            class="tv-btn-action-delete"
+                            style="display: none; background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 12.5px; cursor: pointer; transition: all 0.15s ease;"
+                            onclick="openConfirmDeleteVocabsModal()">
+                        Xóa từ đã chọn
+                    </button>
                 </div>
             @else
-                <div class="tv-edit-vocab-empty">
+                <div class="tv-edit-vocab-empty" id="editVocabEmptyState">
                     <p>Chủ đề này hiện chưa có từ vựng nào.</p>
                 </div>
             @endif
@@ -551,8 +559,27 @@
             <x-button variant="neutral" data-sp-modal-close>
                 Hủy bỏ
             </x-button>
-            <x-button variant="primary" id="btnSaveEditTopic" onclick="handleMockSaveEditTopic()">
+            <x-button variant="primary" id="btnSaveEditTopic" onclick="handleSaveEditTopic()">
                 Lưu thay đổi
+            </x-button>
+        </x-slot:actions>
+    </x-modal>
+
+    {{-- ===== MODAL XÁC NHẬN XÓA TỪ VỰNG HÀNG LOẠT (BE-008.2.2) ===== --}}
+    <x-modal id="modalConfirmDeleteVocabs" title="Xác nhận xóa từ vựng" maxWidth="460px">
+        <p style="margin: 0 0 14px; font-size: 15px; color: #334155; line-height: 1.5;">
+            Bạn có chắc chắn muốn xóa <strong id="confirmDeleteVocabCount">0</strong> từ vựng đã chọn khỏi chủ đề này không?
+        </p>
+        <div style="font-size: 13.5px; color: #991B1B; background: #FEF2F2; padding: 12px 14px; border-radius: 12px; border: 1px solid #FEE2E2; line-height: 1.5;">
+            <strong>Lưu ý:</strong> Thao tác này sẽ xóa vĩnh viễn các từ vựng được chọn và toàn bộ tiến độ học liên quan trong chủ đề.
+        </div>
+
+        <x-slot:actions>
+            <x-button variant="neutral" type="button" onclick="closeConfirmDeleteVocabsModal()">
+                Hủy
+            </x-button>
+            <x-button variant="danger" type="button" id="btnExecuteDeleteVocabs" onclick="executeDeleteSelectedVocabs()">
+                Xóa từ đã chọn
             </x-button>
         </x-slot:actions>
     </x-modal>
@@ -849,38 +876,268 @@
         if (countText) {
             countText.innerHTML = 'Đã chọn: <strong>' + count + '</strong> từ để xóa';
         }
+        const btnDelete = document.getElementById('btnTriggerDeleteVocabs');
+        if (btnDelete) {
+            btnDelete.style.display = count > 0 ? 'inline-flex' : 'none';
+        }
     }
 
-    function handleMockSaveEditTopic() {
+    function clearEditTopicNameError() {
+        const nameInput = document.getElementById('editTopicNameInput');
+        const errEl = document.getElementById('editTopicNameError');
+        if (nameInput) {
+            nameInput.style.borderColor = '';
+        }
+        if (errEl) {
+            errEl.textContent = '';
+            errEl.style.display = 'none';
+        }
+    }
+
+    function showEditTopicNameError(msg) {
+        const nameInput = document.getElementById('editTopicNameInput');
+        const errEl = document.getElementById('editTopicNameError');
+        if (nameInput) {
+            nameInput.style.borderColor = '#DC2626';
+            nameInput.focus();
+        }
+        if (errEl) {
+            errEl.textContent = msg;
+            errEl.style.display = 'block';
+        }
+    }
+
+    // A. Thao tác Đổi tên chủ đề cá nhân (BE-008.2.2)
+    // Tuyệt đối không xóa bất kỳ từ vựng nào khi thực hiện thao tác này!
+    function handleSaveEditTopic() {
         const nameInput = document.getElementById('editTopicNameInput');
         const newName = nameInput ? nameInput.value.trim() : '';
-        const count = document.querySelectorAll('.tv-edit-vocab-checkbox:checked').length;
+
+        clearEditTopicNameError();
 
         if (!newName) {
-            alert('Vui lòng nhập tên chủ đề');
+            showEditTopicNameError('Vui lòng nhập tên chủ đề.');
             return;
         }
 
-        // Cập nhật tên hiển thị trên giao diện (mô phỏng UI)
-        const topicNameEl = document.querySelector('.tv-topic-name');
-        if (topicNameEl) {
-            topicNameEl.textContent = newName;
+        if (newName.length > 100) {
+            showEditTopicNameError('Tên chủ đề không được vượt quá 100 ký tự.');
+            return;
         }
 
-        // Đóng modal
-        const modal = document.getElementById('modalEditTopic');
-        if (modal) {
-            modal.hidden = true;
-            if (!document.querySelector('.sp-modal:not([hidden])')) {
+        const saveBtn = document.getElementById('btnSaveEditTopic');
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Đang lưu...';
+        }
+
+        const updateUrl = "{{ route('tu-vung.topics.update', $currentTopicId ?? 0) }}";
+
+        fetch(updateUrl, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ name: newName })
+        })
+        .then(async function (res) {
+            const data = await res.json().catch(function () { return {}; });
+            return { status: res.status, ok: res.ok, data: data };
+        })
+        .then(function (result) {
+            if (!result.ok) {
+                throw result;
+            }
+
+            // Cập nhật tên chủ đề trên giao diện trang danh sách
+            const topicNameEl = document.querySelector('.tv-topic-name');
+            if (topicNameEl && result.data.topic && result.data.topic.name) {
+                topicNameEl.textContent = result.data.topic.name;
+            }
+            document.title = 'StudyPrep - ' + (result.data.topic ? result.data.topic.name : newName);
+
+            // Đóng modal chỉnh sửa
+            const modal = document.getElementById('modalEditTopic');
+            if (modal) {
+                modal.hidden = true;
+                if (!document.querySelector('.sp-modal:not([hidden])')) {
+                    document.body.style.overflow = '';
+                }
+            }
+
+            showToast('Cập nhật chủ đề thành công!');
+        })
+        .catch(function (err) {
+            if (err.status === 422 && err.data && err.data.errors && err.data.errors.name) {
+                showEditTopicNameError(err.data.errors.name[0]);
+            } else if (err.status === 403) {
+                showToast(err.data && err.data.message ? err.data.message : 'Bạn không có quyền chỉnh sửa chủ đề này.');
+            } else if (err.status === 401) {
+                showToast('Vui lòng đăng nhập lại để thực hiện.');
+            } else {
+                showEditTopicNameError('Đã có lỗi xảy ra. Vui lòng thử lại.');
+            }
+        })
+        .finally(function () {
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Lưu thay đổi';
+            }
+        });
+    }
+
+    // B. Thao tác Xóa từ vựng hàng loạt (BE-008.2.2)
+    // Tách biệt hoàn toàn với thao tác đổi tên
+    function openConfirmDeleteVocabsModal() {
+        const checked = document.querySelectorAll('.tv-edit-vocab-checkbox:checked');
+        if (!checked.length) {
+            showToast('Vui lòng chọn ít nhất một từ vựng để xóa.');
+            return;
+        }
+
+        const countSpan = document.getElementById('confirmDeleteVocabCount');
+        if (countSpan) {
+            countSpan.textContent = checked.length;
+        }
+
+        const confirmModal = document.getElementById('modalConfirmDeleteVocabs');
+        if (confirmModal) {
+            confirmModal.hidden = false;
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function closeConfirmDeleteVocabsModal() {
+        const confirmModal = document.getElementById('modalConfirmDeleteVocabs');
+        if (confirmModal) {
+            confirmModal.hidden = true;
+            // Nếu modalEditTopic vẫn đang mở thì giữ overflow: hidden, ngược lại mở khóa
+            const stillOpen = document.querySelectorAll('.sp-modal:not([hidden])');
+            if (!stillOpen.length) {
                 document.body.style.overflow = '';
             }
         }
+    }
 
-        let msg = 'Đã cập nhật chủ đề: ' + newName;
-        if (count > 0) {
-            msg += ' (Đã chọn xóa ' + count + ' từ vựng)';
+    function executeDeleteSelectedVocabs() {
+        const checked = document.querySelectorAll('.tv-edit-vocab-checkbox:checked');
+        const selectedIds = Array.from(checked).map(function (cb) {
+            return parseInt(cb.value, 10);
+        });
+
+        if (!selectedIds.length) {
+            closeConfirmDeleteVocabsModal();
+            return;
         }
-        showToast(msg);
+
+        const executeBtn = document.getElementById('btnExecuteDeleteVocabs');
+        if (executeBtn) {
+            executeBtn.disabled = true;
+            executeBtn.textContent = 'Đang xóa...';
+        }
+
+        const bulkDeleteUrl = "{{ route('tu-vung.topics.vocabularies.bulk-delete', $currentTopicId ?? 0) }}";
+
+        fetch(bulkDeleteUrl, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ vocabulary_ids: selectedIds })
+        })
+        .then(async function (res) {
+            const data = await res.json().catch(function () { return {}; });
+            return { status: res.status, ok: res.ok, data: data };
+        })
+        .then(function (result) {
+            if (!result.ok) {
+                throw result;
+            }
+
+            // 1. Đóng modal xác nhận
+            closeConfirmDeleteVocabsModal();
+
+            // 2. Gỡ bỏ các từ đã xóa khỏi danh sách trong Modal
+            selectedIds.forEach(function (id) {
+                const modalItem = document.getElementById('edit-vocab-item-' + id);
+                if (modalItem) {
+                    modalItem.remove();
+                }
+
+                // 3. Gỡ bỏ các từ đã xóa khỏi danh sách thẻ từ vựng trên trang
+                const card = document.getElementById('vocab-card-' + id);
+                if (card) {
+                    card.remove();
+                }
+            });
+
+            // 4. Cập nhật số lượng hiển thị trong modal và trên trang
+            updateSelectedVocabCount();
+
+            const remainingCount = typeof result.data.remaining_count !== 'undefined'
+                ? result.data.remaining_count
+                : document.querySelectorAll('.tv-vocab-card').length;
+
+            const countEl = document.querySelector('.tv-topic-vocab-count');
+            if (countEl) {
+                countEl.textContent = remainingCount + ' từ vựng';
+            }
+
+            const tabCountAll = document.getElementById('count-all');
+            if (tabCountAll) {
+                tabCountAll.textContent = remainingCount;
+            }
+
+            // 5. Nếu trong modal không còn từ nào, hiển thị empty state
+            const modalVocabItems = document.querySelectorAll('.tv-edit-vocab-item');
+            if (!modalVocabItems.length) {
+                const listContainer = document.getElementById('editVocabList');
+                if (listContainer) {
+                    listContainer.innerHTML = '<div class="tv-edit-vocab-empty" id="editVocabEmptyState"><p>Chủ đề này hiện chưa có từ vựng nào.</p></div>';
+                }
+                const quickActions = document.getElementById('editVocabQuickActions');
+                if (quickActions) {
+                    quickActions.style.display = 'none';
+                }
+            }
+
+            // 6. Nếu trên trang không còn từ nào, hiển thị empty topic state
+            const remainingCards = document.querySelectorAll('.tv-vocab-card');
+            if (!remainingCards.length) {
+                const listWrap = document.getElementById('tvVocabList');
+                if (listWrap) {
+                    listWrap.outerHTML = `
+                        <div class="tv-empty-topic-state">
+                            <div class="tv-empty-filter-icon">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                                </svg>
+                            </div>
+                            <h4 class="tv-empty-filter-title">Chủ đề này chưa có từ vựng.</h4>
+                            <p class="tv-empty-filter-desc">Nội dung từ vựng đang được biên soạn và sẽ sớm có mặt.</p>
+                            <a href="{{ route('tu-vung') }}" class="sp-btn sp-btn--primary sp-btn--medium">Quay lại danh mục Từ vựng</a>
+                        </div>
+                    `;
+                }
+            }
+
+            showToast('Đã xóa các từ vựng được chọn!');
+        })
+        .catch(function (err) {
+            const msg = err.data && err.data.message ? err.data.message : 'Có lỗi xảy ra khi xóa từ vựng.';
+            showToast(msg);
+        })
+        .finally(function () {
+            if (executeBtn) {
+                executeBtn.disabled = false;
+                executeBtn.textContent = 'Xóa từ đã chọn';
+            }
+        });
     }
 
     function handleMockDeleteTopic() {
