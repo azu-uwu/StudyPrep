@@ -1387,16 +1387,351 @@
             return;
         }
 
-        // Hợp lệ: hiển thị thông báo "Chức năng đang được hoàn thiện", giữ nguyên nội dung Modal
-        // KHÔNG gửi request POST, KHÔNG ghi MySQL, KHÔNG tạo route mới, KHÔNG lưu localStorage/session, KHÔNG thêm từ giả
-        if (notice && noticeTitle && noticeDesc) {
-            notice.className = 'tv-modal-notice tv-modal-notice--info';
-            noticeTitle.textContent = 'Dữ liệu hợp lệ: "' + wordVal + '"';
-            noticeDesc.textContent = 'Chức năng đang được hoàn thiện, sẵn sàng kết nối Backend (BE-008.2.4).';
-            notice.style.display = 'flex';
+        const submitBtn = document.getElementById('btnSubmitCreateVocab');
+        const originalBtnText = submitBtn ? submitBtn.innerHTML : '+ Thêm từ vựng';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = 'Đang thêm...';
         }
 
-        showToast('Dữ liệu hợp lệ. Chức năng đang được hoàn thiện (BE-008.2.4).');
+        const exEnInput = document.getElementById('vocabExampleEnInput');
+        const exViInput = document.getElementById('vocabExampleViInput');
+
+        const payload = {
+            word: wordVal,
+            meaning_vi: meaningVal,
+            part_of_speech: posVal || null,
+            pronunciation: pronVal || null,
+            example_en: exEnInput && exEnInput.value.trim() ? exEnInput.value.trim() : null,
+            example_vi: exViInput && exViInput.value.trim() ? exViInput.value.trim() : null,
+            image_url: imageUrlVal || null
+        };
+
+        const storeVocabUrl = "{{ route('tu-vung.topics.vocabularies.store', $currentTopicId ?? 0) }}";
+
+        fetch(storeVocabUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(async function (res) {
+            const data = await res.json().catch(function () { return {}; });
+            return { status: res.status, ok: res.ok, data: data };
+        })
+        .then(function (result) {
+            if (result.status === 201) {
+                closeCreateVocabModal();
+                resetCreateVocabForm();
+                showToast(result.data.message || 'Thêm từ vựng thành công!');
+                appendVocabularyCard(result.data.vocabulary, result.data.total_vocabularies);
+                return;
+            }
+
+            if (result.status === 422) {
+                const errors = result.data.errors || {};
+                let firstBackendErr = null;
+
+                if (errors.word) {
+                    setVocabFieldError(wordInput, errors.word[0]);
+                    if (!firstBackendErr) firstBackendErr = wordInput;
+                }
+                if (errors.meaning_vi) {
+                    setVocabFieldError(meaningInput, errors.meaning_vi[0]);
+                    if (!firstBackendErr) firstBackendErr = meaningInput;
+                }
+                if (errors.part_of_speech) {
+                    setVocabFieldError(posSelect, errors.part_of_speech[0]);
+                    if (!firstBackendErr) firstBackendErr = posSelect;
+                }
+                if (errors.pronunciation) {
+                    setVocabFieldError(pronInput, errors.pronunciation[0]);
+                    if (!firstBackendErr) firstBackendErr = pronInput;
+                }
+                if (errors.image_url) {
+                    setVocabFieldError(imageUrlInput, errors.image_url[0]);
+                    if (!firstBackendErr) firstBackendErr = imageUrlInput;
+                }
+                if (errors.example_en) {
+                    setVocabFieldError(exEnInput, errors.example_en[0]);
+                    if (!firstBackendErr) firstBackendErr = exEnInput;
+                }
+                if (errors.example_vi) {
+                    setVocabFieldError(exViInput, errors.example_vi[0]);
+                    if (!firstBackendErr) firstBackendErr = exViInput;
+                }
+
+                if (firstBackendErr) {
+                    firstBackendErr.focus();
+                } else if (result.data.message) {
+                    showToast(result.data.message);
+                }
+                return;
+            }
+
+            const errorMsg = result.data && result.data.message
+                ? result.data.message
+                : (result.status === 403 ? 'Bạn không có quyền thêm từ vựng vào chủ đề này.' : 'Đã có lỗi xảy ra khi thêm từ vựng.');
+            showToast(errorMsg);
+        })
+        .catch(function () {
+            showToast('Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
+        })
+        .finally(function () {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            }
+        });
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function escapeJsString(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/\\/g, '\\\\')
+            .replace(/'/g, "\\'")
+            .replace(/"/g, '\\"')
+            .replace(/\n/g, '\\n')
+            .replace(/\r/g, '');
+    }
+
+    function highlightWordInExample(word, example) {
+        if (!word || !example) return escapeHtml(example || '');
+        const escapedEx = escapeHtml(example);
+        const escapedWord = escapeHtml(word);
+        const regex = new RegExp('(\\b' + escapedWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[a-zA-Z]*\\b)', 'gi');
+        return escapedEx.replace(regex, '<span class="tv-vocab-highlight">$1</span>');
+    }
+
+    function appendVocabularyCard(vocab, totalVocabularies) {
+        if (!vocab) return;
+
+        let listContainer = document.getElementById('tvVocabList');
+
+        // Nếu lúc đầu chủ đề rỗng (chưa có tvVocabList mà chỉ có .tv-empty-topic-state)
+        if (!listContainer) {
+            const emptyTopicState = document.querySelector('.tv-empty-topic-state');
+            if (emptyTopicState) {
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = `
+                    <div class="tv-vocab-list" id="tvVocabList"></div>
+                    <div class="tv-empty-filter-state" id="emptyFilterState" style="display: none;">
+                        <div class="tv-empty-filter-icon">
+                            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                        </div>
+                        <h4 class="tv-empty-filter-title">Chưa có từ vựng nào trong mục này</h4>
+                        <p class="tv-empty-filter-desc">Hãy luyện tập thêm để bổ sung từ vào danh sách này.</p>
+                        <button type="button" class="sp-btn sp-btn--neutral sp-btn--small" onclick="resetToAllFilter()">
+                            Xem tất cả từ vựng
+                        </button>
+                    </div>
+                `;
+                emptyTopicState.parentNode.replaceChild(wrapper, emptyTopicState);
+                listContainer = document.getElementById('tvVocabList');
+            }
+        }
+
+        if (listContainer) {
+            const cardEl = document.createElement('div');
+            cardEl.innerHTML = `
+                <article class="tv-vocab-card"
+                         data-status="${vocab.status || 'new'}"
+                         data-word="${escapeHtml((vocab.word || '').toLowerCase())}"
+                         data-cefr="${escapeHtml(vocab.cefr_level || 'B1')}"
+                         id="vocab-card-${vocab.vocabulary_id}">
+                    <div class="tv-vocab-header">
+                        <h3 class="tv-vocab-word">${escapeHtml(vocab.word)}</h3>
+                        <div class="tv-vocab-actions">
+                            <button type="button"
+                                    class="tv-vocab-menu-btn"
+                                    aria-label="Tùy chọn từ vựng ${escapeHtml(vocab.word)}"
+                                    title="Tùy chọn"
+                                    onclick="toggleCardMenu('${vocab.vocabulary_id}')">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                    <circle cx="12" cy="5" r="2.2" />
+                                    <circle cx="12" cy="12" r="2.2" />
+                                    <circle cx="12" cy="19" r="2.2" />
+                                </svg>
+                            </button>
+                            <div class="tv-vocab-dropdown" id="vocabMenu-${vocab.vocabulary_id}">
+                                <button type="button" class="tv-vocab-dropdown-item" onclick="markVocabStatus('${vocab.vocabulary_id}', 'mastered')">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                    Đánh dấu Đã nắm vững
+                                </button>
+                                <button type="button" class="tv-vocab-dropdown-item" onclick="markVocabStatus('${vocab.vocabulary_id}', 'review')">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                                    Đánh dấu Dễ quên
+                                </button>
+                                <button type="button" class="tv-vocab-dropdown-item" onclick="markVocabStatus('${vocab.vocabulary_id}', 'skipped')">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                    Bỏ qua từ này
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tv-vocab-meta">
+                        <span class="tv-cefr-badge" style="background-color: #10B981;">
+                            ${escapeHtml(vocab.cefr_level || 'B1')}
+                        </span>
+                        <span class="tv-vocab-pos">${escapeHtml(vocab.part_of_speech || 'Từ vựng')}</span>
+                        <button type="button"
+                                class="tv-audio-btn tv-audio-btn--small"
+                                aria-label="Nghe phát âm từ ${escapeHtml(vocab.word)}"
+                                title="Nghe phát âm"
+                                onclick="speakWord('${escapeJsString(vocab.word)}', this)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                            </svg>
+                        </button>
+                        ${vocab.pronunciation ? `<span class="tv-vocab-phonetic">${escapeHtml(vocab.pronunciation)}</span>` : ''}
+                    </div>
+                    <div class="tv-vocab-meaning">
+                        <span class="tv-star-icon" aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="#EF4444">
+                                <circle cx="12" cy="12" r="11" fill="#EF4444" />
+                                <path d="M12 6.5l1.6 3.8 4.1.4-3.1 2.7.9 4.1-3.5-2.1-3.5 2.1.9-4.1-3.1-2.7 4.1-.4L12 6.5z" fill="#FFFFFF" />
+                            </svg>
+                        </span>
+                        <span class="tv-meaning-text">${escapeHtml(vocab.meaning_vi)}</span>
+                    </div>
+                    ${vocab.example_en ? `
+                    <div class="tv-vocab-example-box">
+                        <div class="tv-example-header">
+                            <button type="button"
+                                    class="tv-audio-btn tv-audio-btn--example"
+                                    aria-label="Nghe câu ví dụ"
+                                    title="Nghe câu ví dụ"
+                                    onclick="speakWord('${escapeJsString(vocab.example_en)}', this)">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                </svg>
+                            </button>
+                            <div class="tv-example-content">
+                                <p class="tv-example-en">${highlightWordInExample(vocab.word, vocab.example_en)}</p>
+                            </div>
+                            ${vocab.example_vi ? `
+                            <button type="button"
+                                    class="tv-translate-btn"
+                                    aria-label="Xem dịch câu ví dụ"
+                                    title="Dịch câu ví dụ"
+                                    onclick="toggleTranslation('${vocab.vocabulary_id}')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                                </svg>
+                            </button>
+                            ` : ''}
+                        </div>
+                        ${vocab.example_vi ? `
+                        <div class="tv-example-vi" id="example-vi-${vocab.vocabulary_id}">
+                            <span>${escapeHtml(vocab.example_vi)}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    ` : ''}
+                    ${vocab.image_url ? `
+                    <div class="tv-vocab-illustration">
+                        <img src="${escapeHtml(vocab.image_url)}" alt="${escapeHtml(vocab.word)}" loading="lazy">
+                    </div>
+                    ` : ''}
+                </article>
+            `;
+            if (cardEl.firstElementChild) {
+                listContainer.appendChild(cardEl.firstElementChild);
+            }
+        }
+
+        // Bổ sung vào modal chỉnh sửa chủ đề (danh sách chọn để xóa) nếu đang có trên trang
+        let editList = document.getElementById('editVocabList');
+        const editEmpty = document.getElementById('editVocabEmptyState');
+        if (editEmpty && !editList) {
+            const editParent = editEmpty.parentNode;
+            if (editParent) {
+                const newEditWrapper = document.createElement('div');
+                newEditWrapper.innerHTML = `
+                    <div class="tv-edit-vocab-list" id="editVocabList"></div>
+                    <div class="tv-edit-vocab-footer-summary" style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                        <span id="selectedVocabCountText">Đã chọn: <strong>0</strong> từ để xóa</span>
+                        <button type="button"
+                                id="btnTriggerDeleteVocabs"
+                                class="tv-btn-action-delete"
+                                style="display: none; background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 12.5px; cursor: pointer; transition: all 0.15s ease;"
+                                onclick="openConfirmDeleteVocabsModal()">
+                            Xóa từ đã chọn
+                        </button>
+                    </div>
+                `;
+                editParent.replaceChild(newEditWrapper, editEmpty);
+                editList = document.getElementById('editVocabList');
+            }
+        }
+
+        if (editList) {
+            const editItem = document.createElement('div');
+            editItem.innerHTML = `
+                <label class="tv-edit-vocab-item" for="select-vocab-${vocab.vocabulary_id}" id="edit-vocab-item-${vocab.vocabulary_id}">
+                    <input type="checkbox"
+                           class="tv-edit-vocab-checkbox"
+                           id="select-vocab-${vocab.vocabulary_id}"
+                           value="${vocab.vocabulary_id}"
+                           onchange="handleVocabCheckChange(this, '${vocab.vocabulary_id}')">
+                    <div class="tv-edit-vocab-info">
+                        <div class="tv-edit-vocab-word-row">
+                            <span class="tv-edit-vocab-word">${escapeHtml(vocab.word)}</span>
+                            ${vocab.part_of_speech ? `<span class="tv-edit-vocab-pos">${escapeHtml(vocab.part_of_speech)}</span>` : ''}
+                        </div>
+                        <div class="tv-edit-vocab-meaning">${escapeHtml(vocab.meaning_vi)}</div>
+                    </div>
+                    <span class="tv-edit-vocab-tag-delete">Sẽ xóa</span>
+                </label>
+            `;
+            if (editItem.firstElementChild) {
+                editList.appendChild(editItem.firstElementChild);
+            }
+            updateSelectedVocabCount();
+        }
+
+        // Cập nhật số lượng hiển thị trên trang
+        const total = typeof totalVocabularies !== 'undefined'
+            ? totalVocabularies
+            : document.querySelectorAll('.tv-vocab-card').length;
+
+        const countEl = document.querySelector('.tv-topic-vocab-count');
+        if (countEl) {
+            countEl.textContent = total + ' từ vựng';
+        }
+
+        recalculateTabCounts();
+
+        // Đảm bảo hiển thị nếu đang ở tab 'all'
+        if (currentFilter !== 'all') {
+            const activeTab = document.querySelector('.tv-filter-tab-btn.is-active');
+            setFilterTab(currentFilter, activeTab);
+        } else {
+            const emptyState = document.getElementById('emptyFilterState');
+            if (emptyState) emptyState.style.display = 'none';
+            if (listContainer) listContainer.style.display = 'flex';
+        }
     }
 
     // Đăng ký sự kiện mở modal từ nút "+ THÊM TỪ VỰNG"
