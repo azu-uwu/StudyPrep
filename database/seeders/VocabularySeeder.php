@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Topic;
-use App\Models\User;
 use App\Models\Vocabulary;
 use Illuminate\Database\Seeder;
 
@@ -11,7 +10,6 @@ class VocabularySeeder extends Seeder
 {
     public function run(): void
     {
-        $adminId = User::query()->where('role', 'admin')->value('user_id');
         $vocabulary = [
             [
                 'topic' => 'Finance & Budget',
@@ -87,9 +85,8 @@ class VocabularySeeder extends Seeder
 
         foreach ($vocabulary as $item) {
             $topic = Topic::query()->updateOrCreate(
-                ['name' => $item['topic']],
+                ['name' => $item['topic'], 'user_id' => null],
                 [
-                    'user_id' => $adminId,
                     'description' => $item['description'],
                 ]
             );

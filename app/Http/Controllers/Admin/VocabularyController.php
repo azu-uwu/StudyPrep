@@ -7,7 +7,6 @@ use App\Models\Topic;
 use App\Models\Vocabulary;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -58,9 +57,9 @@ class VocabularyController extends Controller
         $vocabularies = $query->orderBy('vocabulary_id', 'asc')->paginate($perPage)->withQueryString();
 
         $totalVocabCount = Vocabulary::count();
-        $totalTopicCount = Topic::count();
+        $totalTopicCount = Topic::system()->count();
 
-        $topics = Topic::orderBy('name')->get();
+        $topics = Topic::system()->orderBy('name')->get();
 
         // Selected preview item for live flashcard simulator
         $previewId = $request->input('preview_id');
@@ -91,7 +90,7 @@ class VocabularyController extends Controller
      */
     public function create(): View
     {
-        $topics = Topic::orderBy('name')->get();
+        $topics = Topic::system()->orderBy('name')->get();
 
         return view('admin.vocabularies.create', compact('topics'));
     }
@@ -119,9 +118,11 @@ class VocabularyController extends Controller
         $topicId = $validated['topic_id'] ?? null;
         if (! empty($validated['new_topic_name'])) {
             $newTopic = Topic::firstOrCreate(
-                ['name' => trim($validated['new_topic_name'])],
                 [
-                    'user_id' => Auth::id() ?? 1,
+                    'name' => trim($validated['new_topic_name']),
+                    'user_id' => null,
+                ],
+                [
                     'description' => 'Bộ thẻ Flashcards tự tạo',
                 ]
             );
@@ -129,7 +130,7 @@ class VocabularyController extends Controller
         }
 
         if (empty($topicId)) {
-            $defaultTopic = Topic::first();
+            $defaultTopic = Topic::system()->first() ?? Topic::first();
             $topicId = $defaultTopic ? $defaultTopic->topic_id : 1;
         }
 
@@ -273,7 +274,7 @@ class VocabularyController extends Controller
         ]);
 
         Topic::create([
-            'user_id' => Auth::id() ?? 1,
+            'user_id' => null,
             'name' => trim($validated['name']),
             'description' => trim((string) ($validated['description'] ?? '')),
         ]);
@@ -305,7 +306,8 @@ class VocabularyController extends Controller
     public function destroyTopic(Topic $topic): RedirectResponse
     {
         $name = $topic->name;
-        $defaultTopic = Topic::where('topic_id', '!=', $topic->topic_id)->first();
+        $defaultTopic = Topic::system()->where('topic_id', '!=', $topic->topic_id)->first()
+            ?? Topic::where('topic_id', '!=', $topic->topic_id)->first();
         if ($defaultTopic) {
             Vocabulary::where('topic_id', $topic->topic_id)->update(['topic_id' => $defaultTopic->topic_id]);
         }
@@ -374,7 +376,7 @@ class VocabularyController extends Controller
      */
     public function importView(Request $request): View
     {
-        $topics = Topic::orderBy('name')->get();
+        $topics = Topic::system()->orderBy('name')->get();
 
         $previewItems = [
             [
@@ -593,8 +595,8 @@ class VocabularyController extends Controller
         $topicId = (int) $request->input('topic_id', 0);
         if ($topicId <= 0) {
             $targetTopic = Topic::firstOrCreate(
-                ['name' => 'ETS 2024 - 1000 Từ vựng trọng tâm'],
-                ['user_id' => Auth::id() ?? 1, 'description' => 'Bộ thẻ trọng tâm Part 5/6/7']
+                ['name' => 'ETS 2024 - 1000 Từ vựng trọng tâm', 'user_id' => null],
+                ['description' => 'Bộ thẻ trọng tâm Part 5/6/7']
             );
             $topicId = $targetTopic->topic_id;
         }

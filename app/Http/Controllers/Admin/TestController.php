@@ -82,7 +82,7 @@ class TestController extends Controller
             ->when(! empty($allowedSectionIds), fn ($q) => $q->whereIn('section_id', $allowedSectionIds))
             ->when(! empty($existingQuestionIds), fn ($q) => $q->whereNotIn('question_id', $existingQuestionIds))
             ->orderByDesc('question_id')
-            ->limit(150)
+            ->limit(500)
             ->get();
 
         $lastSavedAt = session(
@@ -265,7 +265,7 @@ class TestController extends Controller
 
         $validated = $request->validate([
             'content' => 'required|string|min:3',
-            'difficulty' => 'required|in:EASY,MEDIUM,HARD',
+            'difficulty' => 'required|in:UNSET,EASY,MEDIUM,HARD',
             'explanation' => 'nullable|string',
             'transcript' => 'nullable|string',
             'opt_a' => 'nullable|string',
@@ -346,5 +346,34 @@ class TestController extends Controller
 
         return redirect()->route('admin.tests.show', $testForm->test_form_id)
             ->with('success', "Đã xóa câu hỏi #Q-{$questionId} khỏi đề thi {$testForm->test_code}.");
+    }
+
+    /**
+     * Xóa nhanh toàn bộ câu hỏi trùng lặp nội dung và câu hỏi sai kỹ năng khỏi đề thi trong 1 click.
+     */
+    public function cleanupIssues(int|string $id): RedirectResponse
+    {
+        $testForm = TestForm::query()->findOrFail($id);
+        $result = $this->testFormService->cleanupQualityIssues($testForm);
+
+        session()->put('test_saved_at_'.$testForm->test_form_id, now()->format('H:i'));
+
+        if ($result['total_detached'] === 0) {
+            return redirect()->route('admin.tests.show', $testForm->test_form_id)
+                ->with('success', "Đề thi {$testForm->test_code} hiện không có câu hỏi trùng lặp hoặc sai kỹ năng nào cần gỡ.");
+        }
+
+        $details = [];
+        if ($result['detached_duplicates'] > 0) {
+            $details[] = "{$result['detached_duplicates']} câu trùng lặp";
+        }
+        if ($result['detached_wrong_skill'] > 0) {
+            $details[] = "{$result['detached_wrong_skill']} câu sai kỹ năng";
+        }
+
+        $summary = ! empty($details) ? ' ('.implode(', ', $details).')' : '';
+
+        return redirect()->route('admin.tests.show', $testForm->test_form_id)
+            ->with('success', "Đã gỡ nhanh {$result['total_detached']} câu hỏi lỗi khỏi đề thi {$testForm->test_code}{$summary}.");
     }
 }

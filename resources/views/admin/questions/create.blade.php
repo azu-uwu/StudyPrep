@@ -24,7 +24,6 @@
     <form action="{{ route('admin.questions.store') }}" method="POST" enctype="multipart/form-data" id="createQuestionForm">
         @csrf
         <input type="hidden" name="correct_option" id="correctOptionInput" value="{{ old('correct_option', 'A') }}">
-        <input type="hidden" name="question_type_id" value="1">
         <input type="hidden" name="points" value="{{ old('points', '1.00') }}">
         <input type="hidden" name="audio_url" id="generatedAudioUrlInput" value="{{ old('audio_url', '') }}">
         @if (!empty($testContext))

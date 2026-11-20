@@ -162,7 +162,7 @@ CREATE TABLE IF NOT EXISTS AnswerOptions (
 
 CREATE TABLE IF NOT EXISTS Topics (
     topic_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT NOT NULL,
+    user_id BIGINT NULL DEFAULT NULL,
     name VARCHAR(100) NOT NULL,
     description TEXT NULL,
     parent_topic_id BIGINT NULL,

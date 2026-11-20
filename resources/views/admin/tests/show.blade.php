@@ -11,6 +11,20 @@
 @endsection
 
 @section('content')
+<style>
+    .ts-part-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
+    .ts-part-head { padding: 16px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px; }
+    .ts-part-progress-track { width: 100px; height: 6px; background: #e2e8f0; border-radius: 999px; overflow: hidden; margin-top: 4px; }
+    .ts-part-progress-fill { height: 100%; border-radius: 999px; transition: width 0.3s ease; }
+    .ts-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 9999px; white-space: nowrap; }
+    .ts-badge-active { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+    .ts-badge-draft { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+    .ts-badge-archived { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+    .ts-q-card { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; }
+    .ts-q-child-card { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; background: #f8fafc; border-radius: 8px; border: 1px solid #edf2f7; }
+    .ts-q-code { font-size: 11.5px; font-weight: 700; color: #64748b; background: #f8fafc; padding: 2px 7px; border-radius: 5px; border: 1px solid #e2e8f0; }
+    .ts-q-answer-pill { font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+</style>
 <div class="qbank-page">
 
     {{-- Thông báo kết quả thao tác --}}
@@ -59,6 +73,29 @@
         </div>
 
         <div class="user-header-actions" style="flex-wrap: wrap; gap: 8px;">
+            @php
+                $audioSummary = $test['audio_summary'] ?? ['is_listening_test' => false, 'missing_audio_count' => 0, 'total_listening_questions' => 0, 'missing_audio_question_ids' => []];
+            @endphp
+            @if (!empty($audioSummary['is_listening_test']))
+                <button type="button"
+                        id="btnTestBatchTts"
+                        class="btn-admin-action"
+                        style="{{ ($audioSummary['missing_audio_count'] ?? 0) > 0 ? 'color: #0369a1; border-color: #7dd3fc; background: #f0f9ff; font-weight: 700;' : 'color: #065f46; border-color: #a7f3d0; background: #ecfdf5; font-weight: 700;' }}"
+                        onclick="openTestBatchTtsModal()"
+                        title="Sinh tự động file Audio MP3 (TTS) cho các câu Listening Part 1–4 còn thiếu trong đề này">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                    </svg>
+                    @if (($audioSummary['missing_audio_count'] ?? 0) > 0)
+                        <span>Sinh Audio TTS hàng loạt (Thiếu {{ $audioSummary['missing_audio_count'] }})</span>
+                    @else
+                        <span>✓ Đủ 100% Audio Listening</span>
+                    @endif
+                </button>
+            @endif
+
             {{-- Nút Xem trước toàn bộ Đề thi --}}
             <button type="button" class="btn-admin-action" style="color: #0f766e; border-color: #99f6e4; background: #f0fdfa; font-weight: 700;" onclick="openExamPreviewModal('full', null, null)" title="Xem trước giao diện làm bài của học viên cho toàn bộ đề thi">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -166,7 +203,98 @@
             <span>Cấu trúc Part được khóa cứng theo đúng loại đề <strong>{{ $test['blueprint']['name'] }}</strong> (không trộn lẫn Part của kỹ năng khác).</span>
             <span>Trạng thái lưu gần nhất: <strong>{{ $lastSavedAt ?? now()->format('H:i') }}</strong></span>
         </div>
+
+        <div id="overviewDraftWarningBanner" style="display: none; margin-top: 12px; padding: 10px 14px; border-radius: 10px; background: #fffbeb; border: 1px solid #fde68a; color: #b45309; font-size: 13px; font-weight: 600;"></div>
     </div>
+
+    {{-- 2b. Banner Kiểm định Chất lượng Đề thi (Test Validation Banner) --}}
+    @php
+        $quality = $test['quality'] ?? ['has_warnings' => false, 'quota_issues' => [], 'wrong_skill_ids' => [], 'format_issues' => [], 'duplicate_ids' => [], 'duplicate_groups' => [], 'cleanup_ids' => []];
+        $cleanupIds = $quality['cleanup_ids'] ?? [];
+    @endphp
+    @if (!empty($quality['has_warnings']))
+        <div id="testQualityValidationBanner" style="background: #fffbeb; border: 1.5px solid #fcd34d; border-radius: 16px; padding: 18px 22px; margin-bottom: 24px; color: #78350f;">
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 10px; background: #fef3c7; border: 1px solid #f59e0b; color: #b45309; font-weight: 900; font-size: 16px;">!</span>
+                    <div>
+                        <div style="font-size: 15px; font-weight: 800; color: #92400e;">
+                            Cảnh báo Kiểm định Chất lượng Đề thi ({{ $quality['warning_count'] ?? 0 }} vấn đề cần lưu ý)
+                        </div>
+                        <div style="font-size: 12.5px; color: #a16207;">
+                            Hệ thống tự động rà soát chỉ tiêu ETS từng Part, kỹ năng, định dạng đáp án/media và câu hỏi trùng lặp.
+                        </div>
+                    </div>
+                </div>
+
+                @if (!empty($cleanupIds))
+                    <form method="POST" action="{{ route('admin.tests.cleanup-issues', $test['id']) }}" style="margin: 0;" onsubmit="return confirm('Gỡ nhanh {{ count($cleanupIds) }} câu trùng lặp / sai kỹ năng khỏi đề thi này? (Câu hỏi vẫn được giữ lại trong Ngân hàng câu hỏi)');">
+                        @csrf
+                        <button type="submit" class="btn-admin-action" style="background: #dc2626; color: #ffffff; border-color: #b91c1c; font-weight: 700; font-size: 12.5px; padding: 8px 14px;">
+                            <span>Xóa nhanh câu trùng / sai kỹ năng ({{ count($cleanupIds) }} câu)</span>
+                        </button>
+                    </form>
+                @endif
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; font-size: 13px;">
+                @if (!empty($quality['quota_issues']))
+                    <div style="background: #ffffff; border: 1px solid #fde68a; border-radius: 10px; padding: 12px 14px;">
+                        <div style="font-weight: 800; color: #b45309; margin-bottom: 6px;">1. Lệch chỉ tiêu ETS từng Part</div>
+                        <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; color: #334155;">
+                            @foreach ($quality['quota_issues'] as $qi)
+                                <li style="{{ $qi['type'] === 'excess' ? 'color: #b91c1c; font-weight: 700;' : '' }}">
+                                    {{ $qi['message'] }}
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
+                @if (!empty($quality['wrong_skill_ids']))
+                    <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 12px 14px;">
+                        <div style="font-weight: 800; color: #b91c1c; margin-bottom: 6px;">2. Câu hỏi sai kỹ năng / sai Part ({{ count($quality['wrong_skill_ids']) }} câu)</div>
+                        <div style="color: #7f1d1d; line-height: 1.5;">
+                            Các mã câu không thuộc cấu trúc đề này:
+                            <strong>{{ implode(', ', array_map(fn ($qid) => '#Q-'.$qid, $quality['wrong_skill_ids'])) }}</strong>
+                        </div>
+                    </div>
+                @endif
+
+                @if (!empty($quality['duplicate_groups']))
+                    <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 12px 14px;">
+                        <div style="font-weight: 800; color: #b91c1c; margin-bottom: 6px;">3. Phát hiện câu trùng nội dung ({{ count($quality['duplicate_ids']) }} câu thừa)</div>
+                        <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; color: #7f1d1d;">
+                            @foreach (array_slice($quality['duplicate_groups'], 0, 5) as $dg)
+                                <li>
+                                    Giữ <strong>#Q-{{ $dg['keep_id'] }}</strong>, trùng với
+                                    <strong>{{ implode(', ', array_map(fn ($qid) => '#Q-'.$qid, $dg['duplicate_ids'])) }}</strong>
+                                    <span style="color: #64748b;">("{{ $dg['sample'] }}")</span>
+                                </li>
+                            @endforeach
+                            @if (count($quality['duplicate_groups']) > 5)
+                                <li style="font-style: italic;">... và {{ count($quality['duplicate_groups']) - 5 }} nhóm trùng khác.</li>
+                            @endif
+                        </ul>
+                    </div>
+                @endif
+
+                @if (!empty($quality['format_issues']))
+                    <div style="background: #ffffff; border: 1px solid #fde68a; border-radius: 10px; padding: 12px 14px;">
+                        <div style="font-weight: 800; color: #b45309; margin-bottom: 6px;">4. Câu thiếu định dạng / media / đáp án ({{ count($quality['format_issues']) }})</div>
+                        <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; color: #334155;">
+                            @foreach (array_slice($quality['format_issues'], 0, 6) as $fi)
+                                <li><strong>{{ $fi['code'] }}</strong> ({{ $fi['part_code'] }}): {{ $fi['reason'] }}</li>
+                            @endforeach
+                            @if (count($quality['format_issues']) > 6)
+                                <li style="font-style: italic; color: #64748b;">... và {{ count($quality['format_issues']) - 6 }} lỗi định dạng khác.</li>
+                            @endif
+                        </ul>
+                    </div>
+                @endif
+            </div>
+        </div>
+    @endif
 
     {{-- 3. Cấu trúc Kỹ năng và Danh sách từng Part --}}
     @foreach ($test['skills'] as $skillKey => $skill)
@@ -195,15 +323,15 @@
                         $partRate = $part['completion_rate'];
                         $partMode = $part['mode'] ?? $skillKey;
                     @endphp
-                    <div class="test-part-card" data-part-code="{{ $part['code'] }}" data-target="{{ $part['target_count'] }}" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.02);">
+                    <div class="test-part-card ts-part-card" data-part-code="{{ $part['code'] }}" data-target="{{ $part['target_count'] }}">
                         {{-- Header của Part --}}
-                        <div style="padding: 16px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px;">
+                        <div class="ts-part-head">
                             <div>
                                 <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                                     <span style="font-size: 16px; font-weight: 800; color: #1e1b4b;">
                                         {{ str_replace(['—', '–'], '-', $part['name']) }}
                                     </span>
-                                    <span class="part-status-badge" style="font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 6px; {{ $partComplete ? 'background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;' : ($partEmpty ? 'background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0;' : 'background: #fffbeb; color: #b45309; border: 1px solid #fde68a;') }}">
+                                    <span class="part-status-badge ts-badge {{ $partComplete ? 'ts-badge-active' : ($partEmpty ? 'ts-badge-archived' : 'ts-badge-draft') }}">
                                         @if ($partComplete)
                                             ✓ Đã đủ câu
                                         @elseif ($partEmpty)
@@ -224,8 +352,8 @@
                                     <div class="part-count-text" style="font-size: 13.5px; font-weight: 700; color: #0f172a;">
                                         {{ $part['current_count'] }} / {{ $part['target_count'] }} câu
                                     </div>
-                                    <div style="width: 100px; height: 6px; background: #e2e8f0; border-radius: 999px; overflow: hidden; margin-top: 4px;">
-                                        <div class="part-progress-fill" style="height: 100%; width: {{ $partRate }}%; background: {{ $partComplete ? '#10b981' : ($partEmpty ? '#cbd5e1' : '#4f46e5') }}; border-radius: 999px; transition: width 0.3s ease;"></div>
+                                    <div class="ts-part-progress-track">
+                                        <div class="part-progress-fill ts-part-progress-fill" style="width: {{ $partRate }}%; background: {{ $partComplete ? '#10b981' : ($partEmpty ? '#cbd5e1' : '#4f46e5') }};"></div>
                                     </div>
                                 </div>
 
@@ -305,6 +433,16 @@
                                                 </div>
 
                                                 <div style="padding: 12px 18px; background: #ffffff; border-bottom: 1px dashed #e2e8f0; font-size: 13px; color: #475569; line-height: 1.6;">
+                                                    @if (!empty($item['audio_url']))
+                                                        <div style="margin-bottom: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                                            <span style="font-size: 11.5px; font-weight: 700; color: #0369a1; background: #e0f2fe; padding: 2px 8px; border-radius: 999px;">Audio nhóm</span>
+                                                            <audio controls preload="none" src="{{ $item['audio_url'] }}" style="height: 32px; max-width: 300px;"></audio>
+                                                        </div>
+                                                    @elseif ($partMode === 'listening')
+                                                        <div style="margin-bottom: 8px;">
+                                                            <span style="font-size: 11.5px; font-weight: 700; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; padding: 2px 8px; border-radius: 999px;">Chưa có Audio MP3</span>
+                                                        </div>
+                                                    @endif
                                                     @if (!empty($item['image_url']))
                                                         <div style="margin-bottom: 8px;">
                                                             <img src="{{ $item['image_url'] }}" alt="Minh họa nhóm câu hỏi" style="max-height: 150px; border-radius: 8px; border: 1px solid #e2e8f0; object-fit: contain;">
@@ -324,21 +462,29 @@
 
                                                 <div style="padding: 12px 18px; display: flex; flex-direction: column; gap: 10px;">
                                                     @foreach ($item['child_questions'] as $child)
-                                                        <div class="test-q-item" data-question-id="{{ $child['id'] }}" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; background: #f8fafc; border-radius: 8px; border: 1px solid #edf2f7;">
+                                                        @php
+                                                            $childStatus = strtoupper((string) ($child['status'] ?? 'ACTIVE'));
+                                                        @endphp
+                                                        <div class="test-q-item ts-q-child-card" data-question-id="{{ $child['id'] }}" data-status="{{ $childStatus }}">
                                                             <div style="display: flex; align-items: baseline; gap: 10px; flex: 1; min-width: 240px;">
                                                                 <span style="font-size: 13px; font-weight: 800; color: #4338ca; width: 34px;">
                                                                     #{{ $child['sequence_no'] }}
                                                                 </span>
-                                                                <span style="font-size: 11.5px; font-weight: 700; color: #64748b; background: #fff; padding: 1px 6px; border-radius: 4px; border: 1px solid #e2e8f0;">
+                                                                <span class="ts-q-code">
                                                                     {{ $child['question_code'] }}
                                                                 </span>
+                                                                @if ($childStatus === 'ARCHIVED')
+                                                                    <span class="ts-badge ts-badge-archived">Lưu trữ</span>
+                                                                @elseif ($childStatus !== 'ACTIVE')
+                                                                    <span class="ts-badge ts-badge-draft">Bản nháp</span>
+                                                                @endif
                                                                 <span style="font-size: 13.5px; color: #1e293b; font-weight: 600;">
                                                                     {{ $child['content'] }}
                                                                 </span>
                                                             </div>
                                                             <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
                                                                 @if (!empty($child['correct_option']))
-                                                                    <span style="font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;">
+                                                                    <span class="ts-q-answer-pill">
                                                                         Đ/A: ({{ $child['correct_option'] }})
                                                                     </span>
                                                                 @endif
@@ -355,14 +501,22 @@
                                             </div>
                                         @else
                                             {{-- CÂU HỎI ĐƠN LẺ (SINGLE QUESTION) --}}
-                                            <div class="test-q-item" data-question-id="{{ $item['id'] }}" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px;">
+                                            @php
+                                                $itemStatus = strtoupper((string) ($item['status'] ?? 'ACTIVE'));
+                                            @endphp
+                                            <div class="test-q-item ts-q-card" data-question-id="{{ $item['id'] }}" data-status="{{ $itemStatus }}">
                                                 <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 240px;">
                                                     <span style="font-size: 13.5px; font-weight: 800; color: #4338ca; width: 36px; text-align: center;">
                                                         #{{ $item['sequence_no'] }}
                                                     </span>
-                                                    <span style="font-size: 12px; font-weight: 700; color: #64748b; background: #f8fafc; padding: 2px 7px; border-radius: 5px; border: 1px solid #e2e8f0;">
+                                                    <span class="ts-q-code">
                                                         {{ $item['question_code'] }}
                                                     </span>
+                                                    @if ($itemStatus === 'ARCHIVED')
+                                                        <span class="ts-badge ts-badge-archived">Lưu trữ</span>
+                                                    @elseif ($itemStatus !== 'ACTIVE')
+                                                        <span class="ts-badge ts-badge-draft">Bản nháp</span>
+                                                    @endif
                                                     @if (!empty($item['image_url']))
                                                         <img src="{{ $item['image_url'] }}" alt="Hình ảnh câu hỏi" style="width: 48px; height: 36px; border-radius: 6px; object-fit: cover; border: 1px solid #e2e8f0; flex-shrink: 0;">
                                                     @endif
@@ -370,6 +524,15 @@
                                                         <div style="font-size: 13.5px; color: #1e293b; font-weight: 600;">
                                                             {{ $item['content'] }}
                                                         </div>
+                                                        @if (!empty($item['audio_url']))
+                                                            <div style="margin-top: 6px;">
+                                                                <audio controls preload="none" src="{{ $item['audio_url'] }}" style="height: 30px; max-width: 260px;"></audio>
+                                                            </div>
+                                                        @elseif ($partMode === 'listening')
+                                                            <div style="margin-top: 4px;">
+                                                                <span style="font-size: 11px; font-weight: 700; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; padding: 1px 7px; border-radius: 999px;">Chưa có Audio MP3</span>
+                                                            </div>
+                                                        @endif
                                                         @if (!empty($item['options']))
                                                             <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; font-size: 12px; color: #64748b;">
                                                                 @foreach ($item['options'] as $opt)
@@ -384,7 +547,7 @@
 
                                                 <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
                                                     @if (!empty($item['correct_option']))
-                                                        <span style="font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;">
+                                                        <span class="ts-q-answer-pill">
                                                             Đ/A: ({{ $item['correct_option'] }})
                                                         </span>
                                                     @endif
@@ -564,6 +727,7 @@
                     <div>
                         <label style="font-weight: 700; font-size: 13px; display: block; margin-bottom: 5px;">Độ khó</label>
                         <select name="difficulty" id="editTestQDifficulty" class="form-control-admin" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                            <option value="UNSET">UNSET (Chưa xác định)</option>
                             <option value="EASY">EASY (Cơ bản)</option>
                             <option value="MEDIUM">MEDIUM (Trung bình)</option>
                             <option value="HARD">HARD (Nâng cao)</option>
@@ -828,6 +992,33 @@
     }
 @endphp
 
+{{-- Modal Tiến trình Sinh Audio TTS hàng loạt cho Đề Listening --}}
+<div id="modal-test-batch-tts" style="display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(15, 23, 42, 0.55); align-items: center; justify-content: center; padding: 16px;">
+    <div style="background: #ffffff; width: 100%; max-width: 520px; border-radius: 18px; padding: 24px; box-shadow: 0 25px 50px rgba(15, 23, 42, 0.25);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: #0f172a;">Sinh Audio TTS hàng loạt cho Đề thi</h3>
+            <button type="button" id="btnCloseTestBatchTts" onclick="closeTestBatchTtsModal()" style="background: none; border: none; font-size: 20px; color: #64748b; cursor: pointer;">&times;</button>
+        </div>
+
+        <p id="testBatchTtsDesc" style="margin: 0 0 14px; font-size: 13.5px; color: #475569; line-height: 1.5;"></p>
+
+        <div style="width: 100%; height: 10px; background: #f1f5f9; border-radius: 999px; overflow: hidden; margin-bottom: 10px;">
+            <div id="testBatchTtsProgressBar" style="height: 100%; width: 0%; background: #0284c7; border-radius: 999px; transition: width 0.3s ease;"></div>
+        </div>
+
+        <div id="testBatchTtsStats" style="font-size: 12.5px; font-weight: 600; color: #334155; margin-bottom: 16px;">
+            Sẵn sàng xử lý từng lô 5 câu hỏi (an toàn chống lỗi HTTP 429).
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" id="btnCancelTestBatchTts" class="btn-admin-action" onclick="closeTestBatchTtsModal()">Đóng</button>
+            <button type="button" id="btnStartTestBatchTts" class="btn-admin-primary" style="background: #0284c7; border-color: #0284c7;" onclick="runTestBatchTts()">
+                Bắt đầu sinh Audio
+            </button>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script src="{{ asset('js/toeic-audio-player.js') }}"></script>
 <script>
@@ -844,14 +1035,28 @@
     function recalculateTestProgress() {
         var partCards = document.querySelectorAll('.test-part-card');
         var totalCurrent = 0;
+        var totalDraft = 0;
         var totalTarget = 0;
         var hasShortPart = false;
         var hasOverPart = false;
 
         partCards.forEach(function(card) {
             var partTarget = parseInt(card.getAttribute('data-target') || '0', 10);
-            var partCurrent = card.querySelectorAll('.test-q-item').length;
+            var allItems = card.querySelectorAll('.test-q-item');
+            var partCurrent = 0;
+            var partDraft = 0;
+
+            allItems.forEach(function(el) {
+                var st = (el.getAttribute('data-status') || 'ACTIVE').toUpperCase();
+                if (st === 'ACTIVE') {
+                    partCurrent++;
+                } else {
+                    partDraft++;
+                }
+            });
+
             totalCurrent += partCurrent;
+            totalDraft += partDraft;
             totalTarget += partTarget;
 
             if (partCurrent < partTarget) hasShortPart = true;
@@ -859,7 +1064,7 @@
 
             var countText = card.querySelector('.part-count-text');
             if (countText) {
-                countText.textContent = partCurrent + ' / ' + partTarget + ' câu';
+                countText.textContent = partCurrent + ' / ' + partTarget + ' câu' + (partDraft > 0 ? ' (+' + partDraft + ' nháp)' : '');
             }
 
             var partFill = card.querySelector('.part-progress-fill');
@@ -885,6 +1090,9 @@
                 } else if (partCurrent === partTarget && partTarget > 0) {
                     partBadge.textContent = '✓ Đã đủ câu';
                     partBadge.style.cssText = 'font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:6px;background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;';
+                } else if (partCurrent === 0 && partDraft > 0) {
+                    partBadge.textContent = partDraft + ' câu bản nháp chưa duyệt';
+                    partBadge.style.cssText = 'font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:6px;background:#fffbeb;color:#b45309;border:1px solid #fde68a;';
                 } else if (partCurrent === 0) {
                     partBadge.textContent = 'Chưa có câu hỏi';
                     partBadge.style.cssText = 'font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:6px;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;';
@@ -931,11 +1139,21 @@
                 overviewBadge.innerHTML = '<span>✓ Đã hoàn thiện (100%)</span>';
                 overviewBadge.style.cssText = 'display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:12px;background:#ecfdf5;color:#065f46;border:1.5px solid #a7f3d0;font-size:13.5px;font-weight:700;';
             } else if (isEmpty) {
-                overviewBadge.innerHTML = '<span>Đề thi mới (Chưa có câu hỏi nào)</span>';
+                overviewBadge.innerHTML = '<span>Đề thi mới (Chưa có câu hỏi ACTIVE)</span>';
                 overviewBadge.style.cssText = 'display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:12px;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;font-size:13.5px;font-weight:700;';
             } else {
                 overviewBadge.innerHTML = '<span>Đang biên soạn (Còn Part chưa đủ chỉ tiêu)</span>';
                 overviewBadge.style.cssText = 'display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:12px;background:#fffbeb;color:#b45309;border:1.5px solid #fde68a;font-size:13.5px;font-weight:700;';
+            }
+        }
+
+        var draftWarn = document.getElementById('overviewDraftWarningBanner');
+        if (draftWarn) {
+            if (totalDraft > 0) {
+                draftWarn.style.display = 'block';
+                draftWarn.innerHTML = '⚠️ Đề thi đang có <strong>' + totalDraft + ' câu hỏi ở trạng thái Bản nháp (DRAFT)</strong> nên chưa được tính vào tiến độ hoàn thiện. Hãy bấm nút <strong>"Duyệt &amp; Xuất bản"</strong> ở góc trên bên phải để xuất bản toàn bộ sang ACTIVE.';
+            } else {
+                draftWarn.style.display = 'none';
             }
         }
     }
@@ -1569,6 +1787,111 @@
             '• <strong>Đoạn văn học sinh đã nói:</strong> "' + spoken + '"<br>' +
             '• <strong>Điểm phát âm &amp; Độ trôi chảy (Pronunciation &amp; Fluency):</strong> 170 / 200 (Tốt - Rõ âm cuối)<br>' +
             '• <strong>AI Sửa ngữ pháp &amp; Gợi ý nâng cấp từ vựng:</strong> Câu nói mạch lạc, ngữ điệu tự nhiên. Gợi ý nhấn trọng âm rõ hơn ở các danh từ ghép.';
+    }
+    var TEST_MISSING_AUDIO_IDS = @json($test['audio_summary']['missing_audio_question_ids'] ?? []);
+    var TEST_BATCH_TTS_RUNNING = false;
+
+    function openTestBatchTtsModal() {
+        var modal = document.getElementById('modal-test-batch-tts');
+        var desc = document.getElementById('testBatchTtsDesc');
+        var startBtn = document.getElementById('btnStartTestBatchTts');
+        var bar = document.getElementById('testBatchTtsProgressBar');
+        var stats = document.getElementById('testBatchTtsStats');
+
+        if (!modal) return;
+        bar.style.width = '0%';
+
+        if (!Array.isArray(TEST_MISSING_AUDIO_IDS) || TEST_MISSING_AUDIO_IDS.length === 0) {
+            desc.textContent = 'Tất cả câu hỏi Listening (Part 1–4) trong đề thi này đã có file Audio MP3 hoàn chỉnh.';
+            stats.textContent = 'Không có câu hỏi nào thiếu Audio.';
+            if (startBtn) startBtn.style.display = 'none';
+        } else {
+            desc.textContent = 'Hệ thống phát hiện ' + TEST_MISSING_AUDIO_IDS.length + ' câu Listening (Part 1–4) chưa có file Audio MP3. Tiến trình sẽ tự động chia từng lô 5 câu để sinh giọng đọc chuẩn TOEIC và lưu vào máy chủ.';
+            stats.textContent = 'Đang chờ bắt đầu (0 / ' + TEST_MISSING_AUDIO_IDS.length + ' câu)...';
+            if (startBtn) {
+                startBtn.style.display = 'inline-flex';
+                startBtn.disabled = false;
+                startBtn.textContent = 'Bắt đầu sinh Audio';
+            }
+        }
+
+        modal.style.display = 'flex';
+    }
+
+    function closeTestBatchTtsModal() {
+        if (TEST_BATCH_TTS_RUNNING) return;
+        var modal = document.getElementById('modal-test-batch-tts');
+        if (modal) modal.style.display = 'none';
+    }
+
+    async function runTestBatchTts() {
+        if (TEST_BATCH_TTS_RUNNING || !Array.isArray(TEST_MISSING_AUDIO_IDS) || TEST_MISSING_AUDIO_IDS.length === 0) {
+            return;
+        }
+
+        TEST_BATCH_TTS_RUNNING = true;
+        var startBtn = document.getElementById('btnStartTestBatchTts');
+        var cancelBtn = document.getElementById('btnCancelTestBatchTts');
+        var bar = document.getElementById('testBatchTtsProgressBar');
+        var stats = document.getElementById('testBatchTtsStats');
+        var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+
+        if (startBtn) {
+            startBtn.disabled = true;
+            startBtn.textContent = 'Đang sinh Audio...';
+        }
+        if (cancelBtn) cancelBtn.disabled = true;
+
+        var total = TEST_MISSING_AUDIO_IDS.length;
+        var processed = 0;
+        var totalGenerated = 0;
+        var totalSkipped = 0;
+        var totalFailed = 0;
+        var chunkSize = 5;
+
+        for (var i = 0; i < total; i += chunkSize) {
+            var chunk = TEST_MISSING_AUDIO_IDS.slice(i, i + chunkSize);
+            try {
+                var resp = await fetch('{{ url('/api/admin/questions/batch-generate-tts') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({ question_ids: chunk })
+                });
+                var data = await resp.json();
+                if (resp.ok && data) {
+                    totalGenerated += Number(data.generated || 0);
+                    totalSkipped += Number(data.skipped || 0);
+                    totalFailed += Number(data.failed || 0);
+                } else {
+                    totalFailed += chunk.length;
+                }
+            } catch (err) {
+                totalFailed += chunk.length;
+            }
+
+            processed = Math.min(total, i + chunk.length);
+            var pct = Math.round((processed / total) * 100);
+            if (bar) bar.style.width = pct + '%';
+            if (stats) {
+                stats.textContent = 'Đã xử lý ' + processed + ' / ' + total + ' câu (' + pct + '%) — Đã sinh: ' + totalGenerated + ', Bỏ qua: ' + totalSkipped + ', Lỗi: ' + totalFailed;
+            }
+        }
+
+        TEST_BATCH_TTS_RUNNING = false;
+        if (cancelBtn) cancelBtn.disabled = false;
+        if (startBtn) {
+            startBtn.disabled = false;
+            startBtn.textContent = 'Hoàn tất — Tải lại trang';
+            startBtn.onclick = function () { window.location.reload(); };
+        }
+
+        if (totalGenerated > 0) {
+            setTimeout(function () { window.location.reload(); }, 900);
+        }
     }
 </script>
 @endpush

@@ -8,6 +8,7 @@ use App\Models\TestBlueprint;
 use App\Models\TestForm;
 use App\Models\User;
 use App\Services\TestFormService;
+use App\Services\WordQuestionImportService;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -384,6 +385,285 @@ class TestControllerTest extends TestCase
         ]));
         $detachResp->assertRedirect(route('admin.tests.show', $testForm->test_form_id));
         $this->assertEquals(0, $testForm->questions()->count());
+    }
+
+    public function test_attach_questions_reaches_exact_100_percent_quota_for_speaking_writing_and_listening(): void
+    {
+        $this->seedSectionsAndBlueprints();
+        $service = app(TestFormService::class);
+
+        // 1. TOEIC Speaking: 11/11 (2 + 2 + 3 + 3 + 1)
+        $speakingTest = $service->create([
+            'title' => 'Full Speaking Quota Check',
+            'exam_type' => TestForm::EXAM_TYPE_SPEAKING,
+        ]);
+        $speakingIds = [];
+        foreach (['SPK_T1' => 2, 'SPK_T2' => 2, 'SPK_T3' => 3, 'SPK_T4' => 3, 'SPK_T5' => 1] as $code => $qty) {
+            for ($i = 0; $i < $qty; $i++) {
+                $speakingIds[] = $this->createStandaloneQuestion($code, Question::STATUS_ACTIVE);
+            }
+        }
+        $spkResult = $service->attachQuestions($speakingTest, $speakingIds);
+        $this->assertSame(11, $spkResult['attached']);
+        $this->assertSame(0, $spkResult['rejected_limit']);
+        $spkDetail = $service->detail($speakingTest->fresh());
+        $this->assertSame(11, $spkDetail['current_questions']);
+        $this->assertSame(TestForm::STATUS_COMPLETED, $spkDetail['status']);
+
+        // 2. TOEIC Writing: 8/8 (5 + 2 + 1)
+        $writingTest = $service->create([
+            'title' => 'Full Writing Quota Check',
+            'exam_type' => TestForm::EXAM_TYPE_WRITING,
+        ]);
+        $writingIds = [];
+        foreach (['WRITING_T1' => 5, 'WRITING_T2' => 2, 'WRITING_T3' => 1] as $code => $qty) {
+            for ($i = 0; $i < $qty; $i++) {
+                $writingIds[] = $this->createStandaloneQuestion($code, Question::STATUS_ACTIVE);
+            }
+        }
+        $wrtResult = $service->attachQuestions($writingTest, $writingIds);
+        $this->assertSame(8, $wrtResult['attached']);
+        $this->assertSame(0, $wrtResult['rejected_limit']);
+        $wrtDetail = $service->detail($writingTest->fresh());
+        $this->assertSame(8, $wrtDetail['current_questions']);
+        $this->assertSame(TestForm::STATUS_COMPLETED, $wrtDetail['status']);
+
+        // 3. TOEIC Listening: 100/100 (6 + 25 + 39 + 30)
+        $listeningTest = $service->create([
+            'title' => 'Full Listening Quota Check',
+            'exam_type' => TestForm::EXAM_TYPE_LISTENING,
+        ]);
+        $listeningIds = [];
+        foreach (['PART1' => 6, 'PART2' => 25, 'PART3' => 39, 'PART4' => 30] as $code => $qty) {
+            for ($i = 0; $i < $qty; $i++) {
+                $listeningIds[] = $this->createStandaloneQuestion($code, Question::STATUS_ACTIVE);
+            }
+        }
+        $lcResult = $service->attachQuestions($listeningTest, $listeningIds);
+        $this->assertSame(100, $lcResult['attached']);
+        $this->assertSame(0, $lcResult['rejected_limit']);
+        $lcDetail = $service->detail($listeningTest->fresh());
+        $this->assertSame(100, $lcDetail['current_questions']);
+        $this->assertSame(TestForm::STATUS_COMPLETED, $lcDetail['status']);
+        $this->assertTrue($lcDetail['audio_summary']['is_listening_test']);
+        $this->assertSame(100, $lcDetail['audio_summary']['missing_audio_count']);
+    }
+
+    public function test_test_quality_validation_detects_issues_and_one_click_cleanup_removes_duplicates_and_wrong_skill(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $this->seedSectionsAndBlueprints();
+        $service = app(TestFormService::class);
+
+        $listeningTest = $service->create([
+            'title' => 'Listening Quality Audit Test',
+            'exam_type' => TestForm::EXAM_TYPE_LISTENING,
+        ]);
+
+        $part2SectionId = (int) ExamSection::where('code', 'PART2')->value('section_id');
+        $part5SectionId = (int) ExamSection::where('code', 'PART5')->value('section_id');
+
+        // 2 câu trùng nội dung thuộc PART2
+        $dupKeepId = (int) DB::table('questions')->insertGetId([
+            'section_id' => $part2SectionId,
+            'question_type_id' => 3,
+            'content' => 'Where is the conference room located?',
+            'difficulty' => 'MEDIUM',
+            'points' => 1.00,
+            'status' => Question::STATUS_ACTIVE,
+            'created_at' => now(),
+        ]);
+        $dupExtraId = (int) DB::table('questions')->insertGetId([
+            'section_id' => $part2SectionId,
+            'question_type_id' => 3,
+            'content' => '  where is   the conference room located?  ',
+            'difficulty' => 'MEDIUM',
+            'points' => 1.00,
+            'status' => Question::STATUS_ACTIVE,
+            'created_at' => now(),
+        ]);
+        // 1 câu sai kỹ năng (PART5 gắn lọt vào đề Listening)
+        $wrongSkillId = (int) DB::table('questions')->insertGetId([
+            'section_id' => $part5SectionId,
+            'question_type_id' => 1,
+            'content' => 'The manager _____ the report before noon.',
+            'difficulty' => 'MEDIUM',
+            'points' => 1.00,
+            'status' => Question::STATUS_ACTIVE,
+            'created_at' => now(),
+        ]);
+
+        DB::table('test_form_question')->insert([
+            ['test_form_id' => $listeningTest->test_form_id, 'question_id' => $dupKeepId, 'sequence_no' => 1, 'point' => 1.0],
+            ['test_form_id' => $listeningTest->test_form_id, 'question_id' => $dupExtraId, 'sequence_no' => 2, 'point' => 1.0],
+            ['test_form_id' => $listeningTest->test_form_id, 'question_id' => $wrongSkillId, 'sequence_no' => 3, 'point' => 1.0],
+        ]);
+
+        $detail = $service->detail($listeningTest->fresh());
+        $quality = $detail['quality'];
+
+        $this->assertTrue($quality['has_warnings']);
+        $this->assertSame([$wrongSkillId], $quality['wrong_skill_ids']);
+        $this->assertSame([$dupExtraId], $quality['duplicate_ids']);
+        $this->assertNotEmpty($quality['format_issues']);
+        $this->assertNotEmpty($quality['quota_issues']);
+
+        // Kiểm tra trang chi tiết hiển thị cả nút Sinh Audio TTS hàng loạt lẫn Banner kiểm định
+        $showResp = $this->actingAs($admin)->get(route('admin.tests.show', $listeningTest->test_form_id));
+        $showResp->assertOk();
+        $showResp->assertSee('Sinh Audio TTS hàng loạt');
+        $showResp->assertSee('Cảnh báo Kiểm định Chất lượng Đề thi');
+        $showResp->assertSee('Xóa nhanh câu trùng / sai kỹ năng');
+
+        // 1-click cleanup
+        $cleanupResp = $this->actingAs($admin)->post(route('admin.tests.cleanup-issues', $listeningTest->test_form_id));
+        $cleanupResp->assertRedirect(route('admin.tests.show', $listeningTest->test_form_id));
+        $cleanupResp->assertSessionHas('success');
+
+        $remainingIds = DB::table('test_form_question')
+            ->where('test_form_id', $listeningTest->test_form_id)
+            ->pluck('question_id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        $this->assertSame([$dupKeepId], $remainingIds);
+    }
+
+    public function test_word_parser_preserves_bare_question_headers_and_ignores_numbered_bullets_in_passage(): void
+    {
+        $parser = app(WordQuestionImportService::class);
+        $rawText = <<<'TXT'
+PART 7: Reading Comprehension
+Questions 147-148 refer to the following notice.
+Notice to all staff:
+1. Please lock the storage room before leaving.
+2. Submit expense reports by Friday.
+Question 147:
+What is the purpose of the notice?
+(A) To announce a holiday
+(B) To remind staff of office procedures
+(C) To introduce a new manager
+(D) To schedule a meeting
+Answer: B
+Question 148:
+When are expense reports due?
+(A) Monday
+(B) Wednesday
+(C) Friday
+(D) Sunday
+Answer: C
+TXT;
+
+        $parsed = $parser->parseLines(explode("\n", $rawText), 'READING');
+        $this->assertCount(2, $parsed);
+        $this->assertSame(147, $parsed[0]['question_number']);
+        $this->assertSame('What is the purpose of the notice?', $parsed[0]['content']);
+        $this->assertStringContainsString('1. Please lock the storage room before leaving.', (string) $parsed[0]['stimulus_text']);
+        $this->assertSame(148, $parsed[1]['question_number']);
+        $this->assertSame('When are expense reports due?', $parsed[1]['content']);
+    }
+
+    public function test_admin_can_quick_edit_question_with_unset_difficulty_inside_test(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $this->seedSectionsAndBlueprints();
+        $lrBlueprint = TestBlueprint::where('exam_type', 'TOEIC_LR')->firstOrFail();
+
+        $testForm = TestForm::create([
+            'blueprint_id' => $lrBlueprint->blueprint_id,
+            'title' => 'Quick Edit UNSET Difficulty Test',
+        ]);
+
+        $this->attachQuestionsByCode($testForm->test_form_id, 'PART5', 1, Question::STATUS_ACTIVE);
+        $questionId = (int) DB::table('test_form_question')
+            ->where('test_form_id', $testForm->test_form_id)
+            ->value('question_id');
+
+        $response = $this->actingAs($admin)->put(route('admin.tests.questions.update', [
+            'id' => $testForm->test_form_id,
+            'questionId' => $questionId,
+        ]), [
+            'content' => 'Imported question edited while difficulty remains UNSET.',
+            'difficulty' => 'UNSET',
+            'opt_a' => 'Option A',
+            'opt_b' => 'Option B',
+            'opt_c' => 'Option C',
+            'opt_d' => 'Option D',
+            'correct_option' => 'B',
+        ]);
+
+        $response->assertRedirect(route('admin.tests.show', $testForm->test_form_id));
+        $response->assertSessionHas('success');
+        $this->assertDatabaseHas('questions', [
+            'question_id' => $questionId,
+            'difficulty' => 'UNSET',
+        ]);
+    }
+
+    public function test_speaking_11_questions_import_attaches_all_11_without_header_pollution_or_resume_bug(): void
+    {
+        $this->seedSectionsAndBlueprints();
+        $service = app(TestFormService::class);
+        $parser = app(WordQuestionImportService::class);
+
+        $speakingTest = $service->create([
+            'title' => 'TEST-011 Speaking Regression',
+            'exam_type' => TestForm::EXAM_TYPE_SPEAKING,
+        ]);
+
+        $rawSpeaking = <<<'TXT'
+TOEIC Speaking Test câu 1, 2
+Question 1: Welcome, everyone. Thanks for coming to this meeting.
+Question 2: Members of the press, Dawson Technologies is announcing a product demonstration.
+TOEIC Speaking Test câu 3, 4
+[SPLIT_IMAGE_CELL]
+[IMAGE_URL: storage/uploads/pic1.jpg]
+[SPLIT_IMAGE_CELL]
+[IMAGE_URL: storage/uploads/pic2.jpg]
+Đề TOEIC Speaking câu 5, 6, 7
+Imagine that a British marketing firm is doing research in your country.
+Question 5: How much do you pay for your cell phone, and how old is it?
+Question 6: What's the most important feature you look at when you choose a new cell phone?
+Question 7: What do you like or dislike about using your cell phone and why?
+TOEIC Speaking Test câu 8, 9, 10
+Seminar Schedule: 9:00 AM Opening | 1:00 PM Résumé Writing
+What day is the seminar on, and when does it start?
+I think I saw that the session on résumé writing was scheduled to start right after lunch. That's right, isn't it?
+I have an important appointment in the morning that day, so I'll probably only be able to attend in the afternoon. What sessions will I be able to participate in?
+TOEIC Speaking Test câu 11
+Question 11: Many people argue that students should have to participate in physical activities at school. Which point of view do you agree with and why?
+TXT;
+
+        $parsed = $parser->parseLines(explode("\n", $rawSpeaking), 'SPEAKING');
+        $this->assertCount(11, $parsed);
+
+        $partCounts = array_count_values(array_column($parsed, 'part_code'));
+        $this->assertSame([
+            'SPK_T1' => 2,
+            'SPK_T2' => 2,
+            'SPK_T3' => 3,
+            'SPK_T4' => 3,
+            'SPK_T5' => 1,
+        ], $partCounts);
+
+        // Không có tiêu đề nào bị nuốt vào explanation
+        foreach ($parsed as $q) {
+            $this->assertStringNotContainsString('câu 3, 4', (string) ($q['explanation'] ?? ''));
+            $this->assertStringNotContainsString('câu 5, 6, 7', (string) ($q['explanation'] ?? ''));
+            $this->assertStringNotContainsString('câu 8, 9, 10', (string) ($q['explanation'] ?? ''));
+            $this->assertStringNotContainsString('résumé writing', (string) ($q['explanation'] ?? ''));
+        }
+
+        // Persist và gắn thẳng vào đề Speaking -> phải gắn đủ 11/11, không rớt test_id
+        $ids = $parser->persistQuestionsAndReturnIds($parsed, 'ACTIVE', null, $speakingTest->test_form_id);
+        $this->assertCount(11, $ids);
+        $attachResult = $parser->getLastAttachResult();
+        $this->assertSame(11, $attachResult['attached']);
+        $this->assertSame(0, $attachResult['rejected_limit']);
+
+        $detail = $service->detail($speakingTest->fresh());
+        $this->assertSame(11, $detail['current_questions']);
+        $this->assertSame(TestForm::STATUS_COMPLETED, $detail['status']);
     }
 
     private function seedSectionsAndBlueprints(): void

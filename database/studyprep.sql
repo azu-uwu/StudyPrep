@@ -290,7 +290,7 @@ CREATE TABLE `test_form_question` (
 
 CREATE TABLE `topics` (
   `topic_id` bigint NOT NULL,
-  `user_id` bigint NOT NULL,
+  `user_id` bigint NULL DEFAULT NULL,
   `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` text COLLATE utf8mb4_unicode_ci,
   `parent_topic_id` bigint DEFAULT NULL

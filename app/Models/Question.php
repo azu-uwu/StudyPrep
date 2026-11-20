@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -9,7 +10,20 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Schema;
 
+/**
+ * @property int $question_id
+ * @property int $section_id
+ * @property int $question_type_id
+ * @property int|null $question_set_id
+ * @property string $content
+ * @property string|null $explanation
+ * @property string $difficulty
+ * @property float|int|string|null $points
+ * @property string $status
+ * @property CarbonInterface|string|null $created_at
+ */
 #[Fillable([
     'question_id',
     'section_id',
@@ -128,6 +142,56 @@ class Question extends Model
     public function getQuestionCodeDisplayAttribute(): string
     {
         return sprintf('#Q-%d', $this->question_id);
+    }
+
+    /**
+     * Tự động ánh xạ mã Part TOEIC sang question_type_id chuẩn trong bảng question_type:
+     * - PART1..PART4 -> Audio Listening (AUDIO)
+     * - PART5..PART7 -> Multiple Choice (SINGLE_CHOICE)
+     * - WRITING_T1..WRITING_T3 -> Written Response (TEXT)
+     * - SPK_T1..SPK_T5 -> Speaking Response (SPEAKING)
+     */
+    public static function resolveQuestionTypeIdForPart(string $partCode): int
+    {
+        $code = strtoupper(trim($partCode));
+
+        if (! Schema::hasTable('question_type')) {
+            return 1;
+        }
+
+        if (in_array($code, ['PART1', 'PART2', 'PART3', 'PART4'], true)) {
+            $type = QuestionType::query()->firstOrCreate(
+                ['response_mode' => 'AUDIO'],
+                ['name' => 'Audio Listening']
+            );
+
+            return (int) $type->question_type_id;
+        }
+
+        if (str_starts_with($code, 'WRITING_')) {
+            $type = QuestionType::query()->firstOrCreate(
+                ['response_mode' => 'TEXT'],
+                ['name' => 'Written Response']
+            );
+
+            return (int) $type->question_type_id;
+        }
+
+        if (str_starts_with($code, 'SPK_')) {
+            $type = QuestionType::query()->firstOrCreate(
+                ['response_mode' => 'SPEAKING'],
+                ['name' => 'Speaking Response']
+            );
+
+            return (int) $type->question_type_id;
+        }
+
+        $type = QuestionType::query()->firstOrCreate(
+            ['response_mode' => 'SINGLE_CHOICE'],
+            ['name' => 'Multiple Choice']
+        );
+
+        return (int) $type->question_type_id;
     }
 
     public function getPartBadgeAttribute(): string

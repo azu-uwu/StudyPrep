@@ -111,6 +111,7 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::put('/tests/{id}', [TestController::class, 'update'])->whereNumber('id')->name('tests.update');
         Route::delete('/tests/{id}', [TestController::class, 'destroy'])->whereNumber('id')->name('tests.destroy');
         Route::post('/tests/{id}/save', [TestController::class, 'saveState'])->whereNumber('id')->name('tests.save');
+        Route::post('/tests/{id}/cleanup-issues', [TestController::class, 'cleanupIssues'])->whereNumber('id')->name('tests.cleanup-issues');
         Route::post('/tests/{id}/questions', [TestController::class, 'attachQuestions'])->whereNumber('id')->name('tests.questions.attach');
         Route::put('/tests/{id}/questions/{questionId}', [TestController::class, 'updateQuestion'])->whereNumber(['id', 'questionId'])->name('tests.questions.update');
         Route::delete('/tests/{id}/questions/{questionId}', [TestController::class, 'detachQuestion'])->whereNumber(['id', 'questionId'])->name('tests.questions.detach');
