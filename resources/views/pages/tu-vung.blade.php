@@ -134,12 +134,12 @@
 </div>
 
 {{-- ===== SECTION 1: CHỦ ĐỀ CỦA TÔI (Đồng bộ cấu trúc .lt-section chuẩn) ===== --}}
-<div class="lt-section">
+<div class="lt-section" id="myTopicsSection">
     @php
         $myList = $myTopics ?? [];
     @endphp
 
-    <div class="lt-section-header">
+    <div class="lt-section-header" id="myTopicsSectionHeader">
         <h2 class="lt-section-title">Chủ đề của tôi</h2>
         @if(!empty($myList))
             <a href="javascript:void(0)" class="lt-link-all" id="btnAddTopic" data-sp-modal-open="modalCreateTopic">
@@ -237,7 +237,8 @@
         </svg>
     </button>
 
-    <form id="formCreateTopic" onsubmit="return false;" novalidate>
+    <form id="formCreateTopic" action="{{ route('tu-vung.topics.store') }}" method="POST" onsubmit="return false;" novalidate>
+        @csrf
         {{-- Tên chủ đề (Bắt buộc, tối đa 100 ký tự) --}}
         <x-input
             id="createTopicNameInput"
@@ -473,7 +474,86 @@
                 });
             }
 
-            // Kiểm tra dữ liệu khi nhấn nút "+ Tạo chủ đề"
+            // Helper để escape HTML tránh XSS khi render từ dữ liệu server trả về
+            function escapeHtml(str) {
+                if (!str) return '';
+                var div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            function addNewTopicToUI(topic) {
+                // Xóa / ẩn box trạng thái rỗng nếu có
+                var emptyBox = document.getElementById('myTopicsEmptyBox');
+                if (emptyBox) {
+                    emptyBox.remove();
+                }
+
+                // Đảm bảo nút "+ Thêm chủ đề" có mặt trên header
+                var header = document.getElementById('myTopicsSectionHeader') || document.querySelector('.lt-section .lt-section-header');
+                if (header && !document.getElementById('btnAddTopic')) {
+                    var addLink = document.createElement('a');
+                    addLink.href = 'javascript:void(0)';
+                    addLink.className = 'lt-link-all';
+                    addLink.id = 'btnAddTopic';
+                    addLink.setAttribute('data-sp-modal-open', 'modalCreateTopic');
+                    addLink.textContent = '+ Thêm chủ đề';
+                    addLink.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        openCreateTopicModal();
+                    });
+                    header.appendChild(addLink);
+                }
+
+                // Lấy hoặc tạo grid danh sách chủ đề cá nhân
+                var grid = document.getElementById('myTopicsGrid');
+                if (!grid) {
+                    grid = document.createElement('div');
+                    grid.className = 'tv-my-topics-grid';
+                    grid.id = 'myTopicsGrid';
+                    var section = document.getElementById('myTopicsSection') || (header ? header.parentElement : null);
+                    if (section) {
+                        section.appendChild(grid);
+                    }
+                }
+
+                // Tạo card cho chủ đề mới vừa tạo
+                var card = document.createElement('a');
+                card.href = topic.url || ('/tu-vung/' + topic.topic_id);
+                card.className = 'tv-my-topic-card tv-tactile-card';
+                card.setAttribute('aria-label', topic.name);
+                card.style.textDecoration = 'none';
+                card.innerHTML = `
+                    <div class="tv-my-topic-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <div style="font-weight: 700; color: #111C2D; font-size: 15px;">${escapeHtml(topic.name)}</div>
+                        <div style="color: #64748B; font-size: 13px; margin-top: 2px;">0 từ</div>
+                    </div>
+                `;
+
+                // Gắn hiệu ứng tactile card click
+                card.addEventListener('click', function (e) {
+                    var targetUrl = this.getAttribute('href');
+                    if (targetUrl && targetUrl !== 'javascript:void(0)' && !targetUrl.startsWith('#')) {
+                        e.preventDefault();
+                        this.classList.add('is-pressed');
+                        setTimeout(function () {
+                            window.location.href = targetUrl;
+                        }, 120);
+                    }
+                });
+
+                if (grid) {
+                    grid.appendChild(card);
+                }
+            }
+
+            // Gửi dữ liệu tạo chủ đề đến Backend (BE-008.2.1)
             if (btnSubmit) {
                 btnSubmit.addEventListener('click', function (e) {
                     e.preventDefault();
@@ -482,7 +562,7 @@
                     const rawName = nameInput.value;
                     const trimmedName = rawName.trim();
 
-                    // 1. Kiểm tra bắt buộc: Tên chủ đề không để trống
+                    // 1. Kiểm tra bắt buộc phía client: Tên chủ đề không để trống
                     if (!trimmedName) {
                         showInputError(nameInput, 'Vui lòng nhập tên chủ đề.');
                         if (noticeEl) noticeEl.style.display = 'none';
@@ -490,7 +570,7 @@
                         return;
                     }
 
-                    // 2. Kiểm tra độ dài: tối đa 100 ký tự
+                    // 2. Kiểm tra độ dài phía client: tối đa 100 ký tự
                     if (trimmedName.length > 100) {
                         showInputError(nameInput, 'Tên chủ đề không được vượt quá 100 ký tự (hiện tại ' + trimmedName.length + ' ký tự).');
                         if (noticeEl) noticeEl.style.display = 'none';
@@ -498,18 +578,84 @@
                         return;
                     }
 
-                    // Dữ liệu hợp lệ: xóa thông báo lỗi
+                    // Dữ liệu hợp lệ: xóa thông báo lỗi trước đó
                     clearInputError(nameInput);
-
-                    // 3. Phản hồi Frontend (KHÔNG gửi dữ liệu backend, KHÔNG tạo chủ đề MySQL, KHÔNG thông báo thành công giả)
-                    if (noticeEl && noticeTitleEl && noticeDescEl) {
-                        noticeEl.className = 'tv-modal-notice tv-modal-notice--info';
-                        noticeTitleEl.textContent = 'Dữ liệu hợp lệ: "' + trimmedName + '"';
-                        noticeDescEl.textContent = 'Chức năng tạo chủ đề đang chờ kết nối Backend (BE-008.2.1) để lưu vào cơ sở dữ liệu.';
-                        noticeEl.style.display = 'flex';
+                    if (descInput) {
+                        clearInputError(descInput);
+                    }
+                    if (noticeEl) {
+                        noticeEl.style.display = 'none';
                     }
 
-                    showToast('Dữ liệu hợp lệ. Chức năng đang chờ kết nối Backend (BE-008.2.1).');
+                    // 3. Khóa nút submit tránh gửi trùng
+                    const originalBtnHtml = btnSubmit.innerHTML;
+                    btnSubmit.disabled = true;
+                    btnSubmit.textContent = 'Đang tạo...';
+
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                        || document.querySelector('#formCreateTopic input[name="_token"]')?.value
+                        || '';
+
+                    const payload = {
+                        name: trimmedName,
+                        description: descInput ? descInput.value.trim() : ''
+                    };
+
+                    fetch('{{ route('tu-vung.topics.store') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify(payload)
+                    })
+                    .then(async function (response) {
+                        const data = await response.json().catch(function () { return {}; });
+                        if (!response.ok) {
+                            return Promise.reject({ status: response.status, data: data });
+                        }
+                        return data;
+                    })
+                    .then(function (res) {
+                        // 4. Thành công: đóng modal, thông báo toast "Tạo chủ đề thành công!", cập nhật UI
+                        closeCreateTopicModal();
+                        showToast('Tạo chủ đề thành công!');
+                        if (res.topic) {
+                            addNewTopicToUI(res.topic);
+                        }
+                    })
+                    .catch(function (err) {
+                        // 5. Thất bại: giữ modal mở, hiển thị lỗi đúng trường, giữ nguyên dữ liệu đã nhập
+                        if (err.status === 422 && err.data && err.data.errors) {
+                            if (err.data.errors.name && err.data.errors.name.length > 0) {
+                                showInputError(nameInput, err.data.errors.name[0]);
+                                nameInput.focus();
+                            }
+                            if (err.data.errors.description && err.data.errors.description.length > 0 && descInput) {
+                                showInputError(descInput, err.data.errors.description[0]);
+                            }
+                        } else if (err.status === 401) {
+                            showToast('Vui lòng đăng nhập để tạo chủ đề.');
+                            if (typeof window.spOpenAuthModal === 'function') {
+                                closeCreateTopicModal();
+                                window.spOpenAuthModal();
+                            } else {
+                                window.location.href = '{{ route('login') }}';
+                            }
+                        } else if (err.status === 403) {
+                            const forbiddenMsg = (err.data && err.data.message) ? err.data.message : 'Bạn không có quyền thực hiện thao tác này.';
+                            showToast(forbiddenMsg);
+                        } else {
+                            const generalMsg = (err.data && err.data.message) ? err.data.message : 'Có lỗi xảy ra khi tạo chủ đề. Vui lòng thử lại.';
+                            showToast(generalMsg);
+                        }
+                    })
+                    .finally(function () {
+                        btnSubmit.disabled = false;
+                        btnSubmit.innerHTML = originalBtnHtml;
+                    });
                 });
             }
         });

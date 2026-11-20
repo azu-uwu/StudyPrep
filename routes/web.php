@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VocabularyController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ListeningPracticeController;
+use App\Http\Controllers\PersonalTopicController;
 use App\Http\Controllers\ReadingPracticeController;
 use App\Http\Controllers\VocabularyPracticeController;
 use Illuminate\Support\Facades\Route;
@@ -66,6 +67,7 @@ Route::view('/thi-thu/ket-qua', 'pages.thi-thu-ket-qua')->name('thi-thu-ket-qua'
 
 Route::get('/tu-vung', [VocabularyPracticeController::class, 'index'])->name('tu-vung');
 Route::post('/tu-vung/check-answer', [VocabularyPracticeController::class, 'checkAnswer'])->name('tu-vung.check-answer');
+Route::post('/tu-vung/chu-de', [PersonalTopicController::class, 'store'])->middleware('auth')->name('tu-vung.topics.store');
 Route::get('/tu-vung/{topicId}/chon-tu', [VocabularyPracticeController::class, 'selectWords'])->name('tu-vung.chon-tu');
 Route::get('/tu-vung/{topicId}/flashcard', [VocabularyPracticeController::class, 'flashcard'])->name('tu-vung.flashcard');
 Route::get('/tu-vung/{topicId}', [VocabularyPracticeController::class, 'show'])->name('tu-vung.show');
