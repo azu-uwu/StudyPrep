@@ -3,6 +3,95 @@
 @push('styles')
     {{-- CSS riêng cho trang Flashcard và các màn hình Luyện tập --}}
     <link rel="stylesheet" href="{{ asset('css/pages/tu-vung-flashcard.css') }}">
+    <style>
+        .tv-fc-energy-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #FFFBEB;
+            border: 1px solid #FDE68A;
+            color: #92400E;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: 800;
+            font-family: 'Nunito', sans-serif;
+        }
+        .tv-energy-toast {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: #111C2D;
+            color: #FFFFFF;
+            padding: 14px 20px;
+            border-radius: 16px;
+            box-shadow: 0 12px 32px rgba(17, 28, 45, 0.35);
+            border: 1.5px solid #F59E0B;
+            opacity: 0;
+            transform: translateY(-20px) scale(0.95);
+            pointer-events: none;
+            transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            font-family: 'Nunito', sans-serif;
+            max-width: 440px;
+        }
+        .tv-energy-toast.show {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+        .tv-energy-toast__icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(245, 158, 11, 0.18);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .tv-energy-toast__body {
+            flex: 1;
+        }
+        .tv-energy-toast__title {
+            font-size: 14px;
+            font-weight: 800;
+            line-height: 1.35;
+            color: #FFFFFF;
+        }
+        .tv-energy-toast__sub {
+            font-size: 12px;
+            font-weight: 600;
+            color: #FBBF24;
+            margin-top: 2px;
+        }
+        .tv-energy-toast__close {
+            background: transparent;
+            border: 0;
+            color: #94A3B8;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.15s ease;
+        }
+        .tv-energy-toast__close:hover {
+            color: #FFFFFF;
+        }
+        @media (max-width: 640px) {
+            .tv-energy-toast {
+                top: 16px;
+                left: 16px;
+                right: 16px;
+                max-width: none;
+            }
+        }
+    </style>
 @endpush
 
 <div class="tv-fc-container">
@@ -28,10 +117,37 @@
         </div>
 
         @if(count($vocabularies) > 0)
-            <div class="tv-fc-progress-badge" aria-label="Tiến độ học">
-                <span id="fcCurrentIdxText">1</span> / <span id="fcTotalCountText">{{ count($vocabularies) }}</span> từ
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="tv-fc-energy-pill" id="fcEnergyPill" title="Năng lượng hiện tại (BE-017.2)" aria-label="Năng lượng">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="#F59E0B" stroke="#D97706" stroke-width="1.5">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke-linejoin="round"/>
+                    </svg>
+                    <span id="fcEnergyVal">{{ Auth::check() ? (Auth::user()->energy ?? 5) : 5 }}/5</span>
+                </div>
+                <div class="tv-fc-progress-badge" aria-label="Tiến độ học">
+                    <span id="fcCurrentIdxText">1</span> / <span id="fcTotalCountText">{{ count($vocabularies) }}</span> từ
+                </div>
             </div>
         @endif
+    </div>
+
+    {{-- Toast thông báo chúc mừng nhận thêm năng lượng (BE-017.2) --}}
+    <div class="tv-energy-toast" id="tvEnergyToast" role="alert" aria-live="polite">
+        <div class="tv-energy-toast__icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="#F59E0B" stroke="#B45309" stroke-width="1.5">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke-linejoin="round"/>
+            </svg>
+        </div>
+        <div class="tv-energy-toast__body">
+            <div class="tv-energy-toast__title">Chúc mừng! Bạn đã học đúng 10 từ và nhận thêm 1 năng lượng.</div>
+            <div class="tv-energy-toast__sub">Năng lượng hiện tại: <strong id="tvEnergyToastValue">{{ Auth::check() ? (Auth::user()->energy ?? 5) : 5 }}/5</strong></div>
+        </div>
+        <button type="button" class="tv-energy-toast__close" aria-label="Đóng thông báo" onclick="hideEnergyToast()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
     </div>
 
     @if(count($vocabularies) > 0)
@@ -677,6 +793,20 @@
             }
 
             const data = await response.json();
+
+            // BE-017.2: Cập nhật hiển thị số năng lượng hiện tại
+            if (typeof data.current_energy !== 'undefined') {
+                const energyVal = document.getElementById('fcEnergyVal');
+                if (energyVal) {
+                    energyVal.textContent = `${data.current_energy}/5`;
+                }
+            }
+
+            // BE-017.2: Hiển thị Toast chúc mừng khi Backend xác nhận đã cộng năng lượng thành công
+            if (data.energy_rewarded === true) {
+                showEnergyToast(data.current_energy);
+            }
+
             showFeedbackResult(Boolean(data.is_correct), vocab);
         } catch (error) {
             console.error('Network error checking answer:', error);
@@ -1072,6 +1202,33 @@
             }
         }
     });
+
+    // BE-017.2: Quản lý hiển thị Toast thông báo nhận năng lượng
+    let energyToastTimeout = null;
+
+    function showEnergyToast(currentEnergy) {
+        const toast = document.getElementById('tvEnergyToast');
+        const valElem = document.getElementById('tvEnergyToastValue');
+        if (!toast) return;
+
+        if (valElem) {
+            valElem.textContent = `${currentEnergy}/5`;
+        }
+
+        toast.classList.add('show');
+
+        if (energyToastTimeout) clearTimeout(energyToastTimeout);
+        energyToastTimeout = setTimeout(() => {
+            hideEnergyToast();
+        }, 5000);
+    }
+
+    function hideEnergyToast() {
+        const toast = document.getElementById('tvEnergyToast');
+        if (toast) {
+            toast.classList.remove('show');
+        }
+    }
 
     // Helper utilities
     function cleanInputString(str) {

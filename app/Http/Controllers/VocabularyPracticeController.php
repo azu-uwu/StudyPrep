@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Topic;
 use App\Models\UserVocabulary;
 use App\Models\Vocabulary;
+use App\Services\EnergyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -328,7 +329,7 @@ class VocabularyPracticeController extends Controller
      * - Lượt học mới tính lại từ đầu, không lấy kết quả cũ của lượt trước.
      * - Cập nhật bản ghi cũ nếu đã tồn tại theo cặp (user_id, vocabulary_id); không tạo bản ghi trùng.
      */
-    public function checkAnswer(Request $request): JsonResponse
+    public function checkAnswer(Request $request, EnergyService $energyService): JsonResponse
     {
         if (! Auth::check()) {
             return response()->json([
@@ -355,9 +356,9 @@ class VocabularyPracticeController extends Controller
         }
 
         $topic = $vocabulary->topic;
-        $userId = Auth::id();
+        $userId = (int) Auth::id();
 
-        if ($topic !== null && $topic->user_id !== null && (int) $topic->user_id !== (int) $userId) {
+        if ($topic !== null && $topic->user_id !== null && (int) $topic->user_id !== $userId) {
             return response()->json([
                 'success' => false,
                 'message' => 'Bạn không có quyền truy cập từ vựng này.',
@@ -384,6 +385,10 @@ class VocabularyPracticeController extends Controller
                 'vocabulary_id' => $vocabulary->vocabulary_id,
                 'practice_type' => $practiceType,
                 'finalized' => false,
+                'reward_accumulated_count' => $energyService->getAccumulatedCount($userId),
+                'current_energy' => (int) (Auth::user()?->energy ?? 0),
+                'energy_rewarded' => false,
+                'energy_awarded_amount' => 0,
             ]);
         }
 
@@ -399,6 +404,10 @@ class VocabularyPracticeController extends Controller
                 'practice_type' => $practiceType,
                 'finalized' => true,
                 'is_done' => (int) ($round['final_is_done'] ?? 0),
+                'reward_accumulated_count' => $energyService->getAccumulatedCount($userId),
+                'current_energy' => (int) (Auth::user()?->energy ?? 0),
+                'energy_rewarded' => false,
+                'energy_awarded_amount' => 0,
             ]);
         }
 
@@ -411,6 +420,10 @@ class VocabularyPracticeController extends Controller
                 'practice_type' => $practiceType,
                 'finalized' => false,
                 'message' => 'Chưa hoàn thành đủ hai bài luyện tập của lượt học.',
+                'reward_accumulated_count' => $energyService->getAccumulatedCount($userId),
+                'current_energy' => (int) (Auth::user()?->energy ?? 0),
+                'energy_rewarded' => false,
+                'energy_awarded_amount' => 0,
             ]);
         }
 
@@ -438,6 +451,19 @@ class VocabularyPracticeController extends Controller
             'final_is_done' => $finalIsDone ? 1 : 0,
         ]);
 
+        // BE-017.2: Cơ chế tích lũy phục hồi năng lượng
+        // Chỉ tích lũy khi đúng ít nhất 1 trong 2 bài (is_done = 1)
+        if ($finalIsDone) {
+            $reward = $energyService->recordCorrectVocabulary($userId, $vocabulary->vocabulary_id);
+        } else {
+            $reward = [
+                'accumulated_count' => $energyService->getAccumulatedCount($userId),
+                'current_energy' => (int) (Auth::user()?->energy ?? 0),
+                'energy_rewarded' => false,
+                'energy_awarded_amount' => 0,
+            ];
+        }
+
         return response()->json([
             'success' => true,
             'is_correct' => $isCorrect,
@@ -446,6 +472,10 @@ class VocabularyPracticeController extends Controller
             'finalized' => true,
             'is_done' => $finalIsDone ? 1 : 0,
             'learned_at' => $userVocab->learned_at?->toISOString() ?? now()->toISOString(),
+            'reward_accumulated_count' => $reward['accumulated_count'],
+            'current_energy' => $reward['current_energy'],
+            'energy_rewarded' => $reward['energy_rewarded'],
+            'energy_awarded_amount' => $reward['energy_awarded_amount'],
         ]);
     }
 }

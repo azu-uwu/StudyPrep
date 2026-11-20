@@ -4,10 +4,18 @@ use App\Services\TextToSpeechService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
+
+/**
+ * BE-017.2: Tự động phục hồi năng lượng về 5 lúc 00:00 mỗi ngày theo múi giờ Việt Nam.
+ */
+Schedule::command('studyprep:reset-daily-energy')
+    ->dailyAt('00:00')
+    ->timezone('Asia/Ho_Chi_Minh');
 
 Artisan::command('audio:generate-tts {--part= : Chỉ sinh cho Part cụ thể (1, 2, 3, 4)} {--limit=0 : Giới hạn số câu (0 = tất cả)} {--force : Ghi đè file nếu đã tồn tại}', function (TextToSpeechService $tts) {
     $part = $this->option('part') ? (int) $this->option('part') : null;
