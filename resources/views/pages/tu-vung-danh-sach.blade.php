@@ -584,21 +584,18 @@
         </x-slot:actions>
     </x-modal>
 
-    {{-- ===== MODAL XÁC NHẬN XÓA CHỦ ĐỀ CÁ NHÂN ===== --}}
-    <x-modal id="modalDeleteTopic" title="Xóa chủ đề cá nhân" maxWidth="460px">
-        <p style="margin: 0 0 14px; font-size: 15px; color: #334155; line-height: 1.5;">
-            Bạn có chắc chắn muốn xóa chủ đề <strong>"{{ $topic['name'] }}"</strong> không?
+    {{-- ===== MODAL XÁC NHẬN XÓA CHỦ ĐỀ CÁ NHÂN (BE-008.2.3) ===== --}}
+    <x-modal id="modalDeleteTopic" title="Xóa chủ đề?" maxWidth="460px">
+        <p style="margin: 0; font-size: 15px; color: #334155; line-height: 1.6;">
+            Bạn có chắc chắn muốn xóa chủ đề <strong>"{{ $topic['name'] }}"</strong> không? Toàn bộ từ vựng trong chủ đề và tiến độ học liên quan sẽ bị xóa vĩnh viễn. Hành động này không thể hoàn tác.
         </p>
-        <div style="font-size: 13.5px; color: #991B1B; background: #FEF2F2; padding: 12px 14px; border-radius: 12px; border: 1px solid #FEE2E2; line-height: 1.5;">
-            <strong>Lưu ý:</strong> Toàn bộ từ vựng cá nhân và tiến độ học trong chủ đề này sẽ bị gỡ bỏ khỏi tài khoản của bạn.
-        </div>
 
         <x-slot:actions>
             <x-button variant="neutral" data-sp-modal-close>
-                Hủy bỏ
+                Hủy
             </x-button>
-            <x-button variant="danger" id="btnConfirmDeleteTopic" onclick="handleMockDeleteTopic()">
-                Xác nhận xóa
+            <x-button variant="danger" id="btnConfirmDeleteTopic" onclick="executeDeleteTopic()">
+                Xóa chủ đề
             </x-button>
         </x-slot:actions>
     </x-modal>
@@ -1140,15 +1137,71 @@
         });
     }
 
-    function handleMockDeleteTopic() {
-        const modal = document.getElementById('modalDeleteTopic');
-        if (modal) {
-            modal.hidden = true;
-            if (!document.querySelector('.sp-modal:not([hidden])')) {
-                document.body.style.overflow = '';
-            }
+    // C. Thao tác Xóa toàn bộ chủ đề cá nhân (BE-008.2.3)
+    function executeDeleteTopic() {
+        const deleteBtn = document.getElementById('btnConfirmDeleteTopic');
+        if (deleteBtn) {
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = 'Đang xóa...';
         }
-        showToast('Đã xác nhận xóa chủ đề (Mô phỏng UI)');
+
+        const deleteUrl = "{{ route('tu-vung.topics.destroy', $currentTopicId ?? 0) }}";
+
+        fetch(deleteUrl, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            }
+        })
+        .then(async function (res) {
+            const data = await res.json().catch(function () { return {}; });
+            return { status: res.status, ok: res.ok, data: data };
+        })
+        .then(function (result) {
+            if (!result.ok) {
+                throw result;
+            }
+
+            // Đóng modal xác nhận xóa
+            const modal = document.getElementById('modalDeleteTopic');
+            if (modal) {
+                modal.hidden = true;
+                if (!document.querySelector('.sp-modal:not([hidden])')) {
+                    document.body.style.overflow = '';
+                }
+            }
+
+            // Hiển thị Toast thông báo thành công
+            showToast('Đã xóa chủ đề thành công!');
+
+            // Điều hướng về trang Từ vựng
+            const redirectUrl = (result.data && result.data.redirect_url) ? result.data.redirect_url : "{{ route('tu-vung') }}";
+            setTimeout(function () {
+                window.location.href = redirectUrl;
+            }, 650);
+        })
+        .catch(function (err) {
+            if (err.status === 401) {
+                showToast('Vui lòng đăng nhập lại để thực hiện.');
+                if (typeof window.spOpenAuthModal === 'function') {
+                    window.spOpenAuthModal();
+                }
+            } else if (err.status === 403) {
+                showToast(err.data && err.data.message ? err.data.message : 'Bạn không có quyền xóa chủ đề này.');
+            } else if (err.status === 404) {
+                showToast('Chủ đề không tồn tại hoặc đã bị xóa.');
+            } else {
+                showToast(err.data && err.data.message ? err.data.message : 'Có lỗi xảy ra khi xóa chủ đề. Vui lòng thử lại.');
+            }
+        })
+        .finally(function () {
+            if (deleteBtn) {
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = 'Xóa chủ đề';
+            }
+        });
     }
 
     // Đóng dropdown khi click ra ngoài màn hình

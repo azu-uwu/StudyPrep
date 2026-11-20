@@ -206,4 +206,57 @@ class PersonalTopicController extends Controller
 
         return redirect()->back()->with('success', 'Đã xóa các từ vựng được chọn!');
     }
+
+    /**
+     * Xóa chủ đề từ vựng cá nhân của học viên đang đăng nhập (BE-008.2.3).
+     */
+    public function destroy(Request $request, int|string $topic): JsonResponse|RedirectResponse
+    {
+        $user = $request->user();
+
+        if (! $user) {
+            abort(401, 'Vui lòng đăng nhập để thực hiện chức năng này.');
+        }
+
+        if (method_exists($user, 'isLocked') && $user->isLocked()) {
+            abort(403, 'Tài khoản của bạn đã bị khóa.');
+        }
+
+        $topicModel = Topic::findOrFail((int) $topic);
+
+        // Kiểm tra phân quyền: Không cho phép xóa chủ đề hệ thống (user_id === null)
+        if ($topicModel->user_id === null) {
+            abort(403, 'Không thể xóa chủ đề hệ thống.');
+        }
+
+        // Kiểm tra phân quyền: Không cho phép xóa chủ đề của học viên khác
+        $authUserId = (int) ($user->user_id ?? Auth::id());
+        if ((int) $topicModel->user_id !== $authUserId) {
+            abort(403, 'Bạn không có quyền xóa chủ đề này.');
+        }
+
+        DB::transaction(function () use ($topicModel): void {
+            // Khóa bản ghi để bảo đảm an toàn khi xóa
+            $topicToDelete = Topic::where('topic_id', $topicModel->topic_id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($topicToDelete) {
+                // Tận dụng ON DELETE CASCADE của MySQL để tự động xóa vocabularies và user_vocabulary
+                // Và ON DELETE SET NULL cho parent_topic_id để không ảnh hưởng chủ đề con
+                $topicToDelete->delete();
+            }
+        });
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã xóa chủ đề thành công!',
+                'deleted_topic_id' => (int) $topic,
+                'redirect_url' => route('tu-vung'),
+            ]);
+        }
+
+        return redirect()->route('tu-vung')->with('success', 'Đã xóa chủ đề thành công!');
+    }
 }

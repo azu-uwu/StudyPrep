@@ -70,6 +70,7 @@ Route::post('/tu-vung/check-answer', [VocabularyPracticeController::class, 'chec
 Route::post('/tu-vung/chu-de', [PersonalTopicController::class, 'store'])->middleware('auth')->name('tu-vung.topics.store');
 Route::match(['put', 'patch'], '/tu-vung/chu-de/{topic}', [PersonalTopicController::class, 'update'])->middleware('auth')->name('tu-vung.topics.update');
 Route::delete('/tu-vung/chu-de/{topic}/tu-vung', [PersonalTopicController::class, 'bulkDeleteVocabularies'])->middleware('auth')->name('tu-vung.topics.vocabularies.bulk-delete');
+Route::delete('/tu-vung/chu-de/{topic}', [PersonalTopicController::class, 'destroy'])->middleware('auth')->name('tu-vung.topics.destroy');
 Route::get('/tu-vung/{topicId}/chon-tu', [VocabularyPracticeController::class, 'selectWords'])->name('tu-vung.chon-tu');
 Route::get('/tu-vung/{topicId}/flashcard', [VocabularyPracticeController::class, 'flashcard'])->name('tu-vung.flashcard');
 Route::get('/tu-vung/{topicId}', [VocabularyPracticeController::class, 'show'])->name('tu-vung.show');
