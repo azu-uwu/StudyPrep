@@ -65,6 +65,7 @@ Route::view('/thi-thu/giao-dien-thi', 'pages.thi-thu-giao-dien-thi')->name('thi-
 Route::view('/thi-thu/ket-qua', 'pages.thi-thu-ket-qua')->name('thi-thu-ket-qua');
 
 Route::get('/tu-vung', [VocabularyPracticeController::class, 'index'])->name('tu-vung');
+Route::post('/tu-vung/check-answer', [VocabularyPracticeController::class, 'checkAnswer'])->name('tu-vung.check-answer');
 Route::get('/tu-vung/{topicId}/chon-tu', [VocabularyPracticeController::class, 'selectWords'])->name('tu-vung.chon-tu');
 Route::get('/tu-vung/{topicId}/flashcard', [VocabularyPracticeController::class, 'flashcard'])->name('tu-vung.flashcard');
 Route::get('/tu-vung/{topicId}', [VocabularyPracticeController::class, 'show'])->name('tu-vung.show');

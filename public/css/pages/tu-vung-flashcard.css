@@ -660,7 +660,7 @@
     min-width: 200px !important;
 }
 
-/* ===== 6. FEEDBACK BOTTOM BANNER (SLIDE-UP FROM BOTTOM - THAM CHIẾU ẢNH MỚI) ===== */
+/* ===== 6. FEEDBACK BOTTOM BANNER (GIỚI HẠN CHIỀU RỘNG BẰNG THANH TIẾN ĐỘ 680PX) ===== */
 .tv-feedback-drawer {
     position: fixed;
     bottom: 0;
@@ -671,6 +671,9 @@
     transform: translateY(105%);
     opacity: 0;
     transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+    display: flex;
+    justify-content: center;
+    box-sizing: border-box;
 }
 
 .tv-feedback-drawer.is-open {
@@ -680,6 +683,8 @@
 }
 
 .tv-feedback-card {
+    width: 100%;
+    max-width: 680px; /* Khớp chuẩn 680px với thanh tiến độ và container học */
     border-top-left-radius: 24px;
     border-top-right-radius: 24px;
     border-bottom-left-radius: 0;
@@ -688,6 +693,7 @@
     color: #FFFFFF;
     box-shadow: 0 -10px 35px rgba(0, 0, 0, 0.15);
     transition: background-color 0.2s ease;
+    box-sizing: border-box;
 }
 
 .tv-feedback-card.is-correct {
@@ -959,6 +965,7 @@
 @media (max-width: 767.98px) {
     .tv-feedback-drawer {
         left: 0;
+        padding: 0 16px;
     }
 
     .tv-feedback-card {

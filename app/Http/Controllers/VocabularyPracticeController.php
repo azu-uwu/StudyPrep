@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Topic;
+use App\Models\UserVocabulary;
 use App\Models\Vocabulary;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
@@ -30,17 +32,59 @@ class VocabularyPracticeController extends Controller
     }
 
     /**
+     * So sánh câu trả lời của người học với từ vựng chuẩn trong MySQL.
+     * Chuẩn hóa: loại bỏ khoảng trắng thừa, chuyển thành chữ thường, chỉ giữ ký tự chữ cái và số.
+     */
+    private function isAnswerCorrect(string $userAnswer, string $correctWord): bool
+    {
+        $cleanUser = preg_replace('/[^a-z0-9]/', '', mb_strtolower(trim($userAnswer)));
+        $cleanTarget = preg_replace('/[^a-z0-9]/', '', mb_strtolower(trim($correctWord)));
+
+        return $cleanUser !== '' && $cleanUser === $cleanTarget;
+    }
+
+    /**
      * Ánh xạ dữ liệu Eloquent Topic sang định dạng mảng mà View đang dùng.
      *
-     * Giữ nguyên các key mà tu-vung.blade.php, tu-vung-danh-sach.blade.php
-     * và các component đang tham chiếu. Những trường không có trong DB
-     * (thumbnail, cefr_levels, progress) được trả về giá trị mặc định an toàn
-     * để View tự fallback theo logic @if đã có sẵn.
+     * Tiến độ học được tính thực tế từ bảng user_vocabulary:
+     * Số từ có is_done = 1 của người dùng / Tổng số từ trong chủ đề * 100%.
      *
      * @return array<string, mixed>
      */
     private function mapTopicToViewData(Topic $topic): array
     {
+        $totalVocabularies = (int) ($topic->vocabularies_count ?? $topic->vocabularies()->count());
+
+        $completedCount = 0;
+        $practicedCount = 0;
+
+        if (Auth::check() && $totalVocabularies > 0) {
+            $userId = Auth::id();
+
+            $completedCount = UserVocabulary::query()
+                ->where('user_id', $userId)
+                ->where('is_done', 1)
+                ->whereIn('vocabulary_id', function ($query) use ($topic) {
+                    $query->select('vocabulary_id')
+                        ->from('vocabularies')
+                        ->where('topic_id', $topic->topic_id);
+                })
+                ->count();
+
+            $practicedCount = UserVocabulary::query()
+                ->where('user_id', $userId)
+                ->whereIn('vocabulary_id', function ($query) use ($topic) {
+                    $query->select('vocabulary_id')
+                        ->from('vocabularies')
+                        ->where('topic_id', $topic->topic_id);
+                })
+                ->count();
+        }
+
+        $completedPct = $totalVocabularies > 0 ? (int) round(($completedCount / $totalVocabularies) * 100) : 0;
+        $accuracyPct = $practicedCount > 0 ? (int) round(($completedCount / $practicedCount) * 100) : 0;
+        $masteryScore = round(($completedPct / 20), 1);
+
         return [
             'topic_id' => $topic->topic_id,
             'name' => $topic->name,
@@ -51,14 +95,14 @@ class VocabularyPracticeController extends Controller
             'thumbnail_type' => 'badge',
             'thumbnail_label' => mb_strtoupper((string) $topic->name),
             // Số lượng từ: dùng vocabularies_count từ withCount(), hoặc total() nếu đã load
-            'total_vocabularies' => $topic->vocabularies_count ?? $topic->vocabularies->count(),
+            'total_vocabularies' => $totalVocabularies,
             // DB không lưu riêng danh sách cấp độ CEFR theo chủ đề → [] để View ẩn section
             'cefr_levels' => [],
-            // Tiến độ: BE-008 sẽ tính toán thực từ user_vocabulary; giá trị mặc định = 0
+            // Tiến độ: tính từ bảng user_vocabulary của người dùng hiện tại
             'progress' => [
-                'completed_pct' => 0,
-                'mastery_score' => 0.0,
-                'accuracy_pct' => 0,
+                'completed_pct' => $completedPct,
+                'mastery_score' => $masteryScore,
+                'accuracy_pct' => $accuracyPct,
             ],
         ];
     }
@@ -66,19 +110,15 @@ class VocabularyPracticeController extends Controller
     /**
      * Ánh xạ Eloquent Vocabulary sang định dạng mảng mà View, Component và JS đang dùng.
      *
-     * Các key bắt buộc: vocabulary_id, word, meaning_vi, part_of_speech, pronunciation,
-     * example_en, example_vi, cefr_level, status, image_url.
-     *
-     * Lưu ý về cefr_level: DB lưu trường part_of_speech theo format "POS|TOEIC_SCORE"
-     * (ví dụ "Verb|650+"). Đây là mức điểm TOEIC tham khảo, không phải CEFR. Trường này
-     * được trích xuất qua accessor $vocabulary->target_level nhưng KHÔNG được hiển thị
-     * dưới nhãn CEFR vì không tương đương. Trả về '' để View hiển thị badge mặc định B1
-     * hoặc giá trị fallback đã khai báo trong Component.
-     *
      * @return array<string, mixed>
      */
-    private function mapVocabularyToViewData(Vocabulary $vocabulary): array
+    private function mapVocabularyToViewData(Vocabulary $vocabulary, ?UserVocabulary $progress = null): array
     {
+        $status = 'new';
+        if ($progress !== null) {
+            $status = $progress->is_done ? 'mastered' : 'review';
+        }
+
         return [
             'vocabulary_id' => $vocabulary->vocabulary_id,
             'topic_id' => $vocabulary->topic_id,
@@ -88,11 +128,8 @@ class VocabularyPracticeController extends Controller
             'pronunciation' => $vocabulary->pronunciation ?? '',
             'example_en' => $vocabulary->example_en ?? '',
             'example_vi' => $vocabulary->example_vi ?? '',
-            // Không được ánh xạ điểm TOEIC (như '650+') sang CEFR (A1–C2):
-            // Trả về '' để Component và JS dùng fallback 'B1' đã có sẵn.
             'cefr_level' => '',
-            // status = 'new' mặc định cho tất cả. BE-008 sẽ tính từ user_vocabulary.is_done.
-            'status' => 'new',
+            'status' => $status,
             'image_url' => $vocabulary->image_url ?? null,
         ];
     }
@@ -157,9 +194,30 @@ class VocabularyPracticeController extends Controller
                 ->all();
         }
 
+        $stats = [
+            'learned' => 0,
+            'mastered' => 0,
+            'forgotten' => 0,
+            'mastery_score' => 0.0,
+        ];
+
+        if (Auth::check()) {
+            $userId = Auth::id();
+            $learned = UserVocabulary::query()->where('user_id', $userId)->count();
+            $mastered = UserVocabulary::query()->where('user_id', $userId)->where('is_done', 1)->count();
+            $forgotten = UserVocabulary::query()->where('user_id', $userId)->where('is_done', 0)->count();
+            $stats = [
+                'learned' => $learned,
+                'mastered' => $mastered,
+                'forgotten' => $forgotten,
+                'mastery_score' => $learned > 0 ? round(($mastered / $learned) * 5.0, 1) : 0.0,
+            ];
+        }
+
         return view('pages.tu-vung', [
             'popularTopics' => $popularTopics,
             'myTopics' => $myTopics,
+            'stats' => $stats,
         ]);
     }
 
@@ -174,8 +232,20 @@ class VocabularyPracticeController extends Controller
         $filterCounts = ['all' => 0, 'mastered' => 0, 'review' => 0, 'skipped' => 0];
 
         if ($topic !== null) {
-            $vocabModels = $topic->vocabularies()->orderBy('vocabulary_id')->get();
-            $vocabularies = $vocabModels->map(fn (Vocabulary $v): array => $this->mapVocabularyToViewData($v))->values()->all();
+            $vocabQuery = $topic->vocabularies()->orderBy('vocabulary_id');
+            if (Auth::check()) {
+                $vocabQuery->with(['userProgress' => function ($q) {
+                    $q->where('user_id', Auth::id());
+                }]);
+            }
+            $vocabModels = $vocabQuery->get();
+
+            $vocabularies = $vocabModels->map(function (Vocabulary $v): array {
+                $progress = Auth::check() ? $v->userProgress->first() : null;
+
+                return $this->mapVocabularyToViewData($v, $progress);
+            })->values()->all();
+
             $filterCounts = $this->calculateFilterCounts($vocabularies);
         }
 
@@ -245,6 +315,137 @@ class VocabularyPracticeController extends Controller
             'topic' => $topic !== null ? $this->mapTopicToViewData($topic) : null,
             'vocabularies' => $vocabularies,
             'allVocabularies' => $allVocabularies,
+        ]);
+    }
+
+    /**
+     * Tiếp nhận câu trả lời luyện tập Flashcard, kiểm tra đúng/sai và tổng hợp kết quả 2 bài vào CSDL (BE-008.1).
+     *
+     * Quy tắc mới:
+     * - Mỗi từ có hai bài luyện tập liên tiếp: (1) Nghe và viết lại, (2) Điền từ còn trống.
+     * - Chỉ chốt kết quả vào CSDL sau khi đã hoàn thành cả hai bài luyện tập của lượt học.
+     * - Tổng hợp theo phép OR: Đúng ít nhất 1 trong 2 bài thì is_done = 1; sai cả 2 bài thì is_done = 0.
+     * - Lượt học mới tính lại từ đầu, không lấy kết quả cũ của lượt trước.
+     * - Cập nhật bản ghi cũ nếu đã tồn tại theo cặp (user_id, vocabulary_id); không tạo bản ghi trùng.
+     */
+    public function checkAnswer(Request $request): JsonResponse
+    {
+        if (! Auth::check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Vui lòng đăng nhập để lưu kết quả luyện tập.',
+            ], 401);
+        }
+
+        $validated = $request->validate([
+            'vocabulary_id' => ['required', 'integer'],
+            'practice_type' => ['required', 'string', 'in:listen,listen_write,fill,fill_blank'],
+            'answer' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $vocabulary = Vocabulary::query()
+            ->with('topic')
+            ->find($validated['vocabulary_id']);
+
+        if ($vocabulary === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Từ vựng không tồn tại.',
+            ], 404);
+        }
+
+        $topic = $vocabulary->topic;
+        $userId = Auth::id();
+
+        if ($topic !== null && $topic->user_id !== null && (int) $topic->user_id !== (int) $userId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền truy cập từ vựng này.',
+            ], 403);
+        }
+
+        $userAnswer = (string) ($validated['answer'] ?? '');
+        $isCorrect = $this->isAnswerCorrect($userAnswer, $vocabulary->word);
+        $practiceType = $validated['practice_type'];
+        $sessionKey = "flashcard_practice.{$userId}.{$vocabulary->vocabulary_id}";
+
+        // Bài 1: Nghe và viết lại (listen / listen_write)
+        if (in_array($practiceType, ['listen', 'listen_write'], true)) {
+            // Khởi tạo trạng thái lượt học mới cho từ này trong Session
+            session()->put($sessionKey, [
+                'listen_correct' => $isCorrect,
+                'listen_answered_at' => now()->timestamp,
+                'finalized' => false,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'is_correct' => $isCorrect,
+                'vocabulary_id' => $vocabulary->vocabulary_id,
+                'practice_type' => $practiceType,
+                'finalized' => false,
+            ]);
+        }
+
+        // Bài 2: Điền từ còn trống (fill / fill_blank)
+        $round = session()->get($sessionKey);
+
+        // Trường hợp request trùng khi lượt học này đã được chốt xong
+        if (is_array($round) && ! empty($round['finalized'])) {
+            return response()->json([
+                'success' => true,
+                'is_correct' => $isCorrect,
+                'vocabulary_id' => $vocabulary->vocabulary_id,
+                'practice_type' => $practiceType,
+                'finalized' => true,
+                'is_done' => (int) ($round['final_is_done'] ?? 0),
+            ]);
+        }
+
+        // Kiểm tra xem lượt học hiện tại đã có kết quả Bài 1 (Nghe) hay chưa
+        if (! is_array($round) || ! array_key_exists('listen_correct', $round)) {
+            return response()->json([
+                'success' => true,
+                'is_correct' => $isCorrect,
+                'vocabulary_id' => $vocabulary->vocabulary_id,
+                'practice_type' => $practiceType,
+                'finalized' => false,
+                'message' => 'Chưa hoàn thành đủ hai bài luyện tập của lượt học.',
+            ]);
+        }
+
+        // Tổng hợp kết quả: Đúng ít nhất 1 bài thì is_done = 1; sai cả hai thì is_done = 0
+        $listenCorrect = (bool) $round['listen_correct'];
+        $fillCorrect = $isCorrect;
+        $finalIsDone = $listenCorrect || $fillCorrect;
+
+        $userVocab = UserVocabulary::updateOrCreate(
+            [
+                'user_id' => $userId,
+                'vocabulary_id' => $vocabulary->vocabulary_id,
+            ],
+            [
+                'is_done' => $finalIsDone ? 1 : 0,
+                'learned_at' => now(),
+            ]
+        );
+
+        // Đánh dấu đã chốt trong Session cho lượt học này để ngăn request trùng
+        session()->put($sessionKey, [
+            'listen_correct' => $listenCorrect,
+            'fill_correct' => $fillCorrect,
+            'finalized' => true,
+            'final_is_done' => $finalIsDone ? 1 : 0,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'is_correct' => $isCorrect,
+            'vocabulary_id' => $vocabulary->vocabulary_id,
+            'practice_type' => $practiceType,
+            'finalized' => true,
+            'is_done' => $finalIsDone ? 1 : 0,
+            'learned_at' => $userVocab->learned_at?->toISOString() ?? now()->toISOString(),
         ]);
     }
 }

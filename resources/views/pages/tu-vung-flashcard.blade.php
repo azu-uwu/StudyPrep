@@ -419,6 +419,7 @@
     let currentIndex = 0;
     let isFlipped = false;
     let currentScreen = 'flashcard'; // 'flashcard' | 'listenWrite' | 'fillBlank' | 'completion'
+    let isSubmitting = false; // Tránh gửi request trùng lặp khi người dùng click/Enter liên tục
 
     // Trạng thái cho màn hình điền từ (Screen 3):
     // Người dùng nhập TOÀN BỘ từ tiếng Anh vào input thật, các ô hiển thị theo ký tự người dùng gõ
@@ -620,19 +621,92 @@
         }
     }
 
-    function checkListenAnswer() {
+    // Hàm gửi đáp án lên Backend kiểm tra và cập nhật CSDL (BE-008.1)
+    async function submitPracticeAnswer(practiceType, rawAnswer) {
+        if (isSubmitting) return;
+
         const drawer = document.getElementById('feedbackDrawer');
-        if (drawer && drawer.classList.contains('is-open')) return; // Ngăn chặn gửi lại khi banner đang mở
+        if (drawer && drawer.classList.contains('is-open')) return;
+
+        const vocab = flashcardList[currentIndex];
+        if (!vocab) return;
+
+        const answer = (rawAnswer || '').trim();
+        if (!answer) return;
+
+        isSubmitting = true;
+
+        // Vô hiệu hóa nút Kiểm tra trong khi đang xử lý để ngăn gửi trùng
+        const btnCheckListen = document.getElementById('btnCheckListen');
+        const btnCheckFill = document.getElementById('btnCheckFill');
+        if (btnCheckListen) btnCheckListen.disabled = true;
+        if (btnCheckFill) btnCheckFill.disabled = true;
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+            || '{{ csrf_token() }}';
+
+        try {
+            const response = await fetch('{{ route("tu-vung.check-answer") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({
+                    vocabulary_id: vocab.vocabulary_id,
+                    practice_type: practiceType,
+                    answer: answer
+                })
+            });
+
+            if (response.status === 401) {
+                if (typeof window.spOpenAuthModal === 'function') {
+                    window.spOpenAuthModal();
+                } else {
+                    alert('Vui lòng đăng nhập để lưu kết quả luyện tập.');
+                }
+                return;
+            }
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                console.error('Error submitting practice answer:', errData);
+                alert(errData.message || 'Đã có lỗi xảy ra khi kiểm tra đáp án.');
+                return;
+            }
+
+            const data = await response.json();
+            showFeedbackResult(Boolean(data.is_correct), vocab);
+        } catch (error) {
+            console.error('Network error checking answer:', error);
+            alert('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.');
+        } finally {
+            isSubmitting = false;
+
+            // Nếu Feedback Drawer không mở (ví dụ lỗi mạng), kích hoạt lại nút
+            const isDrawerOpen = drawer && drawer.classList.contains('is-open');
+            if (!isDrawerOpen) {
+                if (practiceType === 'listen') {
+                    handleListenInputChange();
+                } else if (practiceType === 'fill') {
+                    const fillInput = document.getElementById('fillHiddenInput');
+                    if (fillInput) handleFillInputChange(fillInput.value);
+                }
+            }
+        }
+    }
+
+    function checkListenAnswer() {
+        if (isSubmitting) return;
+
+        const drawer = document.getElementById('feedbackDrawer');
+        if (drawer && drawer.classList.contains('is-open')) return;
 
         const input = document.getElementById('listenInput');
         if (!input || !input.value.trim()) return;
 
-        const vocab = flashcardList[currentIndex];
-        const userVal = cleanInputString(input.value);
-        const correctVal = cleanInputString(vocab.word);
-        const isCorrect = userVal === correctVal;
-
-        showFeedbackResult(isCorrect, vocab);
+        submitPracticeAnswer('listen', input.value);
     }
 
     // =========================================================================
@@ -787,19 +861,15 @@
     }
 
     function checkFillAnswer() {
+        if (isSubmitting) return;
+
         const drawer = document.getElementById('feedbackDrawer');
-        if (drawer && drawer.classList.contains('is-open')) return; // Ngăn chặn gửi lại khi banner đang mở
+        if (drawer && drawer.classList.contains('is-open')) return;
 
         const input = document.getElementById('fillHiddenInput');
         if (!input || !input.value.trim()) return;
 
-        // Kiểm tra TOÀN BỘ từ người dùng đã nhập so với từ vựng gốc
-        const vocab = flashcardList[currentIndex];
-        const userVal = cleanInputString(input.value);
-        const correctVal = cleanInputString(vocab.word);
-        const isCorrect = userVal === correctVal;
-
-        showFeedbackResult(isCorrect, vocab);
+        submitPracticeAnswer('fill', input.value);
     }
 
     // =========================================================================
@@ -964,6 +1034,7 @@
                 // Nếu banner đang mở -> nhấn Enter sẽ chuyển tiếp
                 handleFeedbackContinue();
             } else {
+                if (isSubmitting) return; // Tránh gửi request trùng khi nhấn Enter liên tục
                 // Nếu banner chưa mở -> nhấn Enter gọi chung hàm kiểm tra đáp án
                 if (type === 'listen') {
                     checkListenAnswer();

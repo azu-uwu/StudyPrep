@@ -44,7 +44,7 @@
                 </div>
 
                 <div class="tv-stat-main-number-wrap">
-                    <span class="tv-stat-main-number" id="statLearnedCount">4</span>
+                    <span class="tv-stat-main-number" id="statLearnedCount">{{ $stats['learned'] ?? 0 }}</span>
                     <span class="tv-stat-main-label">ĐÃ HỌC</span>
                 </div>
             </div>
@@ -54,14 +54,14 @@
             <div class="tv-stat-main-bottom">
                 <div class="tv-stat-sub-col">
                     <span class="tv-stat-sub-label tv-stat-sub-label--green">NẮM VỮNG</span>
-                    <span class="tv-stat-sub-value--green" id="statMasteredCount">3</span>
+                    <span class="tv-stat-sub-value--green" id="statMasteredCount">{{ $stats['mastered'] ?? 0 }}</span>
                 </div>
 
                 <div class="tv-stat-v-divider"></div>
 
                 <div class="tv-stat-sub-col">
                     <span class="tv-stat-sub-label tv-stat-sub-label--red">DỄ QUÊN</span>
-                    <span class="tv-stat-sub-value--red" id="statForgottenCount">1</span>
+                    <span class="tv-stat-sub-value--red" id="statForgottenCount">{{ $stats['forgotten'] ?? 0 }}</span>
                 </div>
             </div>
         </div>
@@ -103,7 +103,7 @@
                 </svg>
             </div>
             <div class="tv-stat-small-content">
-                <span class="tv-stat-small-number tv-stat-small-number--blue" id="statMasteryScore">4.4</span>
+                <span class="tv-stat-small-number tv-stat-small-number--blue" id="statMasteryScore">{{ number_format($stats['mastery_score'] ?? 0, 1) }}</span>
                 <span class="tv-stat-small-label">ĐỘ THÀNH THẠO</span>
             </div>
         </div>
@@ -126,7 +126,7 @@
     </div>
 
     <div class="tv-review-body">
-        <h3 class="tv-review-title">Ôn lại 1 từ vựng dễ quên</h3>
+        <h3 class="tv-review-title">Ôn lại {{ $stats['forgotten'] ?? 0 }} từ vựng dễ quên</h3>
         <x-button variant="neutral" size="small" style="color: #0284C7; font-weight: 800;" data-require-auth>
             → BẮT ĐẦU
         </x-button>
