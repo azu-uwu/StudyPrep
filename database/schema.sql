@@ -514,3 +514,8 @@ ADD COLUMN `image_url` varchar(500) DEFAULT NULL AFTER `example_vi`;
 
 -- Thêm cột remember_token cho bảng Users tính năng ghi nhớ đăng nhập
 ALTER TABLE Users ADD COLUMN remember_token VARCHAR(100) NULL;
+
+
+-- update 3
+ALTER TABLE topics
+MODIFY COLUMN user_id BIGINT NULL DEFAULT NULL;
