@@ -74,6 +74,7 @@ Route::match(['put', 'patch'], '/tu-vung/chu-de/{topic}/tu-vung/{vocabulary}', [
 Route::delete('/tu-vung/chu-de/{topic}/tu-vung/{vocabulary}', [PersonalTopicController::class, 'destroyVocabulary'])->middleware('auth')->name('tu-vung.topics.vocabularies.destroy');
 Route::delete('/tu-vung/chu-de/{topic}/tu-vung', [PersonalTopicController::class, 'bulkDeleteVocabularies'])->middleware('auth')->name('tu-vung.topics.vocabularies.bulk-delete');
 Route::delete('/tu-vung/chu-de/{topic}', [PersonalTopicController::class, 'destroy'])->middleware('auth')->name('tu-vung.topics.destroy');
+Route::patch('/tu-vung/tu/{vocabulary}/trang-thai', [VocabularyPracticeController::class, 'updateVocabularyStatus'])->middleware('auth')->name('tu-vung.vocabularies.update-status');
 Route::get('/tu-vung/{topicId}/chon-tu', [VocabularyPracticeController::class, 'selectWords'])->name('tu-vung.chon-tu');
 Route::get('/tu-vung/{topicId}/flashcard', [VocabularyPracticeController::class, 'flashcard'])->name('tu-vung.flashcard');
 Route::get('/tu-vung/{topicId}', [VocabularyPracticeController::class, 'show'])->name('tu-vung.show');

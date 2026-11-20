@@ -478,4 +478,86 @@ class VocabularyPracticeController extends Controller
             'energy_awarded_amount' => $reward['energy_awarded_amount'],
         ]);
     }
+
+    /**
+     * Đánh dấu trạng thái học thủ công cho từ vựng (Nắm vững / Dễ quên).
+     *
+     * Quy tắc nghiệp vụ:
+     * - mastered: user_vocabulary.is_done = 1
+     * - review: user_vocabulary.is_done = 0
+     * - Tạo mới hoặc cập nhật bản ghi duy nhất theo cặp (user_id, vocabulary_id).
+     * - learned_at: để NULL nếu tạo bản ghi mới; giữ nguyên nếu cập nhật; KHÔNG gán now().
+     * - Tách biệt hoàn toàn: KHÔNG gọi EnergyService và KHÔNG cộng lượt tích lũy năng lượng của BE-017.2.
+     */
+    public function updateVocabularyStatus(Request $request, string|int $vocabulary): JsonResponse
+    {
+        if (! Auth::check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Vui lòng đăng nhập để thực hiện chức năng này.',
+            ], 401);
+        }
+
+        $validated = $request->validate([
+            'status' => ['required', 'string', 'in:mastered,review'],
+            'vocabulary_id' => ['nullable', 'integer'],
+        ]);
+
+        $vocabModel = Vocabulary::query()
+            ->with('topic')
+            ->find((int) $vocabulary);
+
+        if ($vocabModel === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Từ vựng không tồn tại.',
+            ], 404);
+        }
+
+        $userId = (int) Auth::id();
+        $topic = $vocabModel->topic;
+
+        // Phân quyền: Cho phép từ thuộc chủ đề hệ thống (user_id IS NULL) hoặc chủ đề cá nhân của chính học viên.
+        // Từ chối nếu từ thuộc chủ đề cá nhân của người khác.
+        if ($topic !== null && $topic->user_id !== null && (int) $topic->user_id !== $userId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền thao tác trên từ vựng này.',
+            ], 403);
+        }
+
+        $isDone = ($validated['status'] === 'mastered') ? 1 : 0;
+
+        $userVocab = UserVocabulary::query()
+            ->where('user_id', $userId)
+            ->where('vocabulary_id', $vocabModel->vocabulary_id)
+            ->first();
+
+        if ($userVocab === null) {
+            $userVocab = UserVocabulary::create([
+                'user_id' => $userId,
+                'vocabulary_id' => $vocabModel->vocabulary_id,
+                'is_done' => $isDone,
+                'learned_at' => null,
+            ]);
+        } else {
+            $userVocab->is_done = $isDone;
+            $userVocab->save();
+        }
+
+        // Tính lại tiến độ của chủ đề hiện tại để frontend cập nhật đồng bộ (nếu có topic)
+        $progress = null;
+        if ($topic !== null) {
+            $progress = $this->mapTopicToViewData($topic)['progress'] ?? null;
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $isDone === 1 ? 'Đã đánh dấu từ vựng là Nắm vững.' : 'Đã đánh dấu từ vựng là Dễ quên.',
+            'vocabulary_id' => $vocabModel->vocabulary_id,
+            'status' => $validated['status'],
+            'is_done' => $isDone,
+            'progress' => $progress,
+        ]);
+    }
 }

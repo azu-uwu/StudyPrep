@@ -236,21 +236,6 @@
                     <span>Dễ quên</span>
                     <span class="tv-tab-count-badge" id="count-review">{{ $filterCounts['review'] ?? 0 }}</span>
                 </button>
-
-                {{-- Tab 4: Bỏ qua --}}
-                <button type="button"
-                        class="tv-filter-tab-btn"
-                        role="tab"
-                        aria-selected="false"
-                        data-filter="skipped"
-                        onclick="setFilterTab('skipped', this)">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                    <span>Bỏ qua</span>
-                    <span class="tv-tab-count-badge" id="count-skipped">{{ $filterCounts['skipped'] ?? 0 }}</span>
-                </button>
             </div>
         </div>
 
@@ -724,36 +709,142 @@
         }
     }
 
-    // Đánh dấu trạng thái học từ vựng (Nắm vững / Dễ quên / Bỏ qua)
+    // Cập nhật chỉ số tiến độ hiển thị trên giao diện sau khi thay đổi trạng thái
+    function updateProgressUi(progress) {
+        if (!progress) return;
+
+        // 1. Hoàn thành (%)
+        if (typeof progress.completed_pct !== 'undefined') {
+            const fillBar = document.querySelector('.tv-prow-bar-fill');
+            const barWrap = document.querySelector('.tv-prow-bar-wrap');
+            const pValue = barWrap ? barWrap.nextElementSibling : null;
+
+            if (fillBar) fillBar.style.width = progress.completed_pct + '%';
+            if (barWrap) barWrap.setAttribute('aria-valuenow', progress.completed_pct);
+            if (pValue) pValue.textContent = progress.completed_pct + '%';
+        }
+
+        // 2. Độ thành thạo (score & các vạch 1..5)
+        if (typeof progress.mastery_score !== 'undefined') {
+            const scoreNum = Number(progress.mastery_score);
+            const indicator = document.querySelector('.tv-mastery-indicator');
+            const scoreEl = document.querySelector('.tv-mastery-score');
+
+            if (indicator) {
+                indicator.setAttribute('title', 'Độ thành thạo: ' + scoreNum.toFixed(1));
+                for (let i = 1; i <= 5; i++) {
+                    const bar = indicator.querySelector('.tv-mastery-bar--' + i);
+                    if (bar) {
+                        if (scoreNum >= i) {
+                            bar.classList.add('is-active');
+                        } else {
+                            bar.classList.remove('is-active');
+                        }
+                    }
+                }
+            }
+            if (scoreEl) {
+                scoreEl.textContent = scoreNum.toFixed(1);
+            }
+        }
+
+        // 3. Tỉ lệ đúng (%)
+        if (typeof progress.accuracy_pct !== 'undefined') {
+            const accEl = document.querySelector('.tv-accuracy-wrap .tv-prow-value');
+            if (accEl) {
+                accEl.textContent = progress.accuracy_pct + '%';
+            }
+        }
+    }
+
+    // Đánh dấu trạng thái học từ vựng (Nắm vững / Dễ quên)
     function markVocabStatus(vocabId, newStatus) {
         const card = document.getElementById('vocab-card-' + vocabId);
-        if (card) {
-            card.setAttribute('data-status', newStatus);
-            // Đóng menu
-            const menu = document.getElementById('vocabMenu-' + vocabId);
-            if (menu) menu.classList.remove('show');
+        if (!card) return;
 
-            // Cập nhật lại số lượng trên các tab
+        // Đóng menu 3 chấm ngay lập tức
+        const menu = document.getElementById('vocabMenu-' + vocabId);
+        if (menu) menu.classList.remove('show');
+
+        // Tránh click trùng lặp khi đang xử lý
+        if (card.dataset.isUpdating === 'true') return;
+        card.dataset.isUpdating = 'true';
+
+        fetch(`/tu-vung/tu/${vocabId}/trang-thai`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                vocabulary_id: vocabId,
+                status: newStatus
+            })
+        })
+        .then(async function (res) {
+            const data = await res.json().catch(function () { return {}; });
+
+            if (!res.ok || !data.success) {
+                if (res.status === 401) {
+                    showToast('Vui lòng đăng nhập để thực hiện chức năng này.');
+                } else if (res.status === 403) {
+                    showToast(data.message || 'Bạn không có quyền thao tác trên từ vựng này.');
+                } else if (res.status === 422) {
+                    showToast(data.message || 'Trạng thái không hợp lệ.');
+                } else {
+                    showToast(data.message || 'Có lỗi xảy ra khi cập nhật trạng thái.');
+                }
+                return;
+            }
+
+            // 2. Chỉ sau khi Backend xác nhận thành công mới cập nhật thuộc tính data-status của thẻ
+            card.setAttribute('data-status', newStatus);
+
+            if (typeof vocabMap !== 'undefined' && vocabMap[vocabId]) {
+                vocabMap[vocabId].status = newStatus;
+            }
+            try {
+                const rawVocab = card.getAttribute('data-vocab');
+                if (rawVocab) {
+                    const parsed = JSON.parse(rawVocab);
+                    parsed.status = newStatus;
+                    card.setAttribute('data-vocab', JSON.stringify(parsed));
+                }
+            } catch (e) {}
+
+            // 3. Gọi recalculateTabCounts() để cập nhật badge các tab
             recalculateTabCounts();
 
-            // Nếu đang ở tab filter khác, chạy lại filter
+            // 4. Nếu đang lọc tab, cập nhật hiển thị để từ được chuyển đúng nhóm
             if (currentFilter !== 'all') {
-                const activeTab = document.querySelector('.tv-filter-tab-btn.is-active');
+                const activeTab = document.querySelector(`.tv-filter-tab-btn[data-filter="${currentFilter}"]`) || document.querySelector('.tv-filter-tab-btn.is-active');
                 setFilterTab(currentFilter, activeTab);
             }
 
-            const statusNames = {
-                'mastered': 'Đã chuyển vào mục: Nắm vững',
-                'review': 'Đã chuyển vào mục: Dễ quên',
-                'skipped': 'Đã chuyển vào mục: Bỏ qua'
-            };
-            showToast(statusNames[newStatus] || 'Đã cập nhật trạng thái');
-        }
+            // 5. Cập nhật chỉ số tiến độ hiển thị
+            if (data.progress) {
+                updateProgressUi(data.progress);
+            }
+
+            // 6. Hiển thị Toast
+            if (newStatus === 'mastered') {
+                showToast('Đã đánh dấu từ vựng là Nắm vững.');
+            } else if (newStatus === 'review') {
+                showToast('Đã đánh dấu từ vựng là Dễ quên.');
+            }
+        })
+        .catch(function () {
+            showToast('Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
+        })
+        .finally(function () {
+            delete card.dataset.isUpdating;
+        });
     }
 
     function recalculateTabCounts() {
         const cards = document.querySelectorAll('.tv-vocab-card');
-        let counts = { all: cards.length, mastered: 0, review: 0, skipped: 0 };
+        let counts = { all: cards.length, mastered: 0, review: 0 };
 
         cards.forEach(card => {
             const status = card.getAttribute('data-status') || 'new';
@@ -765,12 +856,10 @@
         const cAll = document.getElementById('count-all');
         const cMastered = document.getElementById('count-mastered');
         const cReview = document.getElementById('count-review');
-        const cSkipped = document.getElementById('count-skipped');
 
         if (cAll) cAll.textContent = counts.all;
         if (cMastered) cMastered.textContent = counts.mastered;
         if (cReview) cReview.textContent = counts.review;
-        if (cSkipped) cSkipped.textContent = counts.skipped;
     }
 
     // 5. Quản lý Sắp xếp danh sách (Sort Dropdown)
@@ -1807,10 +1896,6 @@
                             <button type="button" class="tv-vocab-dropdown-item" onclick="markVocabStatus('${vocab.vocabulary_id}', 'review')">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
                                 Đánh dấu Dễ quên
-                            </button>
-                            <button type="button" class="tv-vocab-dropdown-item" onclick="markVocabStatus('${vocab.vocabulary_id}', 'skipped')">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                Bỏ qua từ này
                             </button>
                         </div>
                     </div>
