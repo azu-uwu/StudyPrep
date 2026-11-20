@@ -1174,4 +1174,106 @@ class QuestionControllerTest extends TestCase
         $this->assertStringContainsString('technology makes life easier', (string) $parsed[6]['content']);
         $this->assertStringContainsString('transformed modern life', (string) $parsed[6]['explanation']);
     }
+
+    public function test_question_type_auto_resolves_per_skill_and_assign_auto_activates_draft_or_returns_error_on_mismatch(): void
+    {
+        if (! Schema::hasTable('test_form_question')) {
+            Schema::create('test_form_question', function (Blueprint $table): void {
+                $table->unsignedBigInteger('test_form_id');
+                $table->unsignedBigInteger('question_id');
+                $table->integer('sequence_no');
+                $table->decimal('point', 6, 2)->default(1);
+                $table->primary(['test_form_id', 'question_id']);
+            });
+        }
+
+        $admin = User::factory()->admin()->create();
+        app(TestFormService::class)->ensureStandardSectionsExist();
+        QuestionType::create(['question_type_id' => 1, 'name' => 'Multiple Choice', 'response_mode' => 'SINGLE_CHOICE']);
+
+        // 1. Tạo câu Writing & Speaking -> tự động map đúng question_type_id (không phải Multiple Choice)
+        $wrt1 = ExamSection::where('code', 'WRITING_T1')->firstOrFail();
+        $spk1 = ExamSection::where('code', 'SPK_T1')->firstOrFail();
+
+        $this->actingAs($admin)->post(route('admin.questions.store'), [
+            'section_id' => $wrt1->section_id,
+            'content' => 'Write a sentence using coffee / morning.',
+            'action_type' => 'draft',
+        ])->assertRedirect(route('admin.questions.index'));
+
+        $this->actingAs($admin)->post(route('admin.questions.store'), [
+            'section_id' => $spk1->section_id,
+            'content' => 'Read the museum announcement aloud.',
+            'action_type' => 'draft',
+        ])->assertRedirect(route('admin.questions.index'));
+
+        $wrtQ = Question::with('questionType')->where('section_id', $wrt1->section_id)->firstOrFail();
+        $spkQ = Question::with('questionType')->where('section_id', $spk1->section_id)->firstOrFail();
+
+        $this->assertEquals('Written Response', $wrtQ->questionType->name);
+        $this->assertEquals('Speaking Response', $spkQ->questionType->name);
+        $this->assertEquals('DRAFT', $wrtQ->status);
+
+        // 2. Tạo đề TOEIC Writing
+        $wrtTest = app(TestFormService::class)->create([
+            'title' => 'TOEIC Writing Sync Test',
+            'exam_type' => TestForm::EXAM_TYPE_WRITING,
+        ]);
+
+        // Gắn câu Speaking vào đề Writing -> phải báo lỗi (session error), giữ nguyên URL bộ lọc
+        $filterUrl = route('admin.questions.index', ['skill' => 'SPK', 'status' => 'DRAFT']);
+        $mismatchRes = $this->actingAs($admin)->from($filterUrl)->post(route('admin.questions.bulk-action'), [
+            'action' => 'assign',
+            'test_id' => $wrtTest->test_form_id,
+            'question_ids' => [$spkQ->question_id],
+            'auto_activate_drafts' => '1',
+        ]);
+        $mismatchRes->assertRedirect($filterUrl);
+        $mismatchRes->assertSessionHas('error');
+
+        // Gắn câu Writing DRAFT vào đề Writing -> thành công & tự động duyệt sang ACTIVE
+        $wrtFilterUrl = route('admin.questions.index', ['skill' => 'WRT']);
+        $okRes = $this->actingAs($admin)->from($wrtFilterUrl)->post(route('admin.questions.bulk-action'), [
+            'action' => 'assign',
+            'test_id' => $wrtTest->test_form_id,
+            'question_ids' => [$wrtQ->question_id],
+            'auto_activate_drafts' => '1',
+        ]);
+        $okRes->assertRedirect($wrtFilterUrl);
+        $okRes->assertSessionHas('success');
+        $this->assertEquals('ACTIVE', $wrtQ->fresh()->status);
+        $this->assertEquals(1, $wrtTest->questions()->count());
+    }
+
+    public function test_admin_can_search_questions_by_transcript(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $skill = Skill::create(['skill_id' => 1, 'code' => 'LC', 'skill_name' => 'Listening']);
+        $section = ExamSection::create(['section_id' => 3, 'skill_id' => $skill->skill_id, 'code' => 'PART3', 'name' => 'Part 3', 'sequence_no' => 3]);
+        QuestionType::create(['question_type_id' => 3, 'name' => 'Audio Listening', 'response_mode' => 'SINGLE_CHOICE']);
+
+        $qSet = QuestionSet::create([
+            'title' => 'Office Printer Conversation',
+            'transcript' => 'W: Excuse me, the quarterly budget binder is missing from room 402.',
+            'media_type' => 'AUDIO',
+        ]);
+
+        Question::create([
+            'section_id' => $section->section_id,
+            'question_type_id' => 3,
+            'question_set_id' => $qSet->question_set_id,
+            'content' => 'What are the speakers discussing?',
+            'difficulty' => 'MEDIUM',
+            'points' => 1.0,
+            'status' => 'ACTIVE',
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.questions.index', [
+            'search' => 'quarterly budget binder',
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('What are the speakers discussing?');
+        $response->assertDontSee('Bộ lọc nâng cao');
+    }
 }

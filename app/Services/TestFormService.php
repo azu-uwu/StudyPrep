@@ -97,7 +97,7 @@ class TestFormService
         $query = TestForm::query()
             ->with([
                 'blueprint',
-                'questions' => fn ($q) => $q->select('questions.question_id', 'questions.section_id', 'questions.status')
+                'questions' => fn ($q) => $q->select('questions.question_id', 'questions.section_id', 'questions.status', 'questions.content')
                     ->with('section:section_id,code'),
             ]);
 
@@ -273,13 +273,17 @@ class TestFormService
      * - Chặn câu hỏi làm vượt quá số lượng tối đa của Part hoặc tổng chỉ tiêu đề.
      *
      * @param  array<int, int|string>  $questionIds
-     * @return array{attached: int, skipped: int, rejected_skill: int, rejected_limit: int}
+     * @return array{attached: int, skipped: int, rejected_skill: int, rejected_limit: int, activated: int}
      */
-    public function attachQuestions(TestForm $testForm, array $questionIds, ?int $preferredSequenceNo = null): array
-    {
+    public function attachQuestions(
+        TestForm $testForm,
+        array $questionIds,
+        ?int $preferredSequenceNo = null,
+        bool $autoActivateDrafts = true
+    ): array {
         $cleanIds = array_values(array_unique(array_filter(array_map('intval', $questionIds), fn (int $id): bool => $id > 0)));
         if (empty($cleanIds)) {
-            return ['attached' => 0, 'skipped' => 0, 'rejected_skill' => 0, 'rejected_limit' => 0];
+            return ['attached' => 0, 'skipped' => 0, 'rejected_skill' => 0, 'rejected_limit' => 0, 'activated' => 0];
         }
 
         $testForm->loadMissing('blueprint');
@@ -294,10 +298,10 @@ class TestFormService
             ->keyBy('question_id');
 
         if ($candidates->isEmpty()) {
-            return ['attached' => 0, 'skipped' => 0, 'rejected_skill' => 0, 'rejected_limit' => 0];
+            return ['attached' => 0, 'skipped' => 0, 'rejected_skill' => 0, 'rejected_limit' => 0, 'activated' => 0];
         }
 
-        return DB::transaction(function () use ($testForm, $cleanIds, $candidates, $partTargets, $totalTarget, $preferredSequenceNo): array {
+        return DB::transaction(function () use ($testForm, $cleanIds, $candidates, $partTargets, $totalTarget, $preferredSequenceNo, $autoActivateDrafts): array {
             $existingRows = DB::table('test_form_question')
                 ->where('test_form_id', $testForm->test_form_id)
                 ->get(['question_id', 'sequence_no']);
@@ -314,6 +318,10 @@ class TestFormService
                     ->get();
 
                 foreach ($existingQuestions as $eq) {
+                    if (strtoupper((string) $eq->status) === Question::STATUS_ARCHIVED) {
+                        continue;
+                    }
+
                     $code = strtoupper((string) ($eq->section?->code ?? ''));
                     if (array_key_exists($code, $partTargets)) {
                         $currentPartCounts[$code] = ($currentPartCounts[$code] ?? 0) + 1;
@@ -370,8 +378,17 @@ class TestFormService
                 $existingLookup[$qId] = true;
             }
 
+            $activatedCount = 0;
             if (! empty($rows)) {
                 DB::table('test_form_question')->insert($rows);
+
+                if ($autoActivateDrafts) {
+                    $attachedIds = array_column($rows, 'question_id');
+                    $activatedCount = Question::query()
+                        ->whereIn('question_id', $attachedIds)
+                        ->where('status', Question::STATUS_DRAFT)
+                        ->update(['status' => Question::STATUS_ACTIVE]);
+                }
             }
 
             return [
@@ -379,6 +396,7 @@ class TestFormService
                 'skipped' => $skippedDuplicate,
                 'rejected_skill' => $rejectedSkill,
                 'rejected_limit' => $rejectedLimit,
+                'activated' => $activatedCount,
             ];
         });
     }
@@ -443,11 +461,289 @@ class TestFormService
             ];
         }
 
+        $listeningPartCodes = ['PART1', 'PART2', 'PART3', 'PART4'];
+        $isListeningTest = in_array($examType, [TestForm::EXAM_TYPE_LISTENING, TestForm::EXAM_TYPE_LR], true);
+        $missingAudioQuestionIds = [];
+        $totalListeningQuestions = 0;
+
+        if ($isListeningTest) {
+            foreach ($testForm->questions as $question) {
+                $qPartCode = strtoupper((string) ($question->section?->code ?? ''));
+                if (! in_array($qPartCode, $listeningPartCodes, true)) {
+                    continue;
+                }
+                $totalListeningQuestions++;
+                $resolvedAudio = $question->questionSet?->resolved_audio_url;
+                if (empty($resolvedAudio)) {
+                    $missingAudioQuestionIds[] = (int) $question->question_id;
+                }
+            }
+        }
+
+        $quality = $this->analyzeTestQuality($testForm, $examType, $testForm->questions);
+
         return array_merge($this->toListRow($testForm), [
             'blueprint' => $definition,
             'skills' => $skills,
             'allowed_part_codes' => $partCodes,
+            'audio_summary' => [
+                'is_listening_test' => $isListeningTest,
+                'total_listening_questions' => $totalListeningQuestions,
+                'missing_audio_count' => count($missingAudioQuestionIds),
+                'has_audio_count' => max(0, $totalListeningQuestions - count($missingAudioQuestionIds)),
+                'missing_audio_question_ids' => $missingAudioQuestionIds,
+            ],
+            'quality' => $quality,
         ]);
+    }
+
+    /**
+     * Phân tích chất lượng đề thi toàn diện (chỉ tiêu từng Part, sai kỹ năng, thiếu định dạng, trùng lặp).
+     *
+     * @param  Collection<int, Question>  $attachedQuestions
+     * @return array{
+     *     has_warnings: bool,
+     *     warning_count: int,
+     *     quota_issues: list<array{part_code: string, part_name: string, current: int, target: int, diff: int, type: string, message: string}>,
+     *     wrong_skill_ids: list<int>,
+     *     format_issues: list<array{question_id: int, code: string, part_code: string, reason: string}>,
+     *     duplicate_ids: list<int>,
+     *     duplicate_groups: list<array{keep_id: int, duplicate_ids: list<int>, sample: string}>,
+     *     cleanup_ids: list<int>
+     * }
+     */
+    public function analyzeTestQuality(TestForm $testForm, string $examType, Collection $attachedQuestions): array
+    {
+        $definition = ExamSampleDataService::BLUEPRINTS[$examType] ?? ExamSampleDataService::BLUEPRINTS[TestForm::EXAM_TYPE_LR];
+        $partTargets = TestForm::partTargetsFor($examType);
+        $partNames = [];
+        foreach ($definition['skills'] as $skill) {
+            foreach ($skill['parts'] as $part) {
+                $partNames[strtoupper((string) $part['code'])] = (string) $part['name'];
+            }
+        }
+
+        $countsByPart = [];
+        $wrongSkillIds = [];
+        $formatIssues = [];
+
+        foreach ($attachedQuestions as $question) {
+            $partCode = strtoupper((string) ($question->section?->code ?? ''));
+            $qId = (int) $question->question_id;
+            $qCode = '#Q-'.$qId;
+
+            if ($partCode === '' || ! array_key_exists($partCode, $partTargets)) {
+                $wrongSkillIds[] = $qId;
+
+                continue;
+            }
+
+            if (strtoupper((string) $question->status) === Question::STATUS_ACTIVE) {
+                $countsByPart[$partCode] = ($countsByPart[$partCode] ?? 0) + 1;
+            }
+
+            // Kiểm tra định dạng bắt buộc theo từng Part
+            $qSet = $question->questionSet;
+            $hasAudio = ! empty($qSet?->resolved_audio_url);
+            $hasTranscript = trim((string) ($qSet?->transcript ?? '')) !== '';
+            $hasImage = ! empty($qSet?->resolved_media_url);
+            $hasStimulus = trim((string) ($qSet?->stimulus_text ?? '')) !== '';
+
+            if (in_array($partCode, ['PART1', 'PART2', 'PART3', 'PART4'], true)) {
+                if (! $hasAudio && ! $hasTranscript) {
+                    $formatIssues[] = [
+                        'question_id' => $qId,
+                        'code' => $qCode,
+                        'part_code' => $partCode,
+                        'reason' => 'Câu Listening thiếu cả file Audio lẫn Transcript',
+                    ];
+                }
+                if ($partCode === 'PART1' && ! $hasImage) {
+                    $formatIssues[] = [
+                        'question_id' => $qId,
+                        'code' => $qCode,
+                        'part_code' => $partCode,
+                        'reason' => 'Part 1 (Mô tả tranh) đang thiếu hình ảnh minh họa',
+                    ];
+                }
+            }
+
+            if (in_array($partCode, ['PART6', 'PART7'], true) && ! $hasStimulus && ! $hasImage) {
+                $formatIssues[] = [
+                    'question_id' => $qId,
+                    'code' => $qCode,
+                    'part_code' => $partCode,
+                    'reason' => "{$partCode} đang thiếu đoạn văn đọc hiểu (stimulus_text)",
+                ];
+            }
+
+            if (in_array($partCode, ['PART1', 'PART2', 'PART3', 'PART4', 'PART5', 'PART6', 'PART7'], true)) {
+                $options = $question->relationLoaded('options') ? $question->options : $question->options()->get();
+                $expectedOptions = $partCode === 'PART2' ? 3 : 4;
+                if ($options->count() < $expectedOptions) {
+                    $formatIssues[] = [
+                        'question_id' => $qId,
+                        'code' => $qCode,
+                        'part_code' => $partCode,
+                        'reason' => "Thiếu đáp án trắc nghiệm (hiện có {$options->count()}/{$expectedOptions} lựa chọn)",
+                    ];
+                } elseif (! $options->contains(fn ($opt): bool => (bool) $opt->is_correct)) {
+                    $formatIssues[] = [
+                        'question_id' => $qId,
+                        'code' => $qCode,
+                        'part_code' => $partCode,
+                        'reason' => 'Chưa đánh dấu đáp án đúng',
+                    ];
+                }
+            }
+        }
+
+        $quotaIssues = [];
+        $hasAnyAttached = $attachedQuestions->isNotEmpty();
+        foreach ($partTargets as $code => $target) {
+            $current = $countsByPart[$code] ?? 0;
+            $shortPart = $partNames[$code] ?? $code;
+            if (str_contains($shortPart, ':')) {
+                $shortPart = trim(explode(':', $shortPart)[0]);
+            }
+
+            if ($current > $target) {
+                $diff = $current - $target;
+                $quotaIssues[] = [
+                    'part_code' => $code,
+                    'part_name' => $shortPart,
+                    'current' => $current,
+                    'target' => $target,
+                    'diff' => $diff,
+                    'type' => 'excess',
+                    'message' => "{$shortPart} đang có {$current}/{$target} câu — thừa {$diff} câu",
+                ];
+            } elseif ($hasAnyAttached && $current < $target) {
+                $diff = $target - $current;
+                $quotaIssues[] = [
+                    'part_code' => $code,
+                    'part_name' => $shortPart,
+                    'current' => $current,
+                    'target' => $target,
+                    'diff' => $diff,
+                    'type' => 'missing',
+                    'message' => "{$shortPart} đang có {$current}/{$target} câu — thiếu {$diff} câu",
+                ];
+            }
+        }
+
+        $duplicateAnalysis = $this->detectDuplicateQuestions($attachedQuestions);
+        $duplicateIds = $duplicateAnalysis['duplicate_ids'];
+        $duplicateGroups = $duplicateAnalysis['duplicate_groups'];
+
+        $cleanupIds = array_values(array_unique(array_merge($wrongSkillIds, $duplicateIds)));
+        $warningCount = count($quotaIssues) + count($wrongSkillIds) + count($formatIssues) + count($duplicateIds);
+
+        return [
+            'has_warnings' => $warningCount > 0,
+            'warning_count' => $warningCount,
+            'quota_issues' => $quotaIssues,
+            'wrong_skill_ids' => array_values(array_unique($wrongSkillIds)),
+            'format_issues' => $formatIssues,
+            'duplicate_ids' => $duplicateIds,
+            'duplicate_groups' => $duplicateGroups,
+            'cleanup_ids' => $cleanupIds,
+        ];
+    }
+
+    /**
+     * Gỡ nhanh toàn bộ câu hỏi trùng lặp nội dung và câu hỏi sai kỹ năng khỏi đề thi trong 1 click.
+     *
+     * @return array{detached_wrong_skill: int, detached_duplicates: int, total_detached: int}
+     */
+    public function cleanupQualityIssues(TestForm $testForm): array
+    {
+        $testForm->load([
+            'blueprint',
+            'questions' => fn ($q) => $q->with(['section', 'questionSet', 'options'])
+                ->orderBy('test_form_question.sequence_no'),
+        ]);
+
+        $examType = $this->examTypeOf($testForm);
+        $quality = $this->analyzeTestQuality($testForm, $examType, $testForm->questions);
+
+        $wrongSkillIds = $quality['wrong_skill_ids'];
+        $duplicateIds = $quality['duplicate_ids'];
+        $cleanupIds = $quality['cleanup_ids'];
+
+        $totalDetached = 0;
+        if (! empty($cleanupIds) && Schema::hasTable('test_form_question')) {
+            $totalDetached = DB::table('test_form_question')
+                ->where('test_form_id', $testForm->test_form_id)
+                ->whereIn('question_id', $cleanupIds)
+                ->delete();
+        }
+
+        return [
+            'detached_wrong_skill' => count($wrongSkillIds),
+            'detached_duplicates' => count($duplicateIds),
+            'total_detached' => $totalDetached,
+        ];
+    }
+
+    /**
+     * Phát hiện câu hỏi trùng lặp (trùng question_id hoặc trùng nội dung chuẩn hóa trong cùng Part).
+     *
+     * @param  Collection<int, Question>  $attachedQuestions
+     * @return array{duplicate_ids: list<int>, duplicate_groups: list<array{keep_id: int, duplicate_ids: list<int>, sample: string}>}
+     */
+    private function detectDuplicateQuestions(Collection $attachedQuestions): array
+    {
+        $seenQuestionIds = [];
+        $seenByContentKey = [];
+        $duplicateIds = [];
+        $groupsByKey = [];
+
+        $genericPlaceholders = [
+            'look at the picture and listen to the four statements.',
+            'listen to the question and choose the best response.',
+        ];
+
+        foreach ($attachedQuestions as $question) {
+            $qId = (int) $question->question_id;
+            $partCode = strtoupper((string) ($question->section?->code ?? ''));
+
+            if (isset($seenQuestionIds[$qId])) {
+                $duplicateIds[] = $qId;
+
+                continue;
+            }
+            $seenQuestionIds[$qId] = true;
+
+            $rawContent = trim((string) $question->content);
+            $normalized = mb_strtolower((string) preg_replace('/\s+/u', ' ', $rawContent));
+            if ($normalized === '' || in_array($normalized, $genericPlaceholders, true)) {
+                continue;
+            }
+
+            $key = $partCode.'|'.$normalized;
+            if (! isset($seenByContentKey[$key])) {
+                $seenByContentKey[$key] = [
+                    'keep_id' => $qId,
+                    'sample' => mb_strimwidth($rawContent, 0, 90, '...'),
+                ];
+            } else {
+                $duplicateIds[] = $qId;
+                if (! isset($groupsByKey[$key])) {
+                    $groupsByKey[$key] = [
+                        'keep_id' => $seenByContentKey[$key]['keep_id'],
+                        'duplicate_ids' => [],
+                        'sample' => $seenByContentKey[$key]['sample'],
+                    ];
+                }
+                $groupsByKey[$key]['duplicate_ids'][] = $qId;
+            }
+        }
+
+        return [
+            'duplicate_ids' => array_values(array_unique($duplicateIds)),
+            'duplicate_groups' => array_values($groupsByKey),
+        ];
     }
 
     /**
@@ -499,6 +795,8 @@ class TestFormService
 
         $evaluation = TestForm::evaluateStructure($activeCountsByPart, $examType);
         $validQuestions = $evaluation['valid_count'];
+        $duplicateAnalysis = $this->detectDuplicateQuestions($attachedQuestions);
+        $duplicateCount = count($duplicateAnalysis['duplicate_ids']);
 
         return [
             'id' => $testForm->test_form_id,
@@ -516,6 +814,7 @@ class TestFormService
             'current_questions' => $validQuestions,
             'total_attached_questions' => $attachedQuestions->count(),
             'wrong_skill_count' => $evaluation['wrong_skill_count'],
+            'duplicate_count' => $duplicateCount,
             'unapproved_count' => $unapprovedCount,
             'completion_rate' => $this->completionRate($validQuestions, $targetQuestions),
             'status' => $evaluation['status'],
@@ -567,6 +866,7 @@ class TestFormService
             if (! isset($groupPositions[$question->question_set_id])) {
                 $groupPositions[$question->question_set_id] = count($items);
                 $mediaUrl = $question->questionSet?->resolved_media_url;
+                $audioUrl = $question->questionSet?->resolved_audio_url;
                 $mediaType = strtoupper((string) ($question->questionSet?->media_type ?? ''));
                 $isImageMedia = $mediaType === 'IMAGE' || (is_string($mediaUrl) && preg_match('/\.(png|jpe?g|gif|webp|bmp)$/i', $mediaUrl) === 1);
                 $items[] = [
@@ -575,9 +875,9 @@ class TestFormService
                     'group_title' => $question->questionSet?->title ?? 'Nhóm câu hỏi #'.$question->question_set_id,
                     'stimulus_text' => $question->questionSet?->stimulus_text,
                     'media_url' => $mediaUrl,
-                    'media_type' => $mediaType !== '' ? $mediaType : ($isImageMedia ? 'IMAGE' : ($mediaUrl ? 'AUDIO' : null)),
+                    'media_type' => $mediaType !== '' ? $mediaType : ($isImageMedia ? 'IMAGE' : ($audioUrl ? 'AUDIO' : null)),
                     'image_url' => $isImageMedia ? $mediaUrl : null,
-                    'audio_url' => (! $isImageMedia && $mediaUrl) ? $mediaUrl : null,
+                    'audio_url' => $audioUrl,
                     'transcript' => $question->questionSet?->transcript,
                     'child_questions' => [],
                 ];
@@ -595,6 +895,7 @@ class TestFormService
     private function toQuestionRow(Question $question): array
     {
         $mediaUrl = $question->questionSet?->resolved_media_url;
+        $audioUrl = $question->questionSet?->resolved_audio_url;
         $mediaType = strtoupper((string) ($question->questionSet?->media_type ?? ''));
         $isImageMedia = $mediaType === 'IMAGE' || (is_string($mediaUrl) && preg_match('/\.(png|jpe?g|gif|webp|bmp)$/i', $mediaUrl) === 1);
 
@@ -608,13 +909,13 @@ class TestFormService
             'content' => $question->content,
             'explanation' => $question->explanation ?? '',
             'difficulty' => $question->difficulty,
-            'status' => $question->status,
+            'status' => strtoupper((string) $question->status),
             'question_type' => $question->question_type_display,
             'points' => (float) $question->pivot->point,
             'media_url' => $mediaUrl,
-            'media_type' => $mediaType !== '' ? $mediaType : ($isImageMedia ? 'IMAGE' : ($mediaUrl ? 'AUDIO' : null)),
+            'media_type' => $mediaType !== '' ? $mediaType : ($isImageMedia ? 'IMAGE' : ($audioUrl ? 'AUDIO' : null)),
             'image_url' => $isImageMedia ? $mediaUrl : null,
-            'audio_url' => (! $isImageMedia && $mediaUrl) ? $mediaUrl : null,
+            'audio_url' => $audioUrl,
             'transcript' => $question->questionSet?->transcript,
             'stimulus_text' => $question->questionSet?->stimulus_text,
             'correct_option' => $question->options->firstWhere('is_correct', true)?->label ?? '',

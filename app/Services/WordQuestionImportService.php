@@ -393,7 +393,23 @@ class WordQuestionImportService
     }
 
     /**
+     * Kết quả gắn câu hỏi vào đề thi của lần persist gần nhất (nếu có target_test_id).
+     *
+     * @var array{attached: int, skipped: int, rejected_skill: int, rejected_limit: int, activated: int}|null
+     */
+    private ?array $lastAttachResult = null;
+
+    /**
+     * @return array{attached: int, skipped: int, rejected_skill: int, rejected_limit: int, activated: int}|null
+     */
+    public function getLastAttachResult(): ?array
+    {
+        return $this->lastAttachResult;
+    }
+
+    /**
      * Nhận diện văn bản tiếng Việt dựa trên dấu thanh tiếng Việt hoặc tiền tố dịch nghĩa.
+     * Bảo vệ chống nhận nhầm câu tiếng Anh có từ mượn (VD: "résumé", "café", "naïve").
      */
     public function isVietnameseText(string $text): bool
     {
@@ -406,7 +422,19 @@ class WordQuestionImportService
             return true;
         }
 
-        return preg_match('/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/iu', $clean) === 1;
+        // Các ký tự đặc trưng chỉ có trong tiếng Việt (đ, ă, ơ, ư, thanh nặng/hỏi/ngã, mũ+dấu)
+        if (preg_match('/[đăơưạảãầấậẩẫằắặẳẵẹẻẽềếệểễịỉĩọỏõồốộổỗờớợởỡụủũừứựửữỳýỵỷỹ]/iu', $clean) === 1) {
+            return true;
+        }
+
+        // Nếu chỉ có dấu Latin-1 (é, è, á, à, â, ê, ô...) vốn gặp trong từ mượn tiếng Anh như "résumé", "café",
+        // yêu cầu có ít nhất 2 từ mang dấu khác nhau hoặc chứa từ chức năng tiếng Việt rõ ràng.
+        if (preg_match_all('/\b\p{L}*[àáâèéêìíòóôùú]\p{L}*\b/iu', $clean, $matches) >= 2) {
+            return true;
+        }
+
+        return preg_match('/\b(?:câu|đề|bài|và|của|là|người|không|một|các|này|trong|cho|hãy)\b/iu', $clean) === 1
+            && preg_match('/[àáâèéêìíòóôùú]/iu', $clean) === 1;
     }
 
     /**
@@ -900,6 +928,21 @@ class WordQuestionImportService
             $isDualQuestion = preg_match('/^(?:Câu(?:\s*hỏi)?|Question|Q)\s*\d{1,3}\s*[:\-]\s*(\d{3})\s*[:.\-\)]?\s*(.*)$/iu', $line, $dm) === 1;
             $isStandardQuestion = ! $isDualQuestion && preg_match('/^(?:(?:Câu(?:\s*hỏi)?|Question|Q)\s*(\d{1,3})\s*[:.\-\)]?|(\d{1,3})[\.\)])\s*(.*)$/iu', $line, $m) === 1;
 
+            // Bảo vệ chống nhận nhầm danh sách đánh số nhỏ (1., 2., 3.) bên trong đoạn văn/bảng của Part 3, 4, 6, 7
+            if (
+                $isStandardQuestion
+                && $capturingStimulus
+                && $currentQuestion === null
+                && $currentGroupRangeStart !== null
+                && $currentGroupRangeStart >= 32
+                && preg_match('/^(?:Câu(?:\s*hỏi)?|Question|Q)\b/iu', $line) !== 1
+            ) {
+                $bulletNum = (int) ($m[1] !== '' ? $m[1] : $m[2]);
+                if ($bulletNum < $currentGroupRangeStart) {
+                    $isStandardQuestion = false;
+                }
+            }
+
             if ($isDualQuestion || $isStandardQuestion) {
                 if ($isDualQuestion) {
                     $qNum = (int) $dm[1];
@@ -916,8 +959,9 @@ class WordQuestionImportService
                 $isBarePart1Header = $stem === '' && ($currentPart === 'PART1' || $forcedPart === 'PART1' || ! empty($pendingImageQueue));
                 $isBareReadingDual = $stem === '' && ($isDualQuestion || $activeSkill === 'reading');
                 $isBareWritingTask = $stem === '' && $activeSkill === 'writing';
+                $isExplicitBareHeader = $stem === '' && preg_match('/^(?:Câu(?:\s*hỏi)?|Question|Q)\s*\d{1,3}\s*[:.\-\)]?$/iu', $line) === 1;
 
-                if ($stem === '' && ! $isBarePart1Header && ! $isBareReadingDual && ! $isBareWritingTask) {
+                if ($stem === '' && ! $isBarePart1Header && ! $isBareReadingDual && ! $isBareWritingTask && ! $isExplicitBareHeader) {
                     continue;
                 }
                 if ($isBarePart1Header) {
@@ -1010,15 +1054,18 @@ class WordQuestionImportService
             if (
                 $currentPart === 'SPK_T4'
                 && ! $inDirectionsBlock
-                && $currentStimulus !== null
+                && ($currentStimulus !== null || $currentGroupImageUrl !== null || ! empty($pendingImageQueue) || $currentQuestion !== null)
                 && ! $this->isVietnameseText($line)
                 && preg_match('/\?\s*$/u', $line) === 1
                 && ($currentQuestion === null || empty($currentQuestion['_in_explanation']))
             ) {
                 $flushQuestion();
                 $capturingStimulus = false;
+                if ($currentGroupImageUrl === null) {
+                    $currentGroupImageUrl = $shiftPendingImage();
+                }
                 if ($currentGroupKey === null) {
-                    $currentGroupKey = 'spk4_'.md5($currentStimulus);
+                    $currentGroupKey = 'spk4_'.md5((string) ($currentStimulus ?? $currentGroupImageUrl ?? 'spk4'));
                 }
                 $autoSpkCounter = $autoSpkCounter < 8 ? 8 : ($autoSpkCounter + 1);
                 $currentQuestion = [
@@ -1026,7 +1073,7 @@ class WordQuestionImportService
                     'part_code' => 'SPK_T4',
                     'group_key' => $currentGroupKey,
                     'group_title' => $currentGroupTitle ?? 'Speaking Task 4 Information',
-                    'stimulus_text' => trim($currentStimulus),
+                    'stimulus_text' => $currentStimulus !== null ? trim($currentStimulus) : null,
                     'audio_transcript' => null,
                     'image_url' => $currentGroupImageUrl,
                     'audio_url' => null,
@@ -1330,7 +1377,7 @@ class WordQuestionImportService
 
                 $question = Question::query()->create([
                     'section_id' => $sectionId,
-                    'question_type_id' => 1,
+                    'question_type_id' => Question::resolveQuestionTypeIdForPart($partCode),
                     'question_set_id' => $questionSetId,
                     'content' => $contentText,
                     'difficulty' => $difficulty,
@@ -1377,10 +1424,11 @@ class WordQuestionImportService
                 $importedQuestionIds[] = $question->question_id;
             }
 
+            $this->lastAttachResult = null;
             if ($targetTestId !== null && ! empty($importedQuestionIds)) {
                 $testForm = TestForm::query()->find($targetTestId);
                 if ($testForm !== null) {
-                    app(TestFormService::class)->attachQuestions($testForm, $importedQuestionIds);
+                    $this->lastAttachResult = app(TestFormService::class)->attachQuestions($testForm, $importedQuestionIds);
                 }
             }
         });
@@ -1855,23 +1903,60 @@ class WordQuestionImportService
             ];
         }
 
-        // 2. Tiêu đề Speaking Task 1..5 hoặc tên nhiệm vụ ETS / "(câu 1, 2)"
+        // 2. Tiêu đề Speaking Task 1..5 hoặc tên nhiệm vụ ETS / "TOEIC Speaking Test câu 1, 2" / "(câu 1, 2)"
         if (preg_match('/^(?:Speaking\s*(?:Task|Part)|SPK_T)\s*([1-5])(?:\s*[:\-\(].*)?$/iu', $clean, $m)) {
             return ['skill' => 'speaking', 'part_code' => 'SPK_T'.$m[1]];
         }
-        if (preg_match('/read\s+a\s+text\s+aloud|đọc\s+to\s+văn\s+bản|\(\s*câu\s*1\s*,\s*2\s*\)/iu', $clean) && mb_strlen($clean) <= 130) {
+        if (
+            mb_strlen($clean) <= 130
+            && (
+                preg_match('/read\s+a\s+text\s+aloud|đọc\s+to\s+văn\s+bản/iu', $clean)
+                || preg_match('/(?:speaking|đề|test|\()\s*.*câu\s*1\s*[,–\-]\s*2\b/iu', $clean)
+                || preg_match('/^(?:questions?|câu)\s*1\s*[,–\-]\s*2\s*[:\.]?$/iu', $clean)
+            )
+        ) {
             return ['skill' => 'speaking', 'part_code' => 'SPK_T1'];
         }
-        if (preg_match('/describe\s+a\s+picture|mô\s+tả\s+tranh|\(\s*câu\s*3\s*,\s*4\s*\)/iu', $clean) && ! preg_match('/write\s+a\s+sentence|viết\s+câu/iu', $clean) && mb_strlen($clean) <= 130) {
+        if (
+            mb_strlen($clean) <= 130
+            && ! preg_match('/write\s+a\s+sentence|viết\s+câu/iu', $clean)
+            && (
+                preg_match('/describe\s+a\s+picture|mô\s+tả\s+tranh/iu', $clean)
+                || preg_match('/(?:speaking|đề|test|\()\s*.*câu\s*3\s*[,–\-]\s*4\b/iu', $clean)
+                || preg_match('/^(?:questions?|câu)\s*3\s*[,–\-]\s*4\s*[:\.]?$/iu', $clean)
+            )
+        ) {
             return ['skill' => 'speaking', 'part_code' => 'SPK_T2'];
         }
-        if (preg_match('/respond\s+to\s+questions\s+using\s+information|using\s+information\s+provided|trả\s+lời.*thông\s+tin|\(\s*câu\s*8\s*,\s*9\s*,\s*10\s*\)/iu', $clean) && mb_strlen($clean) <= 140) {
+        if (
+            mb_strlen($clean) <= 140
+            && (
+                preg_match('/respond\s+to\s+questions\s+using\s+information|using\s+information\s+provided|trả\s+lời.*thông\s+tin/iu', $clean)
+                || preg_match('/(?:speaking|đề|test|\()\s*.*câu\s*8\s*,\s*9\s*,\s*10\b/iu', $clean)
+                || preg_match('/(?:speaking|đề|test|\()\s*.*câu\s*8\s*[–\-]\s*10\b/iu', $clean)
+                || preg_match('/^(?:questions?|câu)\s*8\s*[–\-]\s*10\s*[:\.]?$/iu', $clean)
+            )
+        ) {
             return ['skill' => 'speaking', 'part_code' => 'SPK_T4'];
         }
-        if (preg_match('/respond\s+to\s+questions|trả\s+lời\s+câu\s+hỏi|\(\s*câu\s*5\s*,\s*6\s*,\s*7\s*\)/iu', $clean) && mb_strlen($clean) <= 130) {
+        if (
+            mb_strlen($clean) <= 130
+            && (
+                preg_match('/respond\s+to\s+questions|trả\s+lời\s+câu\s+hỏi/iu', $clean)
+                || preg_match('/(?:speaking|đề|test|\()\s*.*câu\s*5\s*,\s*6\s*,\s*7\b/iu', $clean)
+                || preg_match('/(?:speaking|đề|test|\()\s*.*câu\s*5\s*[–\-]\s*7\b/iu', $clean)
+                || preg_match('/^(?:questions?|câu)\s*5\s*[–\-]\s*7\s*[:\.]?$/iu', $clean)
+            )
+        ) {
             return ['skill' => 'speaking', 'part_code' => 'SPK_T3'];
         }
-        if (preg_match('/express\s+an\s+opinion|trình\s+bày\s+quan\s+điểm|\(\s*câu\s*11\s*\)/iu', $clean) && mb_strlen($clean) <= 130) {
+        if (
+            mb_strlen($clean) <= 130
+            && (
+                preg_match('/express\s+an\s+opinion|trình\s+bày\s+quan\s+điểm/iu', $clean)
+                || preg_match('/(?:speaking|đề|test|\()\s*.*câu\s*11\b/iu', $clean)
+            )
+        ) {
             return ['skill' => 'speaking', 'part_code' => 'SPK_T5'];
         }
 

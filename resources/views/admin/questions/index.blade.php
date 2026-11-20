@@ -69,60 +69,58 @@
             </p>
         </div>
 
-        <div class="user-header-actions">
-            {{-- Nút Tải file Word mẫu (.docx) --}}
-            <a href="{{ route('admin.questions.sample-docx') }}" class="btn-admin-action" title="Tải file Word (.docx) mẫu chuẩn cấu trúc nhập câu hỏi">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                    <path d="M12 18v-6"></path>
-                    <path d="M9 15l3 3 3-3"></path>
-                </svg>
-                <span>Tải file Word mẫu</span>
-            </a>
+        <div class="user-header-actions" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px;">
+            {{-- Nhóm hành động phụ: Tải mẫu & Xuất Excel --}}
+            <div style="display: inline-flex; align-items: center; gap: 6px; padding-right: 8px; border-right: 1px solid #e2e8f0;">
+                <a href="{{ route('admin.questions.sample-docx') }}" class="btn-admin-action" style="padding: 8px 11px; font-size: 13px;" title="Tải file Word (.docx) mẫu chuẩn cấu trúc nhập câu hỏi">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <path d="M12 18v-6"></path>
+                        <path d="M9 15l3 3 3-3"></path>
+                    </svg>
+                    <span>Word mẫu</span>
+                </a>
 
-            {{-- Nút Xuất Excel --}}
-            <a href="{{ route('admin.questions.export') }}" class="btn-admin-action excel" title="Xuất danh sách câu hỏi ra Excel (CSV)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="7 10 12 15 17 10"></polyline>
-                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                <span>Xuất Excel</span>
-            </a>
+                <a href="{{ route('admin.questions.export') }}" class="btn-admin-action excel" style="padding: 8px 11px; font-size: 13px;" title="Xuất danh sách câu hỏi ra Excel (CSV)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    <span>Xuất Excel</span>
+                </a>
+            </div>
 
-            {{-- Nút Thêm câu hỏi hàng loạt --}}
-            <a href="{{ route('admin.questions.bulk-import') }}" class="btn-admin-action import" title="Thêm câu hỏi hàng loạt (Bulk Import Studio)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                    <line x1="12" y1="18" x2="12" y2="12"></line>
-                    <line x1="9" y1="15" x2="15" y2="15"></line>
-                </svg>
-                <span>Thêm câu hỏi hàng loạt</span>
-            </a>
+            {{-- Nhóm hành động chính: Import, Tạo nhóm, Thêm mới --}}
+            <div style="display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <a href="{{ route('admin.questions.bulk-import') }}" class="btn-admin-action import" style="padding: 8px 12px; font-size: 13px;" title="Thêm câu hỏi hàng loạt (Bulk Import Studio)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="12" y1="18" x2="12" y2="12"></line>
+                        <line x1="9" y1="15" x2="15" y2="15"></line>
+                    </svg>
+                    <span>Import hàng loạt</span>
+                </a>
 
-            {{-- Nút Tạo nhóm câu hỏi --}}
-            <a href="{{ route('admin.questions.group.create') }}" class="btn-admin-action" style="color: #4338ca; border-color: #c7d2fe; background: #f5f3ff; font-weight: 700;" title="Tạo nhóm câu hỏi TOEIC (Passage / Stimulus)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-                </svg>
-                <span>Tạo nhóm câu hỏi</span>
-            </a>
+                <a href="{{ route('admin.questions.group.create') }}" class="btn-admin-action" style="padding: 8px 12px; font-size: 13px; color: #4338ca; border-color: #c7d2fe; background: #f5f3ff; font-weight: 700;" title="Tạo nhóm câu hỏi TOEIC (Passage / Stimulus)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                    </svg>
+                    <span>Tạo nhóm câu hỏi</span>
+                </a>
 
-            {{-- Nút Thêm câu hỏi mới --}}
-            <a href="{{ route('admin.questions.create') }}" class="btn-admin-primary">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="8" x2="12" y2="16"></line>
-                    <line x1="8" y1="12" x2="16" y2="12"></line>
-                </svg>
-                <span>Thêm câu hỏi mới</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left: -2px;">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-            </a>
+                <a href="{{ route('admin.questions.create') }}" class="btn-admin-primary" style="padding: 8px 14px; font-size: 13px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="16"></line>
+                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
+                    <span>Thêm câu hỏi mới</span>
+                </a>
+            </div>
         </div>
     </div>
 
@@ -275,21 +273,6 @@
                 </svg>
                 <span>Đặt lại</span>
             </a>
-
-            <button type="button" class="qbank-adv-filter-btn">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="4" y1="21" x2="4" y2="14"></line>
-                    <line x1="4" y1="10" x2="4" y2="3"></line>
-                    <line x1="12" y1="21" x2="12" y2="12"></line>
-                    <line x1="12" y1="8" x2="12" y2="3"></line>
-                    <line x1="20" y1="21" x2="20" y2="16"></line>
-                    <line x1="20" y1="12" x2="20" y2="3"></line>
-                    <line x1="1" y1="14" x2="7" y2="14"></line>
-                    <line x1="9" y1="8" x2="15" y2="8"></line>
-                    <line x1="17" y1="16" x2="23" y2="16"></line>
-                </svg>
-                <span>Bộ lọc nâng cao</span>
-            </button>
         </div>
 
         {{-- Hàng 2: 5 Dropdowns lọc theo tiêu chuẩn --}}
@@ -424,6 +407,7 @@
         <input type="hidden" name="filter_tag" value="{{ $filters['tag'] }}">
         <input type="hidden" name="test_id" id="bulk-assign-test-id" value="{{ $targetTest?->test_form_id ?? '' }}">
         <input type="hidden" name="redirect_to_test" id="bulk-redirect-to-test" value="{{ !empty($targetTest) ? '1' : '0' }}">
+        <input type="hidden" name="auto_activate_drafts" id="bulk-auto-activate-drafts" value="1">
 
         <div class="qbank-selection-bar">
             <div class="qbank-sel-left" style="flex-wrap: wrap;">
@@ -610,9 +594,9 @@
                                         $stUpper = strtoupper((string) $q->status);
                                         $stConfig = match ($stUpper) {
                                             'ACTIVE' => ['bg' => '#ecfdf5', 'color' => '#047857', 'border' => '#a7f3d0', 'dot' => '#10b981'],
-                                            'PENDING' => ['bg' => '#fffbeb', 'color' => '#b45309', 'border' => '#fde68a', 'dot' => '#f59e0b'],
+                                            'DRAFT', 'PENDING' => ['bg' => '#fffbeb', 'color' => '#b45309', 'border' => '#fde68a', 'dot' => '#f59e0b'],
                                             'REPORTED' => ['bg' => '#fef2f2', 'color' => '#b91c1c', 'border' => '#fecaca', 'dot' => '#ef4444'],
-                                            'ARCHIVED' => ['bg' => '#f5f3ff', 'color' => '#5b21b6', 'border' => '#ddd6fe', 'dot' => '#7c3aed'],
+                                            'ARCHIVED' => ['bg' => '#f1f5f9', 'color' => '#475569', 'border' => '#cbd5e1', 'dot' => '#64748b'],
                                             default => ['bg' => '#f1f5f9', 'color' => '#475569', 'border' => '#cbd5e1', 'dot' => '#64748b'],
                                         };
                                     @endphp
@@ -660,15 +644,15 @@
                                             </svg>
                                         </button>
 
-                                        {{-- Nút Xóa (3 dots / trash) --}}
+                                        {{-- Nút Xóa câu hỏi (Trash icon) --}}
                                         <button type="button"
                                                 class="action-icon-btn danger"
                                                 title="Xóa câu hỏi"
+                                                aria-label="Xóa câu hỏi #Q-{{ $q->question_id }}"
                                                 onclick="if (confirm('Bạn có chắc chắn muốn xóa câu hỏi #Q-{{ $q->question_id }}?')) { submitSingleQuestionAction('{{ route('admin.questions.destroy', $q->question_id) }}', 'DELETE'); }">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                <circle cx="12" cy="12" r="1"></circle>
-                                                <circle cx="12" cy="5" r="1"></circle>
-                                                <circle cx="12" cy="19" r="1"></circle>
+                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                                             </svg>
                                         </button>
                                     </div>
@@ -1091,16 +1075,35 @@
             @if (isset($availableTests) && $availableTests->isNotEmpty())
                 <div class="form-group-admin">
                     <label>Chọn Đề thi TOEIC <span style="color: #dc2626;">*</span></label>
+                    @php
+                        $examTypeLabels = [
+                            'TOEIC_LR' => 'TOEIC L&R',
+                            'TOEIC_LISTENING' => 'TOEIC Listening',
+                            'TOEIC_READING' => 'TOEIC Reading',
+                            'TOEIC_SPEAKING' => 'TOEIC Speaking',
+                            'TOEIC_WRITING' => 'TOEIC Writing',
+                            'TOEIC_SW' => 'TOEIC S&W',
+                        ];
+                    @endphp
                     <select id="modal-select-test-id" class="form-control-admin" style="width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 14px;">
                         @foreach ($availableTests as $testItem)
+                            @php
+                                $exTypeCode = (string) ($testItem->blueprint?->exam_type ?? 'TOEIC_LR');
+                                $exTypeText = $examTypeLabels[$exTypeCode] ?? $exTypeCode;
+                            @endphp
                             <option value="{{ $testItem->test_form_id }}" {{ ($targetTest?->test_form_id === $testItem->test_form_id) ? 'selected' : '' }}>
-                                [{{ $testItem->test_code }}] {{ $testItem->title }} (Hiện có {{ $testItem->questions_count ?? 0 }} câu)
+                                [{{ $exTypeText }}] {{ $testItem->test_code }} - {{ $testItem->title }} (Hiện có {{ $testItem->questions_count ?? 0 }} câu)
                             </option>
                         @endforeach
                     </select>
                 </div>
 
-                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #334155; margin-top: 12px; cursor: pointer;">
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #047857; font-weight: 600; margin-top: 12px; cursor: pointer;">
+                    <input type="checkbox" id="modal-chk-auto-activate" checked>
+                    <span>Tự động xuất bản (ACTIVE) các câu bản nháp khi gắn vào đề</span>
+                </label>
+
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #334155; margin-top: 8px; cursor: pointer;">
                     <input type="checkbox" id="modal-chk-redirect-test" {{ !empty($targetTest) ? 'checked' : '' }}>
                     <span>Chuyển đến trang Chi tiết Đề thi ngay sau khi gắn xong</span>
                 </label>
@@ -1284,8 +1287,13 @@
             return;
         }
         var redirectChk = document.getElementById('modal-chk-redirect-test');
+        var autoActivateChk = document.getElementById('modal-chk-auto-activate');
         document.getElementById('bulk-assign-test-id').value = selectEl.value;
         document.getElementById('bulk-redirect-to-test').value = (redirectChk && redirectChk.checked) ? '1' : '0';
+        var autoActivateInput = document.getElementById('bulk-auto-activate-drafts');
+        if (autoActivateInput) {
+            autoActivateInput.value = (!autoActivateChk || autoActivateChk.checked) ? '1' : '0';
+        }
         document.getElementById('bulk-action-type').value = 'assign';
         document.getElementById('bulk-action-form').submit();
     }

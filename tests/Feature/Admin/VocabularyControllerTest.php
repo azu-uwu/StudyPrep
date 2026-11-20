@@ -201,7 +201,30 @@ class VocabularyControllerTest extends TestCase
         $response->assertRedirect(route('admin.vocabularies.index'));
         $this->assertDatabaseHas('topics', [
             'name' => 'ETS 2024 Test 3',
+            'user_id' => null,
         ]);
+    }
+
+    public function test_admin_topic_list_excludes_personal_student_topics(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $student = User::factory()->create();
+
+        Topic::create([
+            'user_id' => null,
+            'name' => 'System TOEIC Core',
+        ]);
+        Topic::create([
+            'user_id' => $student->user_id,
+            'name' => 'Student Personal Deck',
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.vocabularies.index'));
+
+        $response->assertOk();
+        $response->assertViewHas('topics', function ($topics): bool {
+            return $topics->count() === 1 && $topics->first()->name === 'System TOEIC Core';
+        });
     }
 
     public function test_admin_can_delete_vocabulary(): void

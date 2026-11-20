@@ -186,12 +186,13 @@ class QuestionController extends Controller
         $status = $filters['status'];
         $tag = $filters['tag'];
 
-        // 1. Tìm kiếm theo Mã ID (#Q-10892), từ khóa, nội dung, giải thích
+        // 1. Tìm kiếm theo Mã ID (#Q-10892), từ khóa, nội dung, giải thích, transcript
         if ($search !== '') {
             $cleanId = preg_replace('/[^0-9]/', '', $search);
             $query->where(function ($q) use ($search, $cleanId) {
                 $q->where('content', 'like', "%{$search}%")
-                    ->orWhere('explanation', 'like', "%{$search}%");
+                    ->orWhere('explanation', 'like', "%{$search}%")
+                    ->orWhereHas('questionSet', fn ($qs) => $qs->where('transcript', 'like', "%{$search}%"));
 
                 if ($cleanId !== '') {
                     $q->orWhere('question_id', (int) $cleanId);
@@ -388,8 +389,8 @@ class QuestionController extends Controller
         ]);
 
         $status = $request->input('action_type') === 'draft' ? 'DRAFT' : ($validated['status'] ?? 'ACTIVE');
-        $questionTypeId = $validated['question_type_id'] ?? (QuestionType::query()->value('question_type_id') ?? 1);
-        $difficulty = $validated['difficulty'] ?? 'MEDIUM';
+        $questionTypeId = Question::resolveQuestionTypeIdForPart($partCode);
+        $difficulty = $validated['difficulty'] ?? 'UNSET';
         $correctOption = strtoupper((string) ($validated['correct_option'] ?? $validated['correct_opt'] ?? 'A'));
         if ($isPart2 && ! in_array($correctOption, ['A', 'B', 'C'], true)) {
             $correctOption = 'A';
@@ -573,6 +574,10 @@ class QuestionController extends Controller
         DB::transaction(function () use ($question, $validated, $request, $savedImagePath, $savedAudioPath): void {
             $question->content = $validated['content'];
             $question->section_id = $validated['section_id'];
+            $newSection = ExamSection::query()->find((int) $validated['section_id']);
+            if ($newSection) {
+                $question->question_type_id = Question::resolveQuestionTypeIdForPart((string) $newSection->code);
+            }
             $question->difficulty = $validated['difficulty'];
             $question->points = $validated['points'] ?? $question->points;
             $question->status = $validated['status'];
@@ -714,7 +719,8 @@ class QuestionController extends Controller
         }
 
         if (empty($ids)) {
-            return redirect()->route('admin.questions.index')->with('error', 'Vui lòng chọn ít nhất một câu hỏi để thực hiện thao tác.');
+            return redirect()->back(302, [], route('admin.questions.index'))
+                ->with('error', 'Vui lòng chọn ít nhất một câu hỏi để thực hiện thao tác.');
         }
 
         if ($action === 'approve') {
@@ -722,7 +728,8 @@ class QuestionController extends Controller
                 Question::whereIn('question_id', $chunk)->update(['status' => 'ACTIVE']);
             }
 
-            return redirect()->route('admin.questions.index')->with('success', 'Đã phê duyệt nhanh thành công '.count($ids).' câu hỏi.');
+            return redirect()->back(302, [], route('admin.questions.index'))
+                ->with('success', 'Đã phê duyệt nhanh thành công '.count($ids).' câu hỏi.');
         }
 
         if ($action === 'delete') {
@@ -736,19 +743,28 @@ class QuestionController extends Controller
                 }
             });
 
-            return redirect()->route('admin.questions.index')->with('success', 'Đã xóa thành công '.count($ids).' câu hỏi đã chọn.');
+            return redirect()->back(302, [], route('admin.questions.index'))
+                ->with('success', 'Đã xóa thành công '.count($ids).' câu hỏi đã chọn.');
         }
 
         if ($action === 'assign') {
             $testId = (int) $request->input('test_id', 0);
             if ($testId > 0 && Schema::hasTable('test_form') && Schema::hasTable('test_form_question')) {
-                $testForm = TestForm::query()->find($testId);
+                $testForm = TestForm::query()->with('blueprint')->find($testId);
                 if (! $testForm) {
-                    return redirect()->route('admin.questions.index')->with('error', 'Không tìm thấy đề thi mục tiêu để gắn câu hỏi.');
+                    return redirect()->back(302, [], route('admin.questions.index'))
+                        ->with('error', 'Không tìm thấy đề thi mục tiêu để gắn câu hỏi.');
                 }
 
-                $result = app(TestFormService::class)->attachQuestions($testForm, $ids);
+                $autoActivateDrafts = $request->has('auto_activate_drafts')
+                    ? $request->boolean('auto_activate_drafts')
+                    : true;
+
+                $result = app(TestFormService::class)->attachQuestions($testForm, $ids, null, $autoActivateDrafts);
                 $notes = [];
+                if (($result['activated'] ?? 0) > 0) {
+                    $notes[] = "tự động xuất bản {$result['activated']} câu bản nháp sang ACTIVE";
+                }
                 if (($result['skipped'] ?? 0) > 0) {
                     $notes[] = "bỏ qua {$result['skipped']} câu trùng lặp";
                 }
@@ -757,6 +773,13 @@ class QuestionController extends Controller
                 }
                 if (($result['rejected_limit'] ?? 0) > 0) {
                     $notes[] = "chặn {$result['rejected_limit']} câu do vượt chỉ tiêu Part/đề";
+                }
+
+                if (($result['attached'] ?? 0) === 0) {
+                    $reason = ! empty($notes) ? ucfirst(implode('; ', $notes)) : 'không có câu hỏi phù hợp';
+
+                    return redirect()->back(302, [], route('admin.questions.index'))
+                        ->with('error', "Không thể gắn câu hỏi nào vào đề thi \"{$testForm->title}\" ({$testForm->test_code}): {$reason}.");
                 }
 
                 $msg = "Đã gắn thêm {$result['attached']} câu hỏi vào đề thi \"{$testForm->title}\" ({$testForm->test_code}).";
@@ -768,13 +791,14 @@ class QuestionController extends Controller
                     return redirect()->route('admin.tests.show', $testForm->test_form_id)->with('success', $msg);
                 }
 
-                return redirect()->route('admin.questions.index')->with('success', $msg);
+                return redirect()->back(302, [], route('admin.questions.index'))->with('success', $msg);
             }
 
-            return redirect()->route('admin.questions.index')->with('success', 'Đã gắn '.count($ids).' câu hỏi vào cấu trúc đề thi thành công.');
+            return redirect()->back(302, [], route('admin.questions.index'))
+                ->with('error', 'Vui lòng chọn đề thi mục tiêu hợp lệ.');
         }
 
-        return redirect()->route('admin.questions.index');
+        return redirect()->back(302, [], route('admin.questions.index'));
     }
 
     /**
@@ -912,14 +936,31 @@ class QuestionController extends Controller
 
                 session()->put('recent_imported_question_ids', $importedIds);
                 $importedCount = count($importedIds);
+                $attachResult = $wordService->getLastAttachResult();
+                $attachNote = '';
+                if ($targetTestId && $targetTestId > 0 && is_array($attachResult)) {
+                    $attached = (int) ($attachResult['attached'] ?? 0);
+                    $attachNote = " Đã gắn {$attached}/{$importedCount} câu vào đề mục tiêu";
+                    $warnings = [];
+                    if (($attachResult['rejected_limit'] ?? 0) > 0) {
+                        $warnings[] = "vượt chỉ tiêu Part/đề: {$attachResult['rejected_limit']} câu";
+                    }
+                    if (($attachResult['rejected_skill'] ?? 0) > 0) {
+                        $warnings[] = "khác kỹ năng đề: {$attachResult['rejected_skill']} câu";
+                    }
+                    if (($attachResult['skipped'] ?? 0) > 0) {
+                        $warnings[] = "trùng lặp: {$attachResult['skipped']} câu";
+                    }
+                    $attachNote .= ! empty($warnings) ? ' (chưa gắn: '.implode(', ', $warnings).').' : '.';
+                }
 
                 if ($request->boolean('return_to_import_view')) {
                     return redirect()->route('admin.questions.bulk-import')
-                        ->with('success', "Đã đọc tệp \"{$file->getClientOriginalName()}\" và nhập thành công {$importedCount} câu hỏi! Bạn có thể Xem trước, Chỉnh sửa hoặc Xóa từng câu hỏi ngay bên dưới.");
+                        ->with('success', "Đã đọc tệp \"{$file->getClientOriginalName()}\" và nhập thành công {$importedCount} câu hỏi!{$attachNote} Bạn có thể Xem trước, Chỉnh sửa hoặc Xóa từng câu hỏi ngay bên dưới.");
                 }
 
                 return redirect()->route('admin.questions.index')
-                    ->with('success', "Đã đọc tệp \"{$file->getClientOriginalName()}\" và nhập thành công {$importedCount} câu hỏi vào Ngân hàng câu hỏi!");
+                    ->with('success', "Đã đọc tệp \"{$file->getClientOriginalName()}\" và nhập thành công {$importedCount} câu hỏi vào Ngân hàng câu hỏi!{$attachNote}");
             }
         }
 
@@ -1145,19 +1186,24 @@ class QuestionController extends Controller
             ];
         }
 
+        $sectionForGroup = ExamSection::query()->find((int) $validated['section_id']);
+        $groupQuestionTypeId = $sectionForGroup
+            ? Question::resolveQuestionTypeIdForPart((string) $sectionForGroup->code)
+            : 1;
+
         $createdCount = 0;
         foreach ($subQuestions as $idx => $qData) {
-            $q = new Question;
-            $q->section_id = $validated['section_id'];
-            $q->question_type_id = 1;
-            $q->question_set_id = $qSet->question_set_id;
-            $q->content = $qData['content'] ?? "Câu hỏi con #{$idx}";
-            $q->difficulty = $qData['difficulty'] ?? 'MEDIUM';
-            $q->points = 1.00;
-            $q->status = $status;
-            $q->explanation = $qData['explanation'] ?? null;
-            $q->created_at = now();
-            $q->save();
+            $q = Question::query()->create([
+                'section_id' => $validated['section_id'],
+                'question_type_id' => $groupQuestionTypeId,
+                'question_set_id' => $qSet->question_set_id,
+                'content' => $qData['content'] ?? "Câu hỏi con #{$idx}",
+                'difficulty' => $qData['difficulty'] ?? 'MEDIUM',
+                'points' => '1.00',
+                'status' => $status,
+                'explanation' => $qData['explanation'] ?? null,
+                'created_at' => now(),
+            ]);
 
             $correctLetter = $qData['correct'] ?? 'B';
             $options = $qData['options'] ?? [];

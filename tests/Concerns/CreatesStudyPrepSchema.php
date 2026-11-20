@@ -140,7 +140,7 @@ trait CreatesStudyPrepSchema
 
         Schema::create('topics', function (Blueprint $table): void {
             $table->id('topic_id');
-            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('user_id')->nullable();
             $table->string('name', 100);
             $table->text('description')->nullable();
             $table->unsignedBigInteger('parent_topic_id')->nullable();

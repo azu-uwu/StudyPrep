@@ -46,18 +46,32 @@
         </div>
     @endif
 
-    {{-- 1. nút thao tác phía trên (Header) --}}
-    <div class="user-page-header" style="display: flex; justify-content: flex-start;">
-    <div class="user-header-actions" style="margin-left: 0;">
-        <button type="button" class="btn-admin-primary" onclick="openAdminModal('modal-add-test')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            <span>Thêm đề thi</span>
-        </button>
+    {{-- 1. Tiêu đề trang & Nút thao tác phía trên (Đồng bộ bố cục với Ngân hàng câu hỏi) --}}
+    <div class="user-page-header">
+        <div>
+            <div class="qbank-breadcrumb-sub">
+                <span>Quản lý đào tạo</span>
+                <span>></span>
+                <span class="crumb-active">Quản lý đề thi TOEIC</span>
+            </div>
+            <div class="user-title-row">
+                <h1 class="user-page-title">Quản lý đề thi TOEIC</h1>
+            </div>
+            <p class="user-page-subtitle" style="margin: 4px 0 0 0; color: #64748b; font-size: 13.5px;">
+                Xây dựng, kiểm định chỉ tiêu ETS và quản lý bộ đề thi chuẩn (Listening, Reading, Speaking &amp; Writing)
+            </p>
+        </div>
+
+        <div class="user-header-actions">
+            <button type="button" class="btn-admin-primary" onclick="openAdminModal('modal-add-test')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>Thêm đề thi</span>
+            </button>
+        </div>
     </div>
-</div>
 
     {{-- 2. Bốn thẻ thống kê chỉ số KPI --}}
     <div class="qbank-kpi-grid">
@@ -333,6 +347,11 @@
                                         <span style="width: 6px; height: 6px; border-radius: 50%; background: #f59e0b;"></span>
                                         Đang biên soạn
                                     </span>
+                                @endif
+                                @if (!empty($test['duplicate_count']) && $test['duplicate_count'] > 0)
+                                    <div style="margin-top: 4px; font-size: 11px; font-weight: 700; color: #b45309;">
+                                        ⚠ Trùng {{ $test['duplicate_count'] }} câu
+                                    </div>
                                 @endif
                             </td>
 
