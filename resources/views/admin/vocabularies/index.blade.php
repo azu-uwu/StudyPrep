@@ -56,6 +56,16 @@
                 <span>Quản lý bộ thẻ</span>
             </button>
 
+            {{-- Bật / Tắt Flashcard Side Panel --}}
+            <button type="button" class="vcb-btn-secondary" onclick="toggleSidePreviewDrawer()" title="Xem nhanh Flashcard ở bảng trượt cạnh phải">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="5" y="4" width="14" height="17" rx="2"></rect>
+                    <line x1="9" y1="9" x2="15" y2="9"></line>
+                    <line x1="9" y1="13" x2="15" y2="13"></line>
+                </svg>
+                <span>Flashcard Panel</span>
+            </button>
+
             {{-- Tạo bộ thẻ mới --}}
             <button type="button" class="vcb-btn-deck" onclick="openModal('modal-new-topic')">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -77,13 +87,13 @@
         </div>
     </div>
 
-    {{-- KPI Summary Cards --}}
+    {{-- 2. Bốn thẻ thống kê chỉ số (4 KPI Cards - Đồng bộ chuẩn Admin) --}}
     <div class="vcb-kpi-grid">
         {{-- Card 1: Tổng số từ vựng --}}
         <div class="vcb-kpi-card">
-            <div class="vcb-kpi-head">
-                <span class="vcb-kpi-label">Tổng số từ vựng</span>
-                <div class="vcb-kpi-icon-wrap" title="Từ vựng TOEIC">
+            <div class="vcb-kpi-top">
+                <p class="vcb-kpi-title">Tổng số từ vựng</p>
+                <div class="vcb-kpi-icon icon-purple" title="Từ vựng TOEIC">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="4 7 4 4 20 4 20 7"></polyline>
                         <line x1="9" y1="20" x2="15" y2="20"></line>
@@ -91,31 +101,60 @@
                     </svg>
                 </div>
             </div>
-            <div class="vcb-kpi-val">{{ number_format($totalVocabCount) }}</div>
+            <div class="vcb-kpi-val-row">
+                <span class="vcb-kpi-num">{{ number_format($totalVocabCount) }}</span>
+                <span class="vcb-kpi-sub">từ</span>
+            </div>
+            <div class="vcb-kpi-foot">
+                <span>Toàn bộ kho dữ liệu từ vựng hệ thống</span>
+            </div>
         </div>
 
         {{-- Card 2: Bộ thẻ Flashcards mở --}}
         <div class="vcb-kpi-card">
-            <div class="vcb-kpi-head">
-                <span class="vcb-kpi-label">Bộ thẻ Flashcards mở</span>
-                <div class="vcb-kpi-icon-wrap" title="Bộ thẻ Flashcards">
+            <div class="vcb-kpi-top">
+                <p class="vcb-kpi-title">Bộ thẻ Flashcards mở</p>
+                <div class="vcb-kpi-icon icon-blue" title="Bộ thẻ Flashcards">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="5" y="4" width="14" height="17" rx="2" transform="rotate(-6 12 12)"></rect>
                         <rect x="6" y="3" width="14" height="17" rx="2"></rect>
                     </svg>
                 </div>
             </div>
-            <div class="vcb-kpi-val">
-                <span>{{ $totalTopicCount }}</span>
-                <span class="vcb-kpi-val-unit">bộ thẻ</span>
+            <div class="vcb-kpi-val-row">
+                <span class="vcb-kpi-num">{{ $totalTopicCount }}</span>
+                <span class="vcb-kpi-sub">bộ thẻ</span>
+            </div>
+            <div class="vcb-kpi-foot">
+                <span>Phân loại theo chủ đề và kỹ năng TOEIC</span>
             </div>
         </div>
 
-        {{-- Card 3: Thống kê học viên học tập --}}
+        {{-- Card 3: Thống kê đã thuộc & thành thạo --}}
         <div class="vcb-kpi-card">
-            <div class="vcb-kpi-head">
-                <span class="vcb-kpi-label">Lượt học viên tương tác</span>
-                <div class="vcb-kpi-icon-wrap" style="background: #eef2ff; color: #4f46e5;" title="Học viên đã học từ vựng">
+            <div class="vcb-kpi-top">
+                <p class="vcb-kpi-title">Từ vựng đã thuộc</p>
+                <div class="vcb-kpi-icon icon-green" title="Học viên đã thuộc">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                </div>
+            </div>
+            <div class="vcb-kpi-val-row">
+                <span class="vcb-kpi-num" style="color: #16a34a;">{{ number_format($totalMasteredCount) }}</span>
+                <span class="vcb-kpi-sub">từ</span>
+            </div>
+            <div class="vcb-kpi-foot">
+                <span style="color: #16a34a; font-weight: 600;">({{ number_format($totalMasteredCount) }} đã thuộc)</span>
+            </div>
+        </div>
+
+        {{-- Card 4: Thống kê học viên tương tác --}}
+        <div class="vcb-kpi-card">
+            <div class="vcb-kpi-top">
+                <p class="vcb-kpi-title">Lượt tương tác học tập</p>
+                <div class="vcb-kpi-icon icon-amber" title="Lượt ôn tập">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                         <circle cx="9" cy="7" r="4"></circle>
@@ -124,60 +163,84 @@
                     </svg>
                 </div>
             </div>
-            <div class="vcb-kpi-val">
-                <span>{{ number_format($totalLearnersInteractions) }}</span>
-                <span class="vcb-kpi-val-unit" style="color: #16a34a; font-size: 13px; font-weight: 600;">({{ number_format($totalMasteredCount) }} đã thuộc)</span>
+            <div class="vcb-kpi-val-row">
+                <span class="vcb-kpi-num">{{ number_format($totalLearnersInteractions) }}</span>
+                <span class="vcb-kpi-sub">lượt học</span>
+            </div>
+            <div class="vcb-kpi-foot">
+                <span>({{ number_format($totalMasteredCount) }} đã thuộc) • Lượt ôn tập</span>
             </div>
         </div>
     </div>
 
-    {{-- Search & Filter Bar --}}
-    <form method="GET" action="{{ route('admin.vocabularies.index') }}" id="vcbFilterForm" class="vcb-filter-bar">
-        <div class="vcb-search-box">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <input
-                type="text"
-                name="search"
-                class="vcb-search-input"
-                placeholder="Tìm theo Từ vựng (Word), Phiên âm, Nghĩa tiếng Việt, Tag..."
-                value="{{ $search }}"
-                autocomplete="off"
-                onchange="document.getElementById('vcbFilterForm').submit()"
-            >
+    {{-- 3. Khung tìm kiếm và bộ lọc đa năng (Modern Filter Card) --}}
+    <form method="GET" action="{{ route('admin.vocabularies.index') }}" id="vcbFilterForm" class="vcb-filter-card">
+        {{-- Hàng 1: Ô tìm kiếm + Nút Đặt lại --}}
+        <div class="vcb-search-row">
+            <div class="vcb-search-input-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input
+                    type="text"
+                    name="search"
+                    class="vcb-search-input"
+                    placeholder="Tìm theo Từ vựng (Word), Phiên âm IPA, Nghĩa tiếng Việt, Định nghĩa..."
+                    value="{{ $search }}"
+                    autocomplete="off"
+                    onchange="document.getElementById('vcbFilterForm').submit()"
+                >
+            </div>
+
+            <a href="{{ route('admin.vocabularies.index') }}" class="qbank-reset-btn" title="Đặt lại toàn bộ bộ lọc">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <polyline points="1 20 1 14 7 14"></polyline>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+                <span>Đặt lại</span>
+            </a>
         </div>
 
-        {{-- POS Filter --}}
-        <select name="pos" class="vcb-filter-select" onchange="document.getElementById('vcbFilterForm').submit()">
-            <option value="all" {{ $posFilter === 'all' ? 'selected' : '' }}>Tất cả từ loại (POS)</option>
-            <option value="Noun" {{ $posFilter === 'Noun' ? 'selected' : '' }}>Danh từ (Noun)</option>
-            <option value="Verb" {{ $posFilter === 'Verb' ? 'selected' : '' }}>Động từ (Verb)</option>
-            <option value="Adj" {{ $posFilter === 'Adj' ? 'selected' : '' }}>Tính từ (Adj)</option>
-            <option value="Adv" {{ $posFilter === 'Adv' ? 'selected' : '' }}>Phó từ (Adv)</option>
-            <option value="Collocation" {{ $posFilter === 'Collocation' ? 'selected' : '' }}>Collocation</option>
-            <option value="Noun Phrase" {{ $posFilter === 'Noun Phrase' ? 'selected' : '' }}>Noun Phrase</option>
-        </select>
+        {{-- Hàng 2: 3 Dropdowns lọc dữ liệu --}}
+        <div class="vcb-filters-grid">
+            <div class="vcb-filter-col">
+                <label class="vcb-filter-label">TỪ LOẠI (POS)</label>
+                <select name="pos" class="vcb-filter-select" onchange="document.getElementById('vcbFilterForm').submit()">
+                    <option value="all" {{ $posFilter === 'all' ? 'selected' : '' }}>Tất cả từ loại (POS)</option>
+                    <option value="Noun" {{ $posFilter === 'Noun' ? 'selected' : '' }}>Danh từ (Noun)</option>
+                    <option value="Verb" {{ $posFilter === 'Verb' ? 'selected' : '' }}>Động từ (Verb)</option>
+                    <option value="Adj" {{ $posFilter === 'Adj' ? 'selected' : '' }}>Tính từ (Adj)</option>
+                    <option value="Adv" {{ $posFilter === 'Adv' ? 'selected' : '' }}>Phó từ (Adv)</option>
+                    <option value="Collocation" {{ $posFilter === 'Collocation' ? 'selected' : '' }}>Collocation</option>
+                    <option value="Noun Phrase" {{ $posFilter === 'Noun Phrase' ? 'selected' : '' }}>Noun Phrase</option>
+                </select>
+            </div>
 
-        {{-- Level Filter --}}
-        <select name="level" class="vcb-filter-select" onchange="document.getElementById('vcbFilterForm').submit()">
-            <option value="all" {{ $levelFilter === 'all' ? 'selected' : '' }}>Mục tiêu / Level</option>
-            <option value="450+" {{ $levelFilter === '450+' ? 'selected' : '' }}>Level 450+ (Căn bản)</option>
-            <option value="550+" {{ $levelFilter === '550+' ? 'selected' : '' }}>Level 550+ (Trung cấp)</option>
-            <option value="650+" {{ $levelFilter === '650+' ? 'selected' : '' }}>Level 650+ (Khá)</option>
-            <option value="750+" {{ $levelFilter === '750+' ? 'selected' : '' }}>Level 750+ (Nâng cao)</option>
-            <option value="800+" {{ $levelFilter === '800+' ? 'selected' : '' }}>Level 800+ (Chuyên sâu)</option>
-            <option value="900+" {{ $levelFilter === '900+' ? 'selected' : '' }}>Level 900+ (Mastery)</option>
-        </select>
+            <div class="vcb-filter-col">
+                <label class="vcb-filter-label">MỤC TIÊU / LEVEL</label>
+                <select name="level" class="vcb-filter-select" onchange="document.getElementById('vcbFilterForm').submit()">
+                    <option value="all" {{ $levelFilter === 'all' ? 'selected' : '' }}>Tất cả mục tiêu điểm</option>
+                    <option value="450+" {{ $levelFilter === '450+' ? 'selected' : '' }}>Target 450+ (Căn bản)</option>
+                    <option value="550+" {{ $levelFilter === '550+' ? 'selected' : '' }}>Target 550+ (Trung cấp)</option>
+                    <option value="650+" {{ $levelFilter === '650+' ? 'selected' : '' }}>Target 650+ (Khá)</option>
+                    <option value="750+" {{ $levelFilter === '750+' ? 'selected' : '' }}>Target 750+ (Nâng cao)</option>
+                    <option value="800+" {{ $levelFilter === '800+' ? 'selected' : '' }}>Target 800+ (Chuyên sâu)</option>
+                    <option value="900+" {{ $levelFilter === '900+' ? 'selected' : '' }}>Target 900+ (Mastery)</option>
+                </select>
+            </div>
 
-        {{-- Topic Filter --}}
-        <select name="topic_id" class="vcb-filter-select" onchange="document.getElementById('vcbFilterForm').submit()">
-            <option value="all" {{ $topicFilter === 'all' ? 'selected' : '' }}>Tất cả bộ thẻ Flashcards</option>
-            @foreach ($topics as $t)
-                <option value="{{ $t->topic_id }}" {{ (string)$topicFilter === (string)$t->topic_id ? 'selected' : '' }}>{{ $t->name }}</option>
-            @endforeach
-        </select>
+            <div class="vcb-filter-col">
+                <label class="vcb-filter-label">BỘ THẺ FLASHCARD</label>
+                <select name="topic_id" class="vcb-filter-select" onchange="document.getElementById('vcbFilterForm').submit()">
+                    <option value="all" {{ $topicFilter === 'all' ? 'selected' : '' }}>Tất cả bộ thẻ Flashcards</option>
+                    @foreach ($topics as $t)
+                        <option value="{{ $t->topic_id }}" {{ (string)$topicFilter === (string)$t->topic_id ? 'selected' : '' }}>{{ $t->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
     </form>
 
     {{-- Main 2-Column Layout --}}
@@ -201,6 +264,10 @@
                     </div>
 
                     <div class="vcb-bulk-actions">
+                        <button type="button" class="btn-admin-action" onclick="toggleSidePreviewDrawer()" style="display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 9px; font-size: 13px; font-weight: 700; background: #ffffff; color: #4338ca; border: 1.5px solid #c7d2fe; cursor: pointer;" title="Bật/Tắt bảng xem trước Flashcard ở cạnh phải">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="4" width="14" height="17" rx="2"></rect><line x1="9" y1="9" x2="15" y2="9"></line><line x1="9" y1="13" x2="15" y2="13"></line></svg>
+                            <span>Xem Flashcard</span>
+                        </button>
                         <button type="button" class="vcb-btn-bulk-assign" onclick="openBulkAssignModal()">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
@@ -247,14 +314,18 @@
                                             'pos' => $item->clean_pos,
                                             'level' => $item->target_level,
                                             'topic_id' => $item->topic_id ?? ($topics->first()->topic_id ?? 1),
+                                            'topic_name' => $item->topic?->name ?? 'Mặc định',
                                             'meaning_vi' => $item->clean_meaning_vi,
                                             'definition_en' => $item->clean_definition_en,
                                             'example_en' => $item->example_en ?? '',
                                             'example_vi' => $item->example_vi ?? '',
                                             'image_url' => $item->image_url,
+                                            'learners_count' => $item->learners_count ?? 0,
+                                            'mastered_count' => $item->mastered_count ?? 0,
                                         ];
                                     @endphp
                                     <tr class="vcb-row-item {{ $isSelected ? 'vcb-row-selected' : '' }}"
+                                        data-id="{{ $item->vocabulary_id }}"
                                         onclick="selectVocabItem({{ \Illuminate\Support\Js::from($itemData) }}, this)">
                                         {{-- Checkbox --}}
                                         <td style="text-align: center;" onclick="event.stopPropagation()">
@@ -329,7 +400,7 @@
                                         <td class="vcb-actions-col" onclick="event.stopPropagation()">
                                             <div class="vcb-actions-wrap">
                                                 {{-- Nút xem trước (Eye icon) --}}
-                                                <button type="button" class="vcb-action-btn" title="Xem trước Flashcard" onclick="selectVocabItem({{ \Illuminate\Support\Js::from($itemData) }}, this.closest('tr'))">
+                                                <button type="button" class="vcb-action-btn" title="Xem trước & Chi tiết Flashcard" onclick="openVocabPreviewModal({{ \Illuminate\Support\Js::from($itemData) }}, this.closest('tr'))">
                                                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                                         <circle cx="12" cy="12" r="3"></circle>
@@ -445,126 +516,252 @@
                 </div>
             </form>
         </div>
+    </div>
 
-        {{-- Right Column: Xem trước Flashcard (LIVE PREVIEW) --}}
-        <div class="vcb-right-col">
-            <div class="vcb-preview-box">
-                {{-- Header --}}
-                <div class="vcb-preview-top">
-                    <div class="vcb-preview-title-row">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="5" y="4" width="14" height="17" rx="2" transform="rotate(-6 12 12)"></rect>
-                            <rect x="6" y="3" width="14" height="17" rx="2"></rect>
+{{-- BACKDROP & SLIDE DRAWER CHO FLASHCARD LIVE PREVIEW --}}
+<div class="vcb-drawer-backdrop" id="vcbDrawerBackdrop" onclick="closeSidePreviewDrawer()"></div>
+
+<div class="vcb-side-drawer" id="vcbSideDrawer" role="dialog" aria-labelledby="sideDrawerTitle">
+    <div class="vcb-drawer-head">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="5" y="4" width="14" height="17" rx="2"></rect>
+                <line x1="9" y1="9" x2="15" y2="9"></line>
+                <line x1="9" y1="13" x2="15" y2="13"></line>
+            </svg>
+            <span id="sideDrawerTitle" style="font-size: 16px; font-weight: 800; color: #0f172a;">Xem trước Flashcard</span>
+            <span class="vcb-badge-live">LIVE</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <button type="button" class="vcb-scroll-btn" onclick="openVocabPreviewModal()" title="Phóng to Modal toàn màn hình">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <polyline points="9 21 3 21 3 15"></polyline>
+                    <line x1="21" y1="3" x2="14" y2="10"></line>
+                    <line x1="3" y1="21" x2="10" y2="14"></line>
+                </svg>
+            </button>
+            <button type="button" class="vcb-drawer-close" onclick="closeSidePreviewDrawer()" title="Đóng ngăn kéo">
+                &times;
+            </button>
+        </div>
+    </div>
+
+    <div style="padding: 18px 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="font-size: 12.5px; color: #64748b;">Mô phỏng trải nghiệm học viên:</span>
+            <div class="vcb-preview-scroll-actions" title="Duyệt qua lại giữa các từ vựng">
+                <button type="button" class="vcb-scroll-btn" onclick="navigateVocab(-1)" title="Từ trước đó (←)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <button type="button" class="vcb-scroll-btn" onclick="navigateVocab(1)" title="Từ tiếp theo (→)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+            </div>
+        </div>
+
+        {{-- Flashcard Simulator inside Drawer --}}
+        <div class="vcb-flashcard-sim" style="box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08); border-radius: 16px;">
+            <div class="vcb-sim-toolbar">
+                <div class="vcb-sim-tabs">
+                    <button type="button" class="vcb-sim-tab active" id="tabFront" onclick="showCardFace(false)">Mặt trước</button>
+                    <button type="button" class="vcb-sim-tab" id="tabBack" onclick="showCardFace(true)">Mặt sau</button>
+                </div>
+                <button type="button" class="vcb-sim-flip-btn" onclick="toggleCardFlip()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                    <span>Lật thẻ</span>
+                </button>
+            </div>
+
+            <div class="vcb-card-viewport" onclick="toggleCardFlip()" style="cursor: pointer;">
+                <div class="vcb-card-flipper" id="cardFlipper">
+                    {{-- Mặt trước --}}
+                    <div class="vcb-card-face vcb-card-front">
+                        <img id="simCardImg" @if ($previewVocab?->image_url) src="{{ $previewVocab->image_url }}" @else hidden @endif alt="{{ $previewVocab?->word ?? '' }}" class="vcb-card-banner-img">
+                        <div class="vcb-sim-word-row">
+                            <span class="vcb-sim-word" id="simWord">{{ $previewVocab?->word ?? 'Chưa có từ' }}</span>
+                            <button type="button" class="vcb-audio-btn" onclick="event.stopPropagation(); playAudio(document.getElementById('simWord').innerText)" title="Nghe phát âm chuẩn">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                            </button>
+                        </div>
+                        <div class="vcb-sim-ipa" id="simIpa">{{ $previewVocab?->pronunciation ?? '' }}</div>
+                        <div class="vcb-sim-badges">
+                            <span class="vcb-pos-badge" id="simPos">{{ $previewVocab?->clean_pos ?: 'Từ vựng' }}</span>
+                            <span class="vcb-lvl-badge" id="simLvl">Target {{ $previewVocab?->target_level ?: '650+' }}</span>
+                        </div>
+                        <div class="vcb-sim-hint">Bấm vào thẻ hoặc "Lật thẻ" để xem nghĩa</div>
+                    </div>
+
+                    {{-- Mặt sau --}}
+                    <div class="vcb-card-face vcb-card-back">
+                        <div class="vcb-back-meaning" id="simMeaning">{{ $previewVocab?->clean_meaning_vi ?? '' }}</div>
+                        <div class="vcb-back-def" id="simDef">{{ $previewVocab?->clean_definition_en ?? '' }}</div>
+                        <div class="vcb-back-example-box">
+                            <div class="vcb-back-example-en" id="simExEn">"{{ $previewVocab?->example_en ?? '' }}"</div>
+                            <div class="vcb-back-example-vi" id="simExVi">→ {{ $previewVocab?->example_vi ?? '' }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="vcb-sm2-bar" style="margin-top: 14px;">
+                <button type="button" class="vcb-sm2-btn" onclick="rateSM2(1, 'Chưa thuộc')">Chưa thuộc<br><span style="font-size: 10px; font-weight: normal;">(1 ngày)</span></button>
+                <button type="button" class="vcb-sm2-btn" onclick="rateSM2(3, 'Khó')">Khó<br><span style="font-size: 10px; font-weight: normal;">(3 ngày)</span></button>
+                <button type="button" class="vcb-sm2-btn vcb-sm2-green" onclick="rateSM2(7, 'Đã thuộc')">Đã thuộc<br><span style="font-size: 10px; font-weight: normal;">(7 ngày)</span></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+    {{-- Floating Mobile Preview Bar (Dành cho màn hình nhỏ <= 1200px) --}}
+    <div class="vcb-mobile-preview-bar" id="vcbMobilePreviewBar" onclick="openVocabPreviewModal()">
+        <div class="vcb-mobile-preview-content">
+            <div class="vcb-mobile-preview-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="5" y="4" width="14" height="17" rx="2" transform="rotate(-6 12 12)"></rect>
+                    <rect x="6" y="3" width="14" height="17" rx="2"></rect>
+                </svg>
+            </div>
+            <div class="vcb-mobile-preview-text">
+                Xem trước thẻ: <strong id="mobilePreviewWord">{{ $previewVocab?->word ?? ($vocabularies->first()?->word ?? 'Flashcard') }}</strong>
+            </div>
+        </div>
+        <button type="button" class="vcb-btn-mobile-open">
+            Mở xem trước &rarr;
+        </button>
+    </div>
+</div>
+
+{{-- MODAL XEM CHI TIẾT & XEM TRƯỚC FLASHCARD (Dành cho mọi kích thước thiết bị & cuộn/duyệt qua lại) --}}
+<div id="modal-preview-vocab" class="vcb-modal-overlay">
+    <div class="vcb-modal-dialog" style="max-width: 720px; width: 95%;">
+        <div class="vcb-modal-head" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 16px 22px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 32px; height: 32px; border-radius: 8px; background: #eef2ff; color: #4f46e5; display: flex; align-items: center; justify-content: center;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="5" y="4" width="14" height="17" rx="2" transform="rotate(-6 12 12)"></rect>
+                        <rect x="6" y="3" width="14" height="17" rx="2"></rect>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="vcb-modal-title" style="font-size: 16.5px; font-weight: 800; color: #0f172a;">Chi tiết &amp; Xem trước Flashcard</h3>
+                    <div style="font-size: 12px; color: #64748b;">Mô phỏng trải nghiệm lật thẻ học 2 mặt của học viên</div>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="vcb-badge-live">LIVE PREVIEW</span>
+                <button type="button" class="vcb-modal-close" onclick="closeModal('modal-preview-vocab')">&times;</button>
+            </div>
+        </div>
+
+        <div class="vcb-modal-body" style="padding: 20px 22px; max-height: 80vh; overflow-y: auto;">
+            {{-- Flashcard Simulation inside Modal --}}
+            <div style="max-width: 440px; margin: 0 auto 20px auto;">
+                <div class="vcb-sim-toolbar" style="margin-bottom: 10px;">
+                    <div class="vcb-sim-tabs">
+                        <button type="button" class="vcb-sim-tab active" id="modalTabFront" onclick="showModalCardFace(false)">Mặt trước</button>
+                        <button type="button" class="vcb-sim-tab" id="modalTabBack" onclick="showModalCardFace(true)">Mặt sau</button>
+                    </div>
+
+                    <button type="button" class="vcb-sim-flip-btn" onclick="toggleModalCardFlip()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
                         </svg>
-                        <span class="vcb-preview-title">Xem trước Flashcard</span>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span class="vcb-badge-live">LIVE PREVIEW</span>
-                        <div class="vcb-preview-scroll-actions" title="Cuộn ngang xem trọn vẹn Flashcard">
-                            <button type="button" class="vcb-scroll-btn" onclick="scrollPreviewCard(-120)" title="Cuộn sang trái" aria-label="Cuộn sang trái">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                            </button>
-                            <button type="button" class="vcb-scroll-btn" onclick="scrollPreviewCard(120)" title="Cuộn sang phải" aria-label="Cuộn sang phải">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                            </button>
-                        </div>
-                    </div>
+                        <span>Lật thẻ</span>
+                    </button>
                 </div>
 
-                <div class="vcb-preview-desc">
-                    Mô phỏng trải nghiệm lật thẻ 2 mặt của học viên trên Web & Mobile App theo giải thuật SM-2.
-                </div>
+                {{-- 3D Flip Viewport inside Modal --}}
+                <div class="vcb-card-viewport" onclick="toggleModalCardFlip()" style="cursor: pointer; min-height: 220px;">
+                    <div class="vcb-card-flipper" id="modalCardFlipper">
+                        {{-- Mặt trước --}}
+                        <div class="vcb-card-face vcb-card-front" style="padding: 24px 20px;">
+                            <img id="modalSimCardImg" hidden alt="" class="vcb-card-banner-img" style="max-height: 120px; object-fit: cover; border-radius: 8px; margin-bottom: 12px;">
 
-                {{-- Interactive Flashcard Component with Horizontal Scroll --}}
-                <div class="vcb-preview-scroll-container overflow-x-auto" id="vcbPreviewScrollContainer">
-                    <div class="vcb-flashcard-sim">
-                    {{-- Nav Toolbar inside Card --}}
-                    <div class="vcb-sim-toolbar">
-                        <div class="vcb-sim-tabs">
-                            <button type="button" class="vcb-sim-tab active" id="tabFront" onclick="showCardFace(false)">Mặt trước</button>
-                            <button type="button" class="vcb-sim-tab" id="tabBack" onclick="showCardFace(true)">Mặt sau</button>
-                        </div>
-
-                        <button type="button" class="vcb-sim-flip-btn" onclick="toggleCardFlip()">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="23 4 23 10 17 10"></polyline>
-                                <polyline points="1 20 1 14 7 14"></polyline>
-                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-                            </svg>
-                            <span>Lật thẻ</span>
-                        </button>
-                    </div>
-
-                    {{-- 3D Flip Card Viewport --}}
-                    @php
-                        $initWord = $previewVocab?->word ?? 'Chưa có dữ liệu';
-                        $initIpa = $previewVocab?->pronunciation ?? '';
-                        $initPos = $previewVocab?->clean_pos ?? '';
-                        $initLvl = $previewVocab?->target_level ?? '';
-                        $initMeaning = $previewVocab?->clean_meaning_vi ?? '';
-                        $initDef = $previewVocab?->clean_definition_en ?? '';
-                        $initExEn = $previewVocab?->example_en ?? '';
-                        $initExVi = $previewVocab?->example_vi ?? '';
-                    @endphp
-                    <div class="vcb-card-viewport" onclick="toggleCardFlip()" style="cursor: pointer;">
-                        <div class="vcb-card-flipper" id="cardFlipper">
-                            {{-- Mặt Trước (Front) --}}
-                            <div class="vcb-card-face vcb-card-front">
-                                <img id="simCardImg" @if ($previewVocab?->image_url) src="{{ $previewVocab->image_url }}" @else hidden @endif alt="{{ $initWord }}" class="vcb-card-banner-img">
-
-                                <div class="vcb-sim-word-row">
-                                    <span class="vcb-sim-word" id="simWord">{{ $initWord }}</span>
-                                    <button type="button" class="vcb-audio-btn" onclick="event.stopPropagation(); playAudio(document.getElementById('simWord').innerText)" title="Nghe phát âm chuẩn">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                                        </svg>
-                                    </button>
-                                </div>
-
-                                <div class="vcb-sim-ipa" id="simIpa">{{ $initIpa }}</div>
-
-                                <div class="vcb-sim-badges">
-                                    <span class="vcb-pos-badge" id="simPos">Phó từ ({{ $initPos }})</span>
-                                    <span class="vcb-lvl-badge" id="simLvl">B2 – {{ $initLvl }}</span>
-                                </div>
-
-                                <div class="vcb-sim-hint">
-                                    Bấm "Lật thẻ" để xem giải nghĩa & ví dụ ngữ cảnh
-                                </div>
+                            <div class="vcb-sim-word-row">
+                                <span class="vcb-sim-word" id="modalSimWord" style="font-size: 26px;">Word</span>
+                                <button type="button" class="vcb-audio-btn" onclick="event.stopPropagation(); playAudio(document.getElementById('modalSimWord').innerText)" title="Nghe phát âm chuẩn">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                    </svg>
+                                </button>
                             </div>
 
-                            {{-- Mặt Sau (Back) --}}
-                            <div class="vcb-card-face vcb-card-back">
-                                <div class="vcb-back-meaning" id="simMeaning">{{ $initMeaning }}</div>
-                                <div class="vcb-back-def" id="simDef">{{ $initDef }}</div>
+                            <div class="vcb-sim-ipa" id="modalSimIpa" style="font-size: 15px; margin-bottom: 12px;">/ipa/</div>
 
-                                <div class="vcb-back-example-box">
-                                    <div class="vcb-back-example-en" id="simExEn">"{{ $initExEn }}"</div>
-                                    <div class="vcb-back-example-vi" id="simExVi">{{ $initExVi }}</div>
-                                </div>
+                            <div class="vcb-sim-badges">
+                                <span class="vcb-pos-badge" id="modalSimPos">POS</span>
+                                <span class="vcb-lvl-badge" id="modalSimLvl">Target Level</span>
+                            </div>
 
-                                <div class="vcb-sim-hint" style="text-align: center; width: 100%;">
-                                    Đánh giá độ nhớ thẻ để thuật toán SM-2 tính khoảng thời gian lặp lại:
-                                </div>
+                            <div class="vcb-sim-hint" style="margin-top: 14px;">
+                                Bấm vào thẻ để lật sang mặt sau (Nghĩa &amp; Ví dụ)
+                            </div>
+                        </div>
+
+                        {{-- Mặt sau --}}
+                        <div class="vcb-card-face vcb-card-back" style="padding: 22px 20px; text-align: left;">
+                            <div class="vcb-back-meaning" id="modalSimMeaning" style="font-size: 17px; margin-bottom: 8px;">Nghĩa</div>
+                            <div class="vcb-back-def" id="modalSimDef" style="font-size: 13px; margin-bottom: 14px;">Definition</div>
+
+                            <div class="vcb-back-example-box" style="padding: 12px 14px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px;">
+                                <div class="vcb-back-example-en" id="modalSimExEn" style="font-size: 13px;">Example</div>
+                                <div class="vcb-back-example-vi" id="modalSimExVi" style="font-size: 12.5px; margin-top: 4px;">Dịch nghĩa</div>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    {{-- SM-2 Interval Rating Buttons --}}
-                    <div class="vcb-sm2-bar">
-                        <button type="button" class="vcb-sm2-btn" onclick="rateSM2(1, 'Chưa thuộc')">
-                            Chưa thuộc<br><span style="font-size: 10px; font-weight: normal;">(1 ngày)</span>
-                        </button>
-                        <button type="button" class="vcb-sm2-btn" onclick="rateSM2(3, 'Khó')">
-                            Khó<br><span style="font-size: 10px; font-weight: normal;">(3 ngày)</span>
-                        </button>
-                        <button type="button" class="vcb-sm2-btn vcb-sm2-green" onclick="rateSM2(7, 'Đã thuộc')">
-                            Đã thuộc<br><span style="font-size: 10px; font-weight: normal;">(7 ngày)</span>
-                        </button>
+            {{-- Thông tin chi tiết mở rộng --}}
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px;">
+                <h4 style="font-size: 13.5px; font-weight: 800; color: #1e293b; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 0.03em;">
+                    Dữ liệu chi tiết từ vựng trong hệ thống
+                </h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 13px;">
+                    <div>
+                        <span style="color: #64748b; font-size: 12px;">Bộ thẻ hiện tại:</span>
+                        <div id="modalDetailTopic" style="font-weight: 700; color: #1e1b4b; margin-top: 2px;">--</div>
+                    </div>
+                    <div>
+                        <span style="color: #64748b; font-size: 12px;">Mục tiêu điểm thi (Target):</span>
+                        <div id="modalDetailLevel" style="font-weight: 700; color: #047857; margin-top: 2px;">--</div>
+                    </div>
+                    <div>
+                        <span style="color: #64748b; font-size: 12px;">Lượt học viên tương tác:</span>
+                        <div id="modalDetailLearners" style="font-weight: 700; color: #4338ca; margin-top: 2px;">--</div>
+                    </div>
+                    <div>
+                        <span style="color: #64748b; font-size: 12px;">Số học viên đã thuộc từ này:</span>
+                        <div id="modalDetailMastered" style="font-weight: 700; color: #16a34a; margin-top: 2px;">--</div>
                     </div>
                 </div>
-                </div>
+            </div>
+        </div>
+
+        <div class="vcb-modal-footer" style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 14px 22px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; gap: 8px;">
+                <button type="button" class="vcb-btn-secondary" onclick="navigateModalVocab(-1)" title="Chuyển sang từ trước">
+                    &larr; Từ trước
+                </button>
+                <button type="button" class="vcb-btn-secondary" onclick="navigateModalVocab(1)" title="Chuyển sang từ tiếp theo">
+                    Từ tiếp theo &rarr;
+                </button>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button type="button" class="vcb-btn-secondary" onclick="editCurrentModalVocab()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 20h9"></path>
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                    </svg>
+                    <span>Chỉnh sửa</span>
+                </button>
+                <button type="button" class="vcb-btn-primary" onclick="closeModal('modal-preview-vocab')">
+                    Đóng
+                </button>
             </div>
         </div>
     </div>
@@ -996,36 +1193,223 @@
         document.getElementById('tabBack').classList.toggle('active', toBack);
     }
 
+    // State tracking for selected vocab & navigation
+    var CURRENT_VOCAB_ITEM = null;
+    var CURRENT_VOCAB_INDEX = 0;
+
+    // Slide Drawer Helpers
+    function openSidePreviewDrawer(item) {
+        if (item) {
+            selectVocabItem(item, null, false);
+        }
+        var drawer = document.getElementById('vcbSideDrawer');
+        var backdrop = document.getElementById('vcbDrawerBackdrop');
+        if (drawer) drawer.classList.add('open');
+        if (backdrop) backdrop.classList.add('open');
+    }
+
+    function closeSidePreviewDrawer() {
+        var drawer = document.getElementById('vcbSideDrawer');
+        var backdrop = document.getElementById('vcbDrawerBackdrop');
+        if (drawer) drawer.classList.remove('open');
+        if (backdrop) backdrop.classList.remove('open');
+    }
+
+    function toggleSidePreviewDrawer() {
+        var drawer = document.getElementById('vcbSideDrawer');
+        if (drawer && drawer.classList.contains('open')) {
+            closeSidePreviewDrawer();
+        } else {
+            openSidePreviewDrawer();
+        }
+    }
+
+    // Toggle 3D card flip for Modal
+    function toggleModalCardFlip() {
+        var flipper = document.getElementById('modalCardFlipper');
+        if (!flipper) return;
+        var isFlipped = flipper.classList.toggle('flipped');
+        var tabF = document.getElementById('modalTabFront');
+        var tabB = document.getElementById('modalTabBack');
+        if (tabF) tabF.classList.toggle('active', !isFlipped);
+        if (tabB) tabB.classList.toggle('active', isFlipped);
+    }
+
+    function showModalCardFace(toBack) {
+        var flipper = document.getElementById('modalCardFlipper');
+        if (!flipper) return;
+        if (toBack) {
+            flipper.classList.add('flipped');
+        } else {
+            flipper.classList.remove('flipped');
+        }
+        var tabF = document.getElementById('modalTabFront');
+        var tabB = document.getElementById('modalTabBack');
+        if (tabF) tabF.classList.toggle('active', !toBack);
+        if (tabB) tabB.classList.toggle('active', toBack);
+    }
+
+    // Update Modal Flashcard Widget
+    function updateModalFlashcard(item) {
+        if (!item) return;
+        var modalWord = document.getElementById('modalSimWord');
+        if (modalWord) modalWord.innerText = item.word || 'Chưa có dữ liệu';
+
+        var modalIpa = document.getElementById('modalSimIpa');
+        if (modalIpa) modalIpa.innerText = item.pronunciation || '';
+
+        var modalPos = document.getElementById('modalSimPos');
+        if (modalPos) modalPos.innerText = item.pos ? 'Từ loại (' + item.pos + ')' : 'Từ vựng';
+
+        var modalLvl = document.getElementById('modalSimLvl');
+        if (modalLvl) modalLvl.innerText = item.level ? 'Target ' + item.level : '';
+
+        var modalMeaning = document.getElementById('modalSimMeaning');
+        if (modalMeaning) modalMeaning.innerText = item.meaning_vi || '';
+
+        var modalDef = document.getElementById('modalSimDef');
+        if (modalDef) modalDef.innerText = item.definition_en || '';
+
+        var modalExEn = document.getElementById('modalSimExEn');
+        if (modalExEn) modalExEn.innerText = item.example_en ? '"' + item.example_en + '"' : '';
+
+        var modalExVi = document.getElementById('modalSimExVi');
+        if (modalExVi) modalExVi.innerText = item.example_vi ? '→ ' + item.example_vi : '';
+
+        var modalImg = document.getElementById('modalSimCardImg');
+        if (modalImg) {
+            if (item.image_url) {
+                modalImg.src = item.image_url;
+                modalImg.hidden = false;
+            } else {
+                modalImg.removeAttribute('src');
+                modalImg.hidden = true;
+            }
+        }
+
+        // Details block
+        var topicEl = document.getElementById('modalDetailTopic');
+        if (topicEl) topicEl.innerText = item.topic_name || 'Bộ thẻ mặc định';
+
+        var lvlEl = document.getElementById('modalDetailLevel');
+        if (lvlEl) lvlEl.innerText = item.level ? item.level : 'Không giới hạn';
+
+        var learnersEl = document.getElementById('modalDetailLearners');
+        if (learnersEl) learnersEl.innerText = (item.learners_count || 0) + ' học viên';
+
+        var masteredEl = document.getElementById('modalDetailMastered');
+        if (masteredEl) masteredEl.innerText = (item.mastered_count || 0) + ' người thành thạo';
+
+        // Flip back to front
+        showModalCardFace(false);
+    }
+
+    // Open Vocabulary Preview Modal
+    function openVocabPreviewModal(item, rowElem) {
+        if (item) {
+            selectVocabItem(item, rowElem, false);
+        } else if (!CURRENT_VOCAB_ITEM) {
+            var firstRow = document.querySelector('.vcb-row-item');
+            if (firstRow) {
+                firstRow.click();
+            }
+        }
+        openModal('modal-preview-vocab');
+    }
+
+    // Navigate next / previous vocab
+    function navigateVocab(delta) {
+        var rows = Array.from(document.querySelectorAll('.vcb-row-item'));
+        if (rows.length === 0) return;
+
+        var nextIdx = CURRENT_VOCAB_INDEX + delta;
+        if (nextIdx < 0) nextIdx = rows.length - 1;
+        if (nextIdx >= rows.length) nextIdx = 0;
+
+        CURRENT_VOCAB_INDEX = nextIdx;
+        var targetRow = rows[nextIdx];
+        if (targetRow) {
+            targetRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            targetRow.click();
+        }
+    }
+
+    // Navigate inside Modal
+    function navigateModalVocab(delta) {
+        navigateVocab(delta);
+    }
+
+    // Edit currently active modal vocab
+    function editCurrentModalVocab() {
+        if (!CURRENT_VOCAB_ITEM) return;
+        closeModal('modal-preview-vocab');
+        openEditVocabModal(CURRENT_VOCAB_ITEM);
+    }
+
     // Select row and dynamically update Live Preview Flashcard
-    function selectVocabItem(item, rowElem) {
-        // Update table row active styling
-        var rows = document.querySelectorAll('.vcb-row-item');
-        rows.forEach(function(r) { r.classList.remove('vcb-row-selected'); });
+    function selectVocabItem(item, rowElem, syncModal = true) {
+        CURRENT_VOCAB_ITEM = item;
+
+        // Update table row active styling & find current index
+        var rows = Array.from(document.querySelectorAll('.vcb-row-item'));
+        rows.forEach(function(r, idx) {
+            r.classList.remove('vcb-row-selected');
+            if (rowElem && r === rowElem) {
+                CURRENT_VOCAB_INDEX = idx;
+            }
+        });
         if (rowElem) {
             rowElem.classList.add('vcb-row-selected');
         }
 
-        // Update Flashcard Widget Content
-        document.getElementById('simWord').innerText = item.word || 'Chưa có dữ liệu';
-        document.getElementById('simIpa').innerText = item.pronunciation || '';
-        document.getElementById('simPos').innerText = item.pos ? 'Từ loại (' + item.pos + ')' : '';
-        document.getElementById('simLvl').innerText = item.level || '';
-        document.getElementById('simMeaning').innerText = item.meaning_vi || '';
-        document.getElementById('simDef').innerText = item.definition_en || '';
-        document.getElementById('simExEn').innerText = item.example_en ? '"' + item.example_en + '"' : '';
-        document.getElementById('simExVi').innerText = item.example_vi || '';
+        // Update Flashcard Widget Content in Right Column (Desktop)
+        var elWord = document.getElementById('simWord');
+        if (elWord) elWord.innerText = item.word || 'Chưa có dữ liệu';
+
+        var elIpa = document.getElementById('simIpa');
+        if (elIpa) elIpa.innerText = item.pronunciation || '';
+
+        var elPos = document.getElementById('simPos');
+        if (elPos) elPos.innerText = item.pos ? 'Từ loại (' + item.pos + ')' : '';
+
+        var elLvl = document.getElementById('simLvl');
+        if (elLvl) elLvl.innerText = item.level || '';
+
+        var elMeaning = document.getElementById('simMeaning');
+        if (elMeaning) elMeaning.innerText = item.meaning_vi || '';
+
+        var elDef = document.getElementById('simDef');
+        if (elDef) elDef.innerText = item.definition_en || '';
+
+        var elExEn = document.getElementById('simExEn');
+        if (elExEn) elExEn.innerText = item.example_en ? '"' + item.example_en + '"' : '';
+
+        var elExVi = document.getElementById('simExVi');
+        if (elExVi) elExVi.innerText = item.example_vi || '';
 
         var image = document.getElementById('simCardImg');
-        if (item.image_url) {
-            image.src = item.image_url;
-            image.hidden = false;
-        } else {
-            image.removeAttribute('src');
-            image.hidden = true;
+        if (image) {
+            if (item.image_url) {
+                image.src = item.image_url;
+                image.hidden = false;
+            } else {
+                image.removeAttribute('src');
+                image.hidden = true;
+            }
         }
+
+        // Update Mobile Bottom Bar Preview
+        var mobWord = document.getElementById('vcbMobilePreviewWord');
+        if (mobWord) mobWord.innerText = item.word || 'Chưa có từ';
+
+        var mobMeaning = document.getElementById('vcbMobilePreviewMeaning');
+        if (mobMeaning) mobMeaning.innerText = item.meaning_vi || '';
 
         // Flip back to front on word switch
         showCardFace(false);
+
+        // Synchronize Modal content
+        updateModalFlashcard(item);
     }
 
     // Toggle 3-dots dropdown menu
@@ -1273,6 +1657,16 @@
         if (!e.target.closest('.vcb-dropdown')) {
             document.querySelectorAll('.vcb-dropdown.open').forEach(function(d) {
                 d.classList.remove('open');
+            });
+        }
+    });
+
+    // Close side drawer or modal on ESC key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeSidePreviewDrawer();
+            document.querySelectorAll('.vcb-modal-overlay.open').forEach(function(m) {
+                m.classList.remove('open');
             });
         }
     });
