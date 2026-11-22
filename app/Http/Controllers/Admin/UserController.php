@@ -159,7 +159,7 @@ class UserController extends Controller
         $isLocked = $validated['status'] === 'LOCKED';
         $energy = isset($validated['energy']) && $validated['energy'] !== null
             ? (int) $validated['energy']
-            : ($role === 'admin' ? 999 : 20);
+            : ($role === 'admin' ? 999 : 5);
 
         $user = new User;
         $user->full_name = $validated['full_name'];
@@ -609,7 +609,7 @@ class UserController extends Controller
                 'role' => $role,
                 'status' => $status,
                 'password_hash' => Hash::make($password),
-                'energy' => $role === 'admin' ? 999 : 20,
+                'energy' => $role === 'admin' ? 999 : 5,
                 'created_at' => now(),
                 'email_verified_at' => $status === 'PENDING' ? null : now(),
                 'locked_until' => $status === 'LOCKED' ? now()->addDays(30) : null,

@@ -604,7 +604,7 @@
                            name="energy"
                            value="{{ old('energy') }}"
                            class="form-control-admin"
-                           placeholder="Default: 20 (999 for Admin)" min="0" max="99999">
+                           placeholder="Default: 5 (999 for Admin)" min="0" max="99999">
                 </div>
             </div>
             <div class="admin-modal-footer">
@@ -956,7 +956,7 @@
         document.getElementById('edit_email').value = user.email || '';
         document.getElementById('edit_user_name').value = user.user_name || '';
         document.getElementById('edit_password').value = '';
-        document.getElementById('edit_energy').value = (user.energy !== undefined && user.energy !== null) ? user.energy : 20;
+        document.getElementById('edit_energy').value = (user.energy !== undefined && user.energy !== null) ? user.energy : 5;
 
         var roleVal = 'student';
         var lowerRole = (user.role || '').toLowerCase();

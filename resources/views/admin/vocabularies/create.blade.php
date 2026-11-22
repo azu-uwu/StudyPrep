@@ -17,7 +17,6 @@
     <form method="POST" action="{{ route('admin.vocabularies.store') }}" id="createVocabForm">
         @csrf
         <input type="hidden" name="action_type" id="formActionType" value="publish">
-        <input type="hidden" name="level" id="inputTargetLevel" value="Target 800+ (High B2 / C1)">
 
         {{-- Top Header --}}
         <div class="vc-header">
@@ -173,21 +172,7 @@
                         >
                     </div>
 
-                    {{-- Row 3: Target Score / Levels --}}
-                    <div class="vc-form-group">
-                        <label class="vc-label">
-                            <span>Mục tiêu điểm thi TOEIC & Khung năng lực</span>
-                            <span style="font-size: 11.5px; color: #64748b; font-weight: normal;">Gắn nhãn độ khó tự động cho thuật toán học viên</span>
-                        </label>
-                        <div class="vc-targets-grid">
-                            <div class="vc-target-pill" onclick="selectLevel('Target 450+ (CEFR B1)', this)">Target 450+ (CEFR B1)</div>
-                            <div class="vc-target-pill" onclick="selectLevel('Target 650+ (CEFR B2)', this)">Target 650+ (CEFR B2)</div>
-                            <div class="vc-target-pill active" onclick="selectLevel('Target 800+ (High B2 / C1)', this)">Target 800+ (High B2 / C1)</div>
-                            <div class="vc-target-pill" onclick="selectLevel('Target 900+ (Mastery C1+)', this)">Target 900+ (Mastery C1+)</div>
-                        </div>
-                    </div>
-
-                    {{-- Row 4: Assign to Deck --}}
+                    {{-- Row 3: Assign to Deck --}}
                     <div class="vc-form-group" style="margin-bottom: 0;">
                         <label class="vc-label" for="selectTopic">
                             <span>Gán vào Bộ thẻ Flashcard <span style="color: #ef4444;">*</span></span>
@@ -447,7 +432,7 @@
                         <div class="vc-phone-body" id="phonePreviewBox">
                             {{-- Topline --}}
                             <div class="vc-phone-topline">
-                                <span class="vc-phone-pos-pill" id="previewPosBadge">ADV • 800+</span>
+                                <span class="vc-phone-pos-pill" id="previewPosBadge">ADV</span>
                                 <button type="button" class="vcb-audio-btn" onclick="playCurrentWordAudio()" title="Nghe phát âm">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
@@ -601,26 +586,6 @@
         document.getElementById('wordCharCounter').innerText = count + ' ký tự';
     }
 
-    // Level Target Pill selector
-    function selectLevel(levelName, element) {
-        document.querySelectorAll('.vc-target-pill').forEach(function(pill) {
-            pill.classList.remove('active');
-        });
-        element.classList.add('active');
-        document.getElementById('inputTargetLevel').value = levelName;
-
-        // Extract short level tag e.g. 800+, 650+
-        var match = levelName.match(/(\d+\+)/);
-        var shortLvl = match ? match[1] : '800+';
-        var pos = document.getElementById('selectPos').value;
-        var shortPos = 'ADV';
-        if (pos.includes('Noun')) shortPos = 'NOUN';
-        else if (pos.includes('Verb')) shortPos = 'VERB';
-        else if (pos.includes('Adjective')) shortPos = 'ADJ';
-        else if (pos.includes('Collocation')) shortPos = 'COLLOC';
-        document.getElementById('previewPosBadge').innerText = shortPos + ' • ' + shortLvl;
-    }
-
     // Play word pronunciation
     function playCurrentWordAudio() {
         var word = document.getElementById('inputWord').value.trim();
@@ -647,6 +612,14 @@
         document.getElementById('previewIpa').innerText = ipa;
         document.getElementById('previewMeaningVi').innerText = meaningVi;
         document.getElementById('previewDefEn').innerText = defEn;
+
+        var pos = document.getElementById('selectPos').value;
+        var shortPos = 'ADV';
+        if (pos.includes('Noun')) shortPos = 'NOUN';
+        else if (pos.includes('Verb')) shortPos = 'VERB';
+        else if (pos.includes('Adjective')) shortPos = 'ADJ';
+        else if (pos.includes('Collocation')) shortPos = 'COLLOC';
+        document.getElementById('previewPosBadge').innerText = shortPos;
     }
 
     // Toggle Preview card face

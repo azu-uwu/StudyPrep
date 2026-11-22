@@ -983,9 +983,14 @@ class QuestionController extends Controller
 
         // 2. Trường hợp nạp từ giao diện Bulk Import Studio (không đính kèm file riêng)
         if ($request->input('bulk_confirm') || $request->input('action_type') === 'bulk_import') {
-            $studioStatus = $request->input('publish_status', 'draft') === 'live' ? 'ACTIVE' : 'DRAFT';
-            $section = ExamSection::first();
-            $sectionId = $defaultSectionId ?: ($section ? $section->section_id : 5);
+            $rawStatus = (string) $request->input('publish_status', 'draft');
+            $studioStatus = in_array(strtolower($rawStatus), ['live', 'active', 'published'], true) ? 'ACTIVE' : 'DRAFT';
+
+            $sectionId = $defaultSectionId ?: (int) $request->input('section_id', 0);
+            $section = $sectionId > 0 ? ExamSection::find($sectionId) : ExamSection::first();
+            $sectionId = $section ? (int) $section->section_id : ($sectionId > 0 ? $sectionId : 5);
+            $partCode = $section ? (string) $section->code : 'PART5';
+            $resolvedQuestionTypeId = Question::resolveQuestionTypeIdForPart($partCode);
 
             $sampleQuestions = [
                 [
@@ -1017,11 +1022,11 @@ class QuestionController extends Controller
             ];
 
             $createdIds = [];
-            DB::transaction(function () use ($sampleQuestions, $sectionId, &$createdIds) {
+            DB::transaction(function () use ($sampleQuestions, $sectionId, $resolvedQuestionTypeId, &$createdIds) {
                 foreach ($sampleQuestions as $data) {
                     $q = Question::create([
                         'section_id' => $sectionId,
-                        'question_type_id' => 1,
+                        'question_type_id' => $resolvedQuestionTypeId,
                         'content' => $data['content'],
                         'difficulty' => $data['difficulty'],
                         'points' => $data['points'],
@@ -1059,8 +1064,14 @@ class QuestionController extends Controller
                     ->with('success', 'Đã nhập thành công '.count($createdIds).' câu hỏi TOEIC! Bạn có thể Xem trước, Chỉnh sửa hoặc Xóa từng câu hỏi ngay bên dưới.');
             }
 
+            $targetTestName = null;
+            if ($targetTestId && $targetTestId > 0 && Schema::hasTable('test_form')) {
+                $targetTestName = TestForm::query()->where('test_id', $targetTestId)->value('title');
+            }
+            $targetSuffix = $targetTestName ? " (Bộ đề: {$targetTestName})" : '';
+
             return redirect()->route('admin.questions.index')
-                ->with('success', "Đã nạp thành công {$count} câu hỏi TOEIC vào Ngân hàng câu hỏi (Bộ đề: ETS TOEIC 2024 - Test 05)!");
+                ->with('success', "Đã nạp thành công {$count} câu hỏi TOEIC vào Ngân hàng câu hỏi{$targetSuffix}!");
         }
 
         // 3. Trường hợp tải file trực tiếp qua modal nhưng file rỗng / chưa chọn
@@ -1203,17 +1214,22 @@ class QuestionController extends Controller
             ];
         }
 
-        $sectionForGroup = ExamSection::query()->find((int) $validated['section_id']);
+        $sectionForGroup = ExamSection::query()->with('skill')->find((int) $validated['section_id']);
         $groupQuestionTypeId = $sectionForGroup
             ? Question::resolveQuestionTypeIdForPart((string) $sectionForGroup->code)
             : 1;
+
+        if ($sectionForGroup && in_array(strtoupper((string) $sectionForGroup->code), ['PART1', 'PART2', 'PART3', 'PART4'], true)) {
+            $qSet->media_type = 'AUDIO';
+            $qSet->save();
+        }
 
         $createdCount = 0;
         foreach ($subQuestions as $idx => $qData) {
             $subDifficulty = $qData['difficulty'] ?? null;
             if (empty($subDifficulty) || $subDifficulty === 'UNSET') {
                 $subDifficulty = AiToeicService::assessToeicDifficulty(
-                    'reading',
+                    $sectionForGroup?->skill?->name ?? 'reading',
                     (string) ($sectionForGroup?->code ?? 'PART7'),
                     $qData['content'] ?? '',
                     $stimulusText,

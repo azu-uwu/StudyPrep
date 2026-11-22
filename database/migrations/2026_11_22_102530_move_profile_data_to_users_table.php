@@ -2,20 +2,33 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
+        if (! Schema::hasTable('users')) {
+            return;
+        }
+
         // 1. Thêm thông tin cá nhân vào users
         Schema::table('users', function (Blueprint $table) {
-            $table->date('birthday')->nullable();
-            $table->string('phone', 25)->nullable();
-            $table->string('gender', 30)->nullable();
-            $table->string('city', 100)->nullable();
-            $table->timestamp('password_changed_at')->nullable();
+            if (! Schema::hasColumn('users', 'birthday')) {
+                $table->date('birthday')->nullable();
+            }
+            if (! Schema::hasColumn('users', 'phone')) {
+                $table->string('phone', 25)->nullable();
+            }
+            if (! Schema::hasColumn('users', 'gender')) {
+                $table->string('gender', 30)->nullable();
+            }
+            if (! Schema::hasColumn('users', 'city')) {
+                $table->string('city', 100)->nullable();
+            }
+            if (! Schema::hasColumn('users', 'password_changed_at')) {
+                $table->timestamp('password_changed_at')->nullable();
+            }
         });
 
     }

@@ -150,16 +150,6 @@
                         </select>
                     </div>
 
-                    {{-- Phân nhóm cấp độ mặc định --}}
-                    <div class="qimport-dest-field">
-                        <label class="qimport-dest-label">Mục tiêu điểm mặc định (Nếu file bỏ trống)</label>
-                        <select name="default_level" class="qimport-dest-select">
-                            <option value="450+">Target 450+ (Cơ bản / Nền tảng)</option>
-                            <option value="650+" selected>Target 650+ (Trung cấp / Tiêu chuẩn TOEIC)</option>
-                            <option value="800+">Target 800+ (Nâng cao / Chuyên sâu)</option>
-                        </select>
-                    </div>
-
                     {{-- Chế độ xử lý trùng lặp --}}
                     <div class="qimport-dest-field">
                         <label class="qimport-dest-label">Chế độ xử lý khi gặp từ trùng lặp</label>

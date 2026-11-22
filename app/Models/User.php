@@ -45,6 +45,16 @@ class User extends Authenticatable
     protected $primaryKey = 'user_id';
 
     /**
+     * Thuộc tính mặc định khi khởi tạo User model.
+     * Mức năng lượng mặc định cấp cho tài khoản học viên là 5.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'energy' => 5,
+    ];
+
+    /**
      * Schema dumps do not include updated_at.
      */
     public $timestamps = false;

@@ -12,6 +12,39 @@
 
 @section('content')
 <div class="vcb-page">
+    {{-- Thông báo kết quả thao tác --}}
+    @if (session('success'))
+        <div class="alert-admin-success">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            <span>{{ session('success') }}</span>
+        </div>
+    @endif
+
+    @if (session('error'))
+        <div class="alert-admin-error">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <span>{{ session('error') }}</span>
+        </div>
+    @endif
+
+    @if (isset($errors) && $errors->any())
+        <div class="alert-admin-error">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <span>{{ $errors->first() }}</span>
+        </div>
+    @endif
+
     {{-- Page Header --}}
     <div class="vcb-header">
         <div class="vcb-title-area">
@@ -346,7 +379,9 @@
                                             <div class="vcb-ipa-text">{{ $item->pronunciation ?? '/.../' }}</div>
                                             <div class="vcb-tags-row">
                                                 <span class="vcb-pos-badge">{{ $item->clean_pos }}</span>
-                                                <span class="vcb-lvl-badge">{{ $item->target_level }}</span>
+                                                @if (!empty($item->target_level))
+                                                    <span class="vcb-lvl-badge">{{ $item->target_level }}</span>
+                                                @endif
                                             </div>
                                         </td>
 
@@ -789,29 +824,16 @@
                     </div>
                 </div>
 
-                <div class="vcb-form-row-2">
-                    <div class="vcb-form-group">
-                        <label class="vcb-form-label">Từ loại (POS)</label>
-                        <select name="part_of_speech" class="vcb-form-control">
-                            <option value="Noun" {{ old('part_of_speech') === 'Noun' ? 'selected' : '' }}>Danh từ (Noun)</option>
-                            <option value="Verb" {{ old('part_of_speech') === 'Verb' ? 'selected' : '' }}>Động từ (Verb)</option>
-                            <option value="Adj" {{ old('part_of_speech') === 'Adj' ? 'selected' : '' }}>Tính từ (Adj)</option>
-                            <option value="Adv" {{ old('part_of_speech', 'Adv') === 'Adv' ? 'selected' : '' }}>Phó từ (Adv)</option>
-                            <option value="Collocation" {{ old('part_of_speech') === 'Collocation' ? 'selected' : '' }}>Collocation</option>
-                            <option value="Noun Phrase" {{ old('part_of_speech') === 'Noun Phrase' ? 'selected' : '' }}>Noun Phrase</option>
-                        </select>
-                    </div>
-                    <div class="vcb-form-group">
-                        <label class="vcb-form-label">Mục tiêu (Level)</label>
-                        <select name="level" class="vcb-form-control">
-                            <option value="450+" {{ old('level') === '450+' ? 'selected' : '' }}>450+</option>
-                            <option value="550+" {{ old('level') === '550+' ? 'selected' : '' }}>550+</option>
-                            <option value="650+" {{ old('level') === '650+' ? 'selected' : '' }}>650+</option>
-                            <option value="750+" {{ old('level', '750+') === '750+' ? 'selected' : '' }}>750+</option>
-                            <option value="800+" {{ old('level') === '800+' ? 'selected' : '' }}>800+</option>
-                            <option value="900+" {{ old('level') === '900+' ? 'selected' : '' }}>900+</option>
-                        </select>
-                    </div>
+                <div class="vcb-form-group">
+                    <label class="vcb-form-label">Từ loại (POS)</label>
+                    <select name="part_of_speech" class="vcb-form-control">
+                        <option value="Noun" {{ old('part_of_speech') === 'Noun' ? 'selected' : '' }}>Danh từ (Noun)</option>
+                        <option value="Verb" {{ old('part_of_speech') === 'Verb' ? 'selected' : '' }}>Động từ (Verb)</option>
+                        <option value="Adj" {{ old('part_of_speech') === 'Adj' ? 'selected' : '' }}>Tính từ (Adj)</option>
+                        <option value="Adv" {{ old('part_of_speech', 'Adv') === 'Adv' ? 'selected' : '' }}>Phó từ (Adv)</option>
+                        <option value="Collocation" {{ old('part_of_speech') === 'Collocation' ? 'selected' : '' }}>Collocation</option>
+                        <option value="Noun Phrase" {{ old('part_of_speech') === 'Noun Phrase' ? 'selected' : '' }}>Noun Phrase</option>
+                    </select>
                 </div>
 
                 <div class="vcb-form-group">
@@ -975,29 +997,16 @@
                     </div>
                 </div>
 
-                <div class="vcb-form-row-2">
-                    <div class="vcb-form-group">
-                        <label class="vcb-form-label">Từ loại (POS)</label>
-                        <select id="edit_vocab_pos" name="part_of_speech" class="vcb-form-control">
-                            <option value="Noun">Danh từ (Noun)</option>
-                            <option value="Verb">Động từ (Verb)</option>
-                            <option value="Adj">Tính từ (Adj)</option>
-                            <option value="Adv">Phó từ (Adv)</option>
-                            <option value="Collocation">Collocation</option>
-                            <option value="Noun Phrase">Noun Phrase</option>
-                        </select>
-                    </div>
-                    <div class="vcb-form-group">
-                        <label class="vcb-form-label">Mục tiêu (Level)</label>
-                        <select id="edit_vocab_level" name="level" class="vcb-form-control">
-                            <option value="450+">450+</option>
-                            <option value="550+">550+</option>
-                            <option value="650+">650+</option>
-                            <option value="750+">750+</option>
-                            <option value="800+">800+</option>
-                            <option value="900+">900+</option>
-                        </select>
-                    </div>
+                <div class="vcb-form-group">
+                    <label class="vcb-form-label">Từ loại (POS)</label>
+                    <select id="edit_vocab_pos" name="part_of_speech" class="vcb-form-control">
+                        <option value="Noun">Danh từ (Noun)</option>
+                        <option value="Verb">Động từ (Verb)</option>
+                        <option value="Adj">Tính từ (Adj)</option>
+                        <option value="Adv">Phó từ (Adv)</option>
+                        <option value="Collocation">Collocation</option>
+                        <option value="Noun Phrase">Noun Phrase</option>
+                    </select>
                 </div>
 
                 <div class="vcb-form-group">
