@@ -781,3 +781,359 @@
         gap: 16px;
     }
 }
+
+/* Hai cột cùng độ rộng, ba hàng cân đối */
+.personal-card .hs-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 24px;
+    row-gap: 22px;
+    align-items: start;
+}
+
+.personal-card .hs-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    margin: 0;
+}
+
+.personal-card .hs-label {
+    display: block;
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+    color: #17213b;
+}
+
+.personal-card .hs-control {
+    width: 100%;
+    min-width: 0;
+}
+
+.personal-card .hs-control .hs-input,
+.personal-card .hs-control .hs-select {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    height: 50px;
+    min-height: 50px;
+    margin: 0;
+    padding: 0 14px;
+    border: 1px solid #d3dced;
+    border-radius: 12px;
+    outline: none;
+    background: #fff;
+    color: #17213b;
+    font: inherit;
+}
+
+.personal-card .hs-control .hs-input:focus,
+.personal-card .hs-control .hs-select:focus {
+    border-color: #6555f6;
+    box-shadow: 0 0 0 3px rgb(101 85 246 / 12%);
+}
+
+.personal-card .hs-form-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 26px;
+}
+
+/* Điểm Listening & Reading / Speaking & Writing cùng một hàng */
+.goal-card .hs-goal-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    margin-top: 20px;
+    margin-bottom: 22px;
+}
+
+.goal-card .hs-goal-metric {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 6px;
+    box-sizing: border-box;
+    min-width: 0;
+    min-height: 146px;
+    padding: 22px 24px;
+    border: 1px solid #e5e8f7;
+    border-radius: 16px;
+    background: #f8f7ff;
+}
+
+.goal-card .hs-goal-type {
+    color: #5f6683;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.goal-card .hs-goal-value {
+    color: #6251f5;
+    font-size: clamp(30px, 3vw, 42px);
+    font-weight: 800;
+    line-height: 1.15;
+}
+
+.goal-card .hs-goal-note {
+    color: #7f87a4;
+    font-size: 13px;
+}
+
+@media (max-width: 767px) {
+    .personal-card .hs-form-grid,
+    .goal-card .hs-goal-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
+    }
+
+    .personal-card .hs-form-footer {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .goal-card .hs-goal-metric {
+        min-height: 124px;
+    }
+}
+
+
+/* Tiến độ: hai thống kê cùng kích thước, hai thẻ theo dõi đồng bộ */
+.progress-card .hs-overview-grid,
+.progress-card .hs-track-grid,
+.settings-card .hs-settings-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.progress-card .hs-overview-grid {
+    margin-top: 20px;
+    margin-bottom: 24px;
+}
+
+.progress-card .hs-stat-tile {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    box-sizing: border-box;
+    min-width: 0;
+    min-height: 116px;
+    padding: 20px 22px;
+    background: #f8f7ff;
+    border: 1px solid #e5e8f7;
+    border-radius: 16px;
+}
+
+.progress-card .hs-stat-badge,
+.settings-card .hs-setting-badge {
+    display: grid;
+    flex: 0 0 48px;
+    width: 48px;
+    height: 48px;
+    place-items: center;
+    border-radius: 14px;
+    color: #6152e9;
+    background: #ece9ff;
+    font-size: 23px;
+}
+
+.progress-card .hs-stat-content {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
+}
+
+.progress-card .hs-stat-count {
+    font-size: clamp(25px, 2.5vw, 34px);
+    font-weight: 800;
+    line-height: 1.15;
+    color: #262351;
+}
+
+.progress-card .hs-stat-title {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.5;
+    color: #6f7795;
+}
+
+.progress-card .hs-group-heading {
+    margin: 0 0 14px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #17213b;
+}
+
+.progress-card .hs-track-tile {
+    box-sizing: border-box;
+    min-width: 0;
+    min-height: 144px;
+    padding: 20px 22px;
+    border: 1px solid #e5e8f7;
+    border-radius: 16px;
+    background: #fff;
+}
+
+.progress-card .hs-track-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.progress-card .hs-track-label {
+    color: #17213b;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.progress-card .hs-track-value {
+    color: #6251f5;
+    font-size: 17px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.progress-card .hs-track-rail {
+    width: 100%;
+    height: 9px;
+    overflow: hidden;
+    background: #eceef8;
+    border-radius: 999px;
+}
+
+.progress-card .hs-track-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #8679ff, #6251f5);
+    border-radius: inherit;
+    transition: width .25s ease;
+}
+
+.progress-card .hs-track-note {
+    display: block;
+    margin-top: 12px;
+    color: #858ca5;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.progress-card .hs-progress-bottom {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 22px;
+}
+
+/* Cài đặt: mật khẩu và nhắc nhở là hai ô đều nhau */
+.settings-card .hs-settings-grid {
+    margin-top: 20px;
+}
+
+.settings-card .hs-setting-tile {
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    gap: 14px;
+    min-width: 0;
+    min-height: 116px;
+    width: 100%;
+    margin: 0;
+    padding: 20px;
+    border: 1px solid #e5e8f7;
+    border-radius: 16px;
+    background: #f8f7ff;
+    text-align: left;
+}
+
+.settings-card button.hs-setting-tile {
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+}
+
+.settings-card button.hs-setting-tile:hover {
+    border-color: #afa7ff;
+    background: #f2f0ff;
+}
+
+.settings-card button.hs-setting-tile:focus-visible,
+.settings-card .hs-switch input:focus-visible + .hs-slider {
+    outline: 3px solid #a9a0ff;
+    outline-offset: 3px;
+}
+
+.settings-card .hs-setting-details {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+    gap: 6px;
+}
+
+.settings-card .hs-setting-title {
+    color: #17213b;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.settings-card .hs-setting-subtitle {
+    color: #7c849f;
+    font-size: 12.5px;
+    line-height: 1.5;
+}
+
+.settings-card .hs-setting-link {
+    flex: 0 0 auto;
+    color: #6251f5;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.settings-card .hs-reminder-control {
+    flex: 0 0 auto;
+}
+
+.settings-card .hs-settings-footnote {
+    color: #838ba6;
+    font-size: 12.5px;
+    margin: 13px 0 0;
+    line-height: 1.5;
+}
+
+@media (max-width: 1024px) {
+    .progress-card .hs-overview-grid,
+    .progress-card .hs-track-grid,
+    .settings-card .hs-settings-grid {
+        gap: 14px;
+    }
+    .settings-card .hs-setting-tile,
+    .progress-card .hs-stat-tile,
+    .progress-card .hs-track-tile {
+        padding: 16px;
+    }
+}
+
+@media (max-width: 767px) {
+    .progress-card .hs-overview-grid,
+    .progress-card .hs-track-grid,
+    .settings-card .hs-settings-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 14px;
+    }
+    .settings-card .hs-setting-tile,
+    .progress-card .hs-stat-tile {
+        min-height: 96px;
+    }
+    .progress-card .hs-track-tile {
+        min-height: 128px;
+    }
+}

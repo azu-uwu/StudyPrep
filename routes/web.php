@@ -12,6 +12,7 @@ use App\Http\Controllers\PersonalTopicController;
 use App\Http\Controllers\ReadingPracticeController;
 use App\Http\Controllers\VocabularyPracticeController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\GoalController;
 use App\Http\Controllers\StudySettingController;
 
@@ -91,6 +92,19 @@ Route::view('/lich-su', 'pages.lich-su')->name('lich-su');
 Route::view('/cai-thien', 'pages.cai-thien')->name('cai-thien');
 
 // Các màn hình quản lý trong Header (Hồ sơ & Cài đặt)
+Route::middleware('auth')->group(function () {
+    // Hiển thị hồ sơ người dùng
+    Route::get('/ho-so', [ProfileController::class, 'show'])->name('ho-so');
+
+    // Cập nhật thông tin cá nhân
+    Route::post('/ho-so', [ProfileController::class, 'update'])->name('profile.update');
+
+    // Đổi mật khẩu
+    Route::post('/ho-so/doi-mat-khau',[ProfileController::class, 'changePassword'])->middleware('throttle:5,1')->name('profile.password');
+
+    // Cập nhật ảnh đại diện
+    Route::post('/ho-so/anh-dai-dien',[ProfileController::class, 'uploadAvatar'])->name('profile.avatar');
+});
 Route::middleware('auth')->group(function () {
     Route::get('/ho-so/muc-tieu-thiet-lap',[GoalController::class, 'edit'])->name('profile.goal.edit');
     Route::post('/ho-so/muc-tieu-thiet-lap',[GoalController::class, 'store'])->name('profile.goal.update');

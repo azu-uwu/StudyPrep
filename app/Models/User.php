@@ -26,6 +26,11 @@ use Illuminate\Support\Str;
     'email_verified_at',
     'status',
     'remember_token',
+    'birthday',
+    'phone',
+    'gender',
+    'city',
+    'password_changed_at',
 ])]
 #[Hidden(['password_hash', 'remember_token'])]
 class User extends Authenticatable
@@ -56,6 +61,8 @@ class User extends Authenticatable
             'password_hash' => 'hashed',
             'energy' => 'integer',
             'failed_login_attempts' => 'integer',
+            'birthday' => 'date',
+            'password_changed_at' => 'datetime',
         ];
     }
 
