@@ -12,6 +12,7 @@ use App\Http\Controllers\PersonalTopicController;
 use App\Http\Controllers\ReadingPracticeController;
 use App\Http\Controllers\VocabularyPracticeController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\GoalController;
 use App\Http\Controllers\StudySettingController;
 
 // use Illuminate\Support\Facades\Route;
@@ -90,9 +91,14 @@ Route::view('/lich-su', 'pages.lich-su')->name('lich-su');
 Route::view('/cai-thien', 'pages.cai-thien')->name('cai-thien');
 
 // Các màn hình quản lý trong Header (Hồ sơ & Cài đặt)
-Route::view('/ho-so', 'pages.ho-so')->name('ho-so');
-Route::view('/ho-so/muc-tieu-thiet-lap', 'pages.muc-tieu-thiet-lap')->name('ho-so.muc-tieu-thiet-lap');
-Route::view('/muc-tieu-trang-chu', 'pages.muc-tieu-trang-chu')->name('muc-tieu-trang-chu');
+Route::middleware('auth')->group(function () {
+    Route::get('/ho-so/muc-tieu-thiet-lap',[GoalController::class, 'edit'])->name('profile.goal.edit');
+    Route::post('/ho-so/muc-tieu-thiet-lap',[GoalController::class, 'store'])->name('profile.goal.update');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('/muc-tieu-trang-chu',[GoalController::class, 'index'])->name('muc-tieu-trang-chu');
+});
 
 Route::middleware('auth')->group(function () {
     // Hiển thị trang cài đặt

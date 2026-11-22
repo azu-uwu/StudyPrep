@@ -260,3 +260,7 @@ legend.setup-legend {
         gap: 12px 10px;
     }
 }
+
+.exam-group[hidden] {
+    display: none !important;
+}
