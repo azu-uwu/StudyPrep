@@ -514,10 +514,12 @@
                 }
             };
 
+            callbacks.fallbackText = q.audio_text || q.transcript || q.content || '';
+
             if (q.audio_url) {
                 window.ToeicAudioPlayer.playMp3(audioEl, q.audio_url, callbacks);
             } else {
-                window.ToeicAudioPlayer.playSpeech(q.audio_text || q.content || '', Object.assign({}, callbacks, {
+                window.ToeicAudioPlayer.playSpeech(callbacks.fallbackText, Object.assign({}, callbacks, {
                     duration: q.audio_duration_seconds || 20
                 }));
             }

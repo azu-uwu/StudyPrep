@@ -30,7 +30,8 @@ class TextToSpeechService
      * @param  int  $partNumber  Part TOEIC (1, 2, 3, 4)
      * @param  string|null  $customFilename  Tên file tùy chọn (không có đuôi .mp3)
      * @param  string  $lang  Mã ngôn ngữ (en-US, en, en-GB)
-     * @return array{audio_url: string, file_path: string, file_size: int, duration_estimate: int}
+     * @param  string|null  $customFolder  Thư mục con tùy chọn trong storage/app/public/
+     * @return array{audio_url: string, relative_path: string, file_path: string, file_size: int, duration_estimate: int, cleaned_text: string}
      *
      * @throws \RuntimeException
      */
@@ -38,7 +39,8 @@ class TextToSpeechService
         string $text,
         int $partNumber = 1,
         ?string $customFilename = null,
-        string $lang = 'en'
+        string $lang = 'en',
+        ?string $customFolder = null
     ): array {
         $cleanedText = $this->cleanTranscriptForSpeech($text);
 
@@ -64,8 +66,8 @@ class TextToSpeechService
             throw new \RuntimeException('Không thể tạo file audio từ dịch vụ TTS. Vui lòng thử lại.');
         }
 
-        // Thư mục lưu: storage/app/public/audio/listening/part_{part_number}/
-        $folderRelative = 'audio/listening/part_'.$partNumber;
+        // Thư mục lưu: storage/app/public/...
+        $folderRelative = $customFolder ? trim($customFolder, '/') : 'audio/listening/part_'.$partNumber;
         $dirPath = storage_path('app/public/'.$folderRelative);
 
         if (! File::isDirectory($dirPath)) {

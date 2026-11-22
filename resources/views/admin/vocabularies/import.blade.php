@@ -232,7 +232,16 @@
                         @foreach ($importedVocabs as $vocab)
                             <tr>
                                 <td>
-                                    <div style="font-size: 14.5px; font-weight: 800; color: #0f172a;">{{ $vocab->word }}</div>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div style="font-size: 14.5px; font-weight: 800; color: #0f172a;">{{ $vocab->word }}</div>
+                                        <button type="button" class="vcb-audio-btn" title="Nghe phát âm chuẩn" onclick="event.stopPropagation(); speakWord({{ \Illuminate\Support\Js::from($vocab->word) }}, this)" style="border: none; background: #eef2ff; color: #4338ca; width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s ease;">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
                                     @if ($vocab->pronunciation)
                                         <div style="font-size: 12px; color: #64748b; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin-top: 2px;">
                                             {{ $vocab->pronunciation }}

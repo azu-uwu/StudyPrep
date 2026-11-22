@@ -41,6 +41,9 @@
         </div>
     </div>
     <x-auth-modal />
+    {{-- Global TOEIC Audio Player & Speech Helper --}}
+    <script src="{{ asset('js/toeic-audio-player.js') }}"></script>
+    <script src="{{ asset('js/studyprep-audio.js') }}"></script>
     @stack('scripts')
 </body>
 </html>

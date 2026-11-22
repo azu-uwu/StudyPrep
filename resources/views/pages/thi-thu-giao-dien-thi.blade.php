@@ -131,7 +131,7 @@
             </div>
 
             <audio id="questionAudio" preload="metadata">
-                <source src="{{ asset('audio/toeic-part5.mp3') }}" type="audio/mpeg">
+                <source src="{{ asset('storage/audio/listening/test1/part1_q1.mp3') }}" type="audio/mpeg">
                 Trình duyệt của bạn không hỗ trợ phát audio.
             </audio>
 
@@ -187,7 +187,7 @@
             </div>
 
             <audio id="questionAudio" preload="metadata">
-                <source src="{{ asset('audio/toeic-part5.mp3') }}" type="audio/mpeg">
+                <source src="{{ asset('storage/audio/listening/test1/part1_q1.mp3') }}" type="audio/mpeg">
                 Trình duyệt của bạn không hỗ trợ phát audio.
             </audio>
 
@@ -342,7 +342,98 @@
 </div>
 
 @push('scripts')
+<script>
+    (function () {
+        var audio = document.getElementById('questionAudio');
+        var playBtn = document.getElementById('playAudio');
+        var restartBtn = document.getElementById('restartAudio');
+        var progress = document.getElementById('audioProgress');
+        var curTimeEl = document.getElementById('audioCurrentTime');
+        var durEl = document.getElementById('audioDuration');
+        var muteBtn = document.getElementById('muteAudio');
+        var statusEl = document.getElementById('audioStatus');
 
+        function formatTime(sec) {
+            var m = Math.floor(sec / 60);
+            var s = Math.floor(sec % 60);
+            return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+        }
+
+        if (audio && playBtn) {
+            playBtn.addEventListener('click', function () {
+                if (audio.paused) {
+                    audio.play().then(function () {
+                        playBtn.textContent = '⏸';
+                        if (statusEl) statusEl.textContent = 'Đang phát...';
+                    }).catch(function (err) {
+                        console.warn('Cannot play audio, falling back to TTS:', err);
+                        if (window.ToeicAudioPlayer) {
+                            window.ToeicAudioPlayer.playSpeech("Where is the meeting room? (A) In room 204. (B) Tomorrow morning. (C) With Mr. Johnson.", {
+                                onPlay: function () {
+                                    playBtn.textContent = '⏸';
+                                    if (statusEl) statusEl.textContent = 'Đang phát (AI)...';
+                                },
+                                onEnded: function () {
+                                    playBtn.textContent = '▶';
+                                    if (statusEl) statusEl.textContent = 'Sẵn sàng';
+                                }
+                            });
+                        }
+                    });
+                } else {
+                    audio.pause();
+                    playBtn.textContent = '▶';
+                    if (statusEl) statusEl.textContent = 'Đã tạm dừng';
+                }
+            });
+
+            if (restartBtn) {
+                restartBtn.addEventListener('click', function () {
+                    audio.currentTime = 0;
+                    audio.play().catch(function () {});
+                    playBtn.textContent = '⏸';
+                    if (statusEl) statusEl.textContent = 'Đang phát...';
+                });
+            }
+
+            audio.addEventListener('loadedmetadata', function () {
+                if (durEl && isFinite(audio.duration)) {
+                    durEl.textContent = formatTime(audio.duration);
+                }
+            });
+
+            audio.addEventListener('timeupdate', function () {
+                if (isFinite(audio.duration) && audio.duration > 0) {
+                    var percent = (audio.currentTime / audio.duration) * 100;
+                    if (progress) progress.value = percent;
+                    if (curTimeEl) curTimeEl.textContent = formatTime(audio.currentTime);
+                    if (durEl) durEl.textContent = formatTime(audio.duration);
+                }
+            });
+
+            audio.addEventListener('ended', function () {
+                playBtn.textContent = '▶';
+                if (statusEl) statusEl.textContent = 'Đã kết thúc';
+                if (progress) progress.value = 0;
+            });
+
+            if (progress) {
+                progress.addEventListener('input', function () {
+                    if (isFinite(audio.duration) && audio.duration > 0) {
+                        audio.currentTime = (progress.value / 100) * audio.duration;
+                    }
+                });
+            }
+
+            if (muteBtn) {
+                muteBtn.addEventListener('click', function () {
+                    audio.muted = !audio.muted;
+                    muteBtn.textContent = audio.muted ? '🔇' : '🔊';
+                });
+            }
+        }
+    })();
+</script>
 @endpush
 
 </x-layouts.app>

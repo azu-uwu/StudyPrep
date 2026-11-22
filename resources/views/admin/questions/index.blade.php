@@ -525,6 +525,12 @@
 
                                     @if ($q->questionSet?->resolved_audio_url)
                                         <audio controls preload="none" src="{{ $q->questionSet->resolved_audio_url }}" style="max-width: 260px; height: 32px; margin-top: 8px; display: block;"></audio>
+                                    @elseif ($q->skill_key === 'listening')
+                                        <div style="margin-top: 6px; display: flex; align-items: center; gap: 6px;">
+                                            <button type="button" class="btn-admin-action" style="padding: 3px 8px; font-size: 11px; background: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd;" onclick="event.stopPropagation(); window.speakWord({{ \Illuminate\Support\Js::from($q->questionSet?->transcript ?: $q->content) }}, this)" title="Nghe đọc transcript tự động bằng AI/TTS">
+                                                🔊 Nghe thử (TTS)
+                                            </button>
+                                        </div>
                                     @endif
 
                                     @if ($isConstructive)

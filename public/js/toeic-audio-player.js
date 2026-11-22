@@ -248,6 +248,12 @@
         };
 
         audioEl.onerror = function () {
+            // Nếu file MP3 bị thiếu (404) hoặc không tải được, tự động chuyển sang đọc văn bản/transcript
+            if (activeCallbacks && activeCallbacks.fallbackText) {
+                console.info('Audio MP3 không khả dụng, tự động chuyển sang đọc transcript.');
+                playSpeech(activeCallbacks.fallbackText, activeCallbacks);
+                return;
+            }
             if (typeof activeCallbacks.onError === 'function') {
                 activeCallbacks.onError('Không thể tải file âm thanh MP3.');
             }
