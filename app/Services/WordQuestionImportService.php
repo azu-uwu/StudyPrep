@@ -1363,16 +1363,22 @@ class WordQuestionImportService
                     $questionSetId = $stimulusSets[$hash];
                 }
 
-                $difficulty = strtoupper((string) ($item['difficulty'] ?? 'UNSET'));
-                if (! in_array($difficulty, ['EASY', 'MEDIUM', 'HARD', 'UNSET'], true)) {
-                    $difficulty = 'UNSET';
-                }
-
                 $contentText = trim((string) ($item['content'] ?? ''));
                 if ($contentText === '') {
                     $contentText = $partCode === 'PART1'
                         ? 'Look at the picture and choose the statement that best describes what you see.'
                         : 'Listen to the audio and select the best response.';
+                }
+
+                $difficulty = strtoupper((string) ($item['difficulty'] ?? 'UNSET'));
+                if (! in_array($difficulty, ['EASY', 'MEDIUM', 'HARD'], true) || $difficulty === 'UNSET') {
+                    $difficulty = AiToeicService::assessToeicDifficulty(
+                        $item['skill'] ?? null,
+                        $partCode,
+                        $contentText,
+                        $item['stimulus'] ?? ($item['passage_text'] ?? null),
+                        is_array($item['options'] ?? null) ? $item['options'] : []
+                    );
                 }
 
                 $question = Question::query()->create([

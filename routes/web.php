@@ -106,12 +106,14 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         // Quản lý người dùng
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
+        Route::get('/users/export', [UserController::class, 'export'])->name('users.export');
+        Route::get('/users/sample-csv', [UserController::class, 'sampleCsv'])->name('users.sample-csv');
+        Route::post('/users/import', [UserController::class, 'import'])->name('users.import');
+        Route::post('/users/bulk-action', [UserController::class, 'bulkAction'])->name('users.bulk-action');
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::patch('/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
         Route::patch('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
-        Route::get('/users/export', [UserController::class, 'export'])->name('users.export');
-        Route::post('/users/import', [UserController::class, 'import'])->name('users.import');
 
         // Quản lý đề thi
         Route::get('/tests', [TestController::class, 'index'])->name('tests.index');

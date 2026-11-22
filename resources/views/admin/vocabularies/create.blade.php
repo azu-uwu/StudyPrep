@@ -106,15 +106,16 @@
                                     type="text"
                                     id="inputWord"
                                     name="word"
-                                    class="vc-input"
+                                    class="vc-input @error('word') is-invalid @enderror"
                                     value="{{ old('word', 'substantially') }}"
                                     required
                                     placeholder="Ví dụ: substantially"
                                     autocomplete="off"
-                                    oninput="updateCharCount(this); syncLivePreview();"
+                                    oninput="updateCharCount(this); syncLivePreview(); clearFieldError(this);"
                                 >
                                 <span class="vc-input-counter" id="wordCharCounter">13 ký tự</span>
                             </div>
+                            <span class="field-error-text text-danger" id="error-inputWord" style="color: #dc2626; font-size: 12px; margin-top: 4px; display: {{ $errors->has('word') ? 'block' : 'none' }};">{{ $errors->first('word') }}</span>
                         </div>
 
                         <div>
@@ -247,11 +248,12 @@
                                 id="inputMeaningVi"
                                 name="meaning_vi"
                                 rows="3"
-                                class="vc-textarea"
+                                class="vc-textarea @error('meaning_vi') is-invalid @enderror"
                                 required
-                                oninput="syncLivePreview()"
+                                oninput="syncLivePreview(); clearFieldError(this);"
                                 placeholder="Đáng kể, về căn bản, rất nhiều (biểu thị mức độ lớn)."
                             >{{ old('meaning_vi', 'Đáng kể, về căn bản, rất nhiều (biểu thị mức độ lớn).') }}</textarea>
+                            <span class="field-error-text text-danger" id="error-inputMeaningVi" style="color: #dc2626; font-size: 12px; margin-top: 4px; display: {{ $errors->has('meaning_vi') ? 'block' : 'none' }};">{{ $errors->first('meaning_vi') }}</span>
                         </div>
                     </div>
 
@@ -722,6 +724,52 @@
                        '<td style="text-align: center;"><button type="button" class="vc-btn-trash" onclick="this.closest(\'tr\').remove()">&times;</button></td>';
         tbody.appendChild(tr);
     }
+
+    function clearFieldError(input) {
+        if (!input) return;
+        input.classList.remove('is-invalid');
+        input.style.borderColor = '';
+        var parent = input.closest('.vc-form-group') || input.parentElement;
+        if (parent) {
+            var errEl = parent.querySelector('.field-error-text');
+            if (errEl) {
+                errEl.style.display = 'none';
+                errEl.innerText = '';
+            }
+        }
+    }
+
+    document.getElementById('createVocabForm')?.addEventListener('submit', function(e) {
+        var wordInput = document.getElementById('inputWord');
+        var meaningInput = document.getElementById('inputMeaningVi');
+        var isValid = true;
+        if (!meaningInput.value.trim()) {
+            meaningInput.classList.add('is-invalid');
+            meaningInput.style.borderColor = '#ef4444';
+            var errMeaning = document.getElementById('error-inputMeaningVi');
+            if (errMeaning) {
+                errMeaning.innerText = 'Vui lòng nhập nghĩa tiếng Việt.';
+                errMeaning.style.display = 'block';
+            }
+            meaningInput.focus();
+            isValid = false;
+        }
+        if (!wordInput.value.trim()) {
+            wordInput.classList.add('is-invalid');
+            wordInput.style.borderColor = '#ef4444';
+            var errWord = document.getElementById('error-inputWord');
+            if (errWord) {
+                errWord.innerText = 'Vui lòng nhập từ vựng (Word).';
+                errWord.style.display = 'block';
+            }
+            wordInput.focus();
+            isValid = false;
+        }
+        if (!isValid) {
+            e.preventDefault();
+            return false;
+        }
+    });
 </script>
 @endpush
 @endsection

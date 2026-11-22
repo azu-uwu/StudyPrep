@@ -966,7 +966,7 @@ class QuestionControllerTest extends TestCase
         $q = Question::query()->with(['section', 'options', 'questionSet'])->firstOrFail();
         $this->assertEquals('PART1', strtoupper((string) $q->section->code));
         $this->assertEquals('DRAFT', $q->status);
-        $this->assertEquals('UNSET', $q->difficulty);
+        $this->assertEquals('EASY', $q->difficulty);
         $this->assertEquals('Look at the picture and listen to the four statements.', $q->content);
         $this->assertCount(4, $q->options);
         $this->assertEquals('storage/questions/imported/p1_batch/pic1.png', $q->questionSet?->media_url);

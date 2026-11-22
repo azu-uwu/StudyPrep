@@ -1,17 +1,17 @@
 @extends('layouts.admin', ['active' => 'nguoi-dung'])
 
-@section('title', 'Quản lý người dùng')
+@section('title', 'User Management')
 
 @section('top_breadcrumb')
-    <span>Hệ thống</span>
+    <span>System</span>
     <span class="crumb-arrow">></span>
-    <span style="color: var(--admin-primary); font-weight: 600;">Quản lý người dùng</span>
+    <span style="color: var(--admin-primary); font-weight: 600;">User Management</span>
 @endsection
 
 @section('content')
 <div class="user-management-page">
 
-    {{-- Thông báo kết quả thao tác --}}
+    {{-- Session Alerts --}}
     @if (session('success'))
         <div class="alert-admin-success">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -33,59 +33,41 @@
         </div>
     @endif
 
-    @if (isset($errors) && $errors->any())
-        <div class="alert-admin-error">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="12"></line>
-                <line x1="12" y1="16" x2="12.01" y2="16"></line>
-            </svg>
-            <div>
-                <strong>Đã có lỗi xảy ra:</strong>
-                <ul style="margin: 4px 0 0 18px; padding: 0;">
-                    @foreach ($errors->all() as $err)
-                        <li>{{ $err }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        </div>
-    @endif
-
-    {{-- 1. Tiêu đề trang & Các nút thao tác phía trên (Page Header) --}}
+    {{-- 1. Page Header & Actions --}}
     <div class="user-page-header">
         <div>
             <div class="user-title-row">
-                <h1 class="user-page-title">Quản lý người dùng</h1>
-                <span class="user-count-badge">{{ number_format($stats['total']) }} tài khoản</span>
+                <h1 class="user-page-title">User Management</h1>
+                <span class="user-count-badge">{{ number_format($stats['total']) }} users</span>
             </div>
             <p class="user-page-subtitle">
-                Quản lý danh sách học viên, giảng viên và kiểm soát quyền truy cập hệ thống StudyPREP
+                Manage students, teachers, and system administrators. Control system roles and account access permissions.
             </p>
         </div>
 
         <div class="user-header-actions">
-            {{-- Nút Xuất dữ liệu Excel --}}
-            <a href="{{ route('admin.users.export') }}" class="btn-admin-action excel" title="Xuất dữ liệu người dùng ra tệp Excel (CSV)">
+            {{-- Export CSV --}}
+            <a href="{{ route('admin.users.export') }}" class="btn-admin-action excel" title="Export users list to CSV">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                     <polyline points="7 10 12 15 17 10"></polyline>
                     <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
-                <span>Xuất dữ liệu Excel</span>
+                <span>Export CSV</span>
             </a>
 
-            {{-- Nút Nhập danh sách --}}
-            <button type="button" class="btn-admin-action import" onclick="openAdminModal('modal-import')" title="Nhập tài khoản từ file danh sách">
+            {{-- Import CSV --}}
+            <button type="button" class="btn-admin-action import" onclick="openAdminModal('modal-import')" title="Import accounts from CSV">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                     <polyline points="14 2 14 8 20 8"></polyline>
                     <line x1="12" y1="18" x2="12" y2="12"></line>
                     <line x1="9" y1="15" x2="15" y2="15"></line>
                 </svg>
-                <span>Nhập danh sách</span>
+                <span>Import CSV</span>
             </button>
 
-            {{-- Nút Thêm người dùng mới --}}
+            {{-- Add New User --}}
             <button type="button" class="btn-admin-primary" onclick="openAdminModal('modal-add-user')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -93,17 +75,17 @@
                     <line x1="20" y1="8" x2="20" y2="14"></line>
                     <line x1="23" y1="11" x2="17" y2="11"></line>
                 </svg>
-                <span>Thêm người dùng mới</span>
+                <span>Add User</span>
             </button>
         </div>
     </div>
 
-    {{-- 2. Ba thẻ thống kê chỉ số (3 KPI Stat Cards - Khớp ảnh mẫu) --}}
+    {{-- 2. KPI Stat Cards --}}
     <div class="user-kpi-grid">
-        {{-- Thẻ 1: Tổng số người dùng --}}
+        {{-- Card 1: Total Users --}}
         <div class="user-kpi-card">
             <div class="user-kpi-header">
-                <p class="user-kpi-label">TỔNG SỐ NGƯỜI DÙNG</p>
+                <p class="user-kpi-label">TOTAL USERS</p>
                 <div class="user-kpi-icon icon-purple">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -116,20 +98,16 @@
             <div class="user-kpi-value">{{ number_format($stats['total']) }}</div>
             <div class="user-kpi-footer">
                 <span class="kpi-trend-pill trend-purple">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-                        <polyline points="17 6 23 6 23 12"></polyline>
-                    </svg>
-                    +12.5%
+                    {{ number_format($stats['active']) }} active
                 </span>
-                <span>so với tháng trước</span>
+                <span>registered accounts</span>
             </div>
         </div>
 
-        {{-- Thẻ 2: Giảng viên & Chấm bài --}}
+        {{-- Card 2: Teachers & Staff --}}
         <div class="user-kpi-card">
             <div class="user-kpi-header">
-                <p class="user-kpi-label">GIẢNG VIÊN & CHẤM BÀI</p>
+                <p class="user-kpi-label">TEACHERS & STAFF</p>
                 <div class="user-kpi-icon icon-purple">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
@@ -142,33 +120,31 @@
             </div>
             <div class="user-kpi-value">{{ number_format($stats['teachers']) }}</div>
             <div class="user-kpi-footer">
-                <span>Đội ngũ chuyên môn & AI Audit</span>
+                <span>Teaching staff & test reviewers</span>
             </div>
         </div>
 
-        {{-- Thẻ 3: Khóa / Cảnh báo --}}
+        {{-- Card 3: Locked / Suspended --}}
         <div class="user-kpi-card">
             <div class="user-kpi-header">
-                <p class="user-kpi-label">KHÓA / CẢNH BÁO</p>
+                <p class="user-kpi-label">LOCKED / SUSPENDED</p>
                 <div class="user-kpi-icon icon-red">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                        <line x1="12" y1="8" x2="12" y2="12"></line>
-                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                     </svg>
                 </div>
             </div>
             <div class="user-kpi-value" style="color: #dc2626;">{{ number_format($stats['locked']) }}</div>
             <div class="user-kpi-footer">
-                <span class="kpi-trend-pill trend-red">- 2 tài khoản</span>
-                <span>gian lận thi thử</span>
+                <span>Access restricted or locked</span>
             </div>
         </div>
     </div>
 
-    {{-- 3. Thanh tìm kiếm và bộ lọc (Filter Bar) --}}
+    {{-- 3. Search & Filter Bar --}}
     <form method="GET" action="{{ route('admin.users.index') }}" class="user-filter-bar">
-        {{-- Ô tìm kiếm --}}
+        {{-- Search input --}}
         <div class="user-search-wrap">
             <svg class="user-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="11" cy="11" r="8"></circle>
@@ -177,43 +153,43 @@
             <input type="text"
                    name="search"
                    value="{{ $filters['search'] }}"
-                   placeholder="Tìm theo Họ tên, Email, SĐT, mã ID..."
+                   placeholder="Search by name, email, username or ID..."
                    class="user-search-input">
         </div>
 
-        {{-- Lọc vai trò --}}
+        {{-- Role filter --}}
         <div class="user-filter-select-wrap">
             <select name="role" class="user-filter-select" onchange="this.form.submit()">
-                <option value="all" {{ $filters['role'] === 'all' ? 'selected' : '' }}>Tất cả vai trò</option>
-                <option value="student" {{ in_array($filters['role'], ['student', 'learner', 'user'], true) ? 'selected' : '' }}>Học viên</option>
-                <option value="teacher" {{ $filters['role'] === 'teacher' ? 'selected' : '' }}>Giảng viên TOEIC</option>
-                <option value="admin" {{ $filters['role'] === 'admin' ? 'selected' : '' }}>Quản trị viên</option>
+                <option value="all" {{ $filters['role'] === 'all' ? 'selected' : '' }}>All Roles</option>
+                <option value="student" {{ $filters['role'] === 'student' ? 'selected' : '' }}>Student</option>
+                <option value="teacher" {{ $filters['role'] === 'teacher' ? 'selected' : '' }}>Teacher</option>
+                <option value="admin" {{ $filters['role'] === 'admin' ? 'selected' : '' }}>Admin</option>
             </select>
             <svg class="user-select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
         </div>
 
-        {{-- Lọc trạng thái --}}
+        {{-- Status filter --}}
         <div class="user-filter-select-wrap">
             <select name="status" class="user-filter-select" onchange="this.form.submit()">
-                <option value="all" {{ $filters['status'] === 'all' ? 'selected' : '' }}>Trạng thái: Tất cả</option>
-                <option value="ACTIVE" {{ $filters['status'] === 'ACTIVE' ? 'selected' : '' }}>• Hoạt động</option>
-                <option value="PENDING" {{ $filters['status'] === 'PENDING' ? 'selected' : '' }}>• Chờ kích hoạt</option>
-                <option value="LOCKED" {{ $filters['status'] === 'LOCKED' ? 'selected' : '' }}>• Bị khóa</option>
+                <option value="ALL" {{ $filters['status'] === 'ALL' ? 'selected' : '' }}>All Statuses</option>
+                <option value="ACTIVE" {{ $filters['status'] === 'ACTIVE' ? 'selected' : '' }}>• Active</option>
+                <option value="PENDING" {{ $filters['status'] === 'PENDING' ? 'selected' : '' }}>• Pending</option>
+                <option value="LOCKED" {{ $filters['status'] === 'LOCKED' ? 'selected' : '' }}>• Locked</option>
             </select>
             <svg class="user-select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
         </div>
 
-        {{-- Lọc thời gian (30 ngày qua) --}}
+        {{-- Time filter --}}
         <div class="user-filter-select-wrap">
             <select name="time" class="user-filter-select" onchange="this.form.submit()" style="padding-left: 36px;">
-                <option value="30" {{ $filters['time'] === '30' ? 'selected' : '' }}>30 ngày qua</option>
-                <option value="7" {{ $filters['time'] === '7' ? 'selected' : '' }}>7 ngày qua</option>
-                <option value="90" {{ $filters['time'] === '90' ? 'selected' : '' }}>90 ngày qua</option>
-                <option value="all" {{ $filters['time'] === 'all' ? 'selected' : '' }}>Toàn thời gian</option>
+                <option value="all" {{ $filters['time'] === 'all' ? 'selected' : '' }}>All Time</option>
+                <option value="7" {{ $filters['time'] === '7' ? 'selected' : '' }}>Last 7 days</option>
+                <option value="30" {{ $filters['time'] === '30' ? 'selected' : '' }}>Last 30 days</option>
+                <option value="90" {{ $filters['time'] === '90' ? 'selected' : '' }}>Last 90 days</option>
             </select>
             <svg style="position: absolute; left: 12px; width: 16px; height: 16px; color: #94a3b8; pointer-events: none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
@@ -226,8 +202,8 @@
             </svg>
         </div>
 
-        {{-- Nút reset bộ lọc --}}
-        <a href="{{ route('admin.users.index') }}" class="user-refresh-btn" title="Đặt lại bộ lọc">
+        {{-- Reset filter button --}}
+        <a href="{{ route('admin.users.index') }}" class="user-refresh-btn" title="Reset filters">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="23 4 23 10 17 10"></polyline>
                 <polyline points="1 20 1 14 7 14"></polyline>
@@ -236,35 +212,76 @@
         </a>
     </form>
 
-    {{-- 4. Bảng danh sách người dùng (Data Table - Khớp ảnh mẫu) --}}
+    {{-- 4. Bulk Action Selection Bar (shown when checkboxes are checked) --}}
+    <div id="user-selection-bar" class="qbank-selection-bar" style="display: none;">
+        <div class="qbank-sel-left">
+            <span class="qbank-sel-circle" id="selected-badge-count">0</span>
+            <span>user(s) selected</span>
+            <span style="color: #cbd5e1;">|</span>
+            <button type="button" class="qbank-sel-link" onclick="clearAllSelections()" style="background: none; border: none; padding: 0;">Clear selection</button>
+        </div>
+        <div class="qbank-sel-actions" style="display: flex; align-items: center; gap: 8px;">
+            <button type="button" class="btn-admin-action" onclick="submitBulkAction('lock')" title="Lock selected users">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <span>Lock Selected</span>
+            </button>
+            <button type="button" class="btn-admin-action" onclick="submitBulkAction('unlock')" title="Unlock selected users">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+                </svg>
+                <span>Unlock Selected</span>
+            </button>
+            <button type="button" class="btn-admin-action danger" onclick="submitBulkAction('delete')" title="Delete selected users">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                <span>Delete Selected</span>
+            </button>
+        </div>
+    </div>
+
+    {{-- Hidden Form for Bulk Action --}}
+    <form id="bulk-action-form" method="POST" action="{{ route('admin.users.bulk-action') }}" style="display: none;">
+        @csrf
+        <input type="hidden" name="action" id="bulk-action-input" value="">
+        <div id="bulk-action-ids-container"></div>
+    </form>
+
+    {{-- 5. Users Data Table --}}
     <div class="user-table-card">
         <div class="user-table-scroll">
             <table class="user-data-table">
                 <thead>
                     <tr>
                         <th style="width: 44px; text-align: center;">
-                            <input type="checkbox" id="check-all-users" class="custom-checkbox" title="Chọn tất cả">
+                            <input type="checkbox" id="check-all-users" class="custom-checkbox" title="Select All">
                         </th>
-                        <th>NGƯỜI DÙNG</th>
-                        <th>VAI TRÒ</th>
-                        <th>GÓI ĐĂNG KÝ</th>
-                        <th>ENERGY / LƯỢT THI</th>
-                        <th>TRẠNG THÁI</th>
-                        <th class="admin-actions-heading">THAO TÁC</th>
+                        <th>USER</th>
+                        <th>ROLE</th>
+                        <th>ENERGY / ATTEMPTS</th>
+                        <th>STATUS</th>
+                        <th>JOINED</th>
+                        <th class="admin-actions-heading">ACTIONS</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($users as $user)
-                        @php
-                            $isTeacher = in_array(strtolower((string)$user->role), ['teacher', 'instructor', 'giang_vien'], true);
-                        @endphp
                         <tr>
                             {{-- Checkbox --}}
                             <td style="text-align: center;">
-                                <input type="checkbox" class="custom-checkbox user-row-checkbox" value="{{ $user->user_id }}">
+                                <input type="checkbox"
+                                       class="custom-checkbox user-row-checkbox"
+                                       value="{{ $user->user_id }}"
+                                       {{ $user->user_id === auth()->id() ? 'disabled' : '' }}
+                                       onchange="handleRowCheckboxChange()">
                             </td>
 
-                            {{-- Người dùng --}}
+                            {{-- User Info (Avatar + Name + Email + ID) --}}
                             <td>
                                 <div class="user-info-cell">
                                     <div class="user-avatar-wrap">
@@ -273,23 +290,16 @@
                                             {{ $user->initials }}
                                         </div>
                                         @if (!$user->isLocked())
-                                            <span class="user-status-dot-subtle"></span>
+                                            <span class="user-status-dot-subtle" title="Active"></span>
                                         @endif
                                     </div>
                                     <div>
                                         <div class="user-name-line">
                                             <span class="user-name-text">{{ $user->full_name ?: $user->user_name }}</span>
-                                            @if ($isTeacher)
-                                                {{-- Huy hiệu giảng viên (medal red) --}}
-                                                <svg class="badge-teacher-red" viewBox="0 0 24 24" fill="currentColor">
-                                                    <circle cx="12" cy="8" r="6"></circle>
-                                                    <path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"></path>
-                                                </svg>
-                                            @elseif ($user->email_verified_at && !$user->isAdmin())
-                                                {{-- Tích xanh xác thực (verified blue) --}}
-                                                <svg class="badge-verified-blue" viewBox="0 0 24 24" fill="currentColor">
-                                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                                                </svg>
+                                            @if ($user->user_id === auth()->id())
+                                                <span style="display: inline-flex; align-items: center; font-size: 11px; font-weight: 700; color: #4338ca; background: #eef2ff; border: 1px solid #c7d2fe; padding: 1px 7px; border-radius: 999px; margin-left: 6px;">
+                                                    You
+                                                </span>
                                             @endif
                                         </div>
                                         <div class="user-email-text">{{ $user->email }}</div>
@@ -298,30 +308,24 @@
                                 </div>
                             </td>
 
-                            {{-- Vai trò --}}
+                            {{-- Role --}}
                             <td>
                                 <span class="role-pill {{ $user->role_badge_class }}">
                                     {{ $user->role_display }}
                                 </span>
                             </td>
 
-                            {{-- Gói đăng ký --}}
-                            <td>
-                                <div class="package-title">Chưa ghi nhận</div>
-                                <div class="package-sub">Gói đăng ký chưa có trong schema hiện tại</div>
-                            </td>
-
-                            {{-- Số dư energy và lượt thi --}}
+                            {{-- Energy & Attempts --}}
                             <td>
                                 <div class="progress-cell-wrap">
                                     <div class="progress-info-row">
                                         <span class="progress-score-main">{{ number_format($user->energy) }} energy</span>
-                                        <span class="progress-sub-text">{{ number_format($user->attempts_count) }} lượt thi</span>
+                                        <span class="progress-sub-text">{{ number_format($user->attempts_count) }} attempts</span>
                                     </div>
                                 </div>
                             </td>
 
-                            {{-- Trạng thái --}}
+                            {{-- Status --}}
                             <td>
                                 <span class="status-pill {{ $user->status_badge_class }}">
                                     <span class="status-dot"></span>
@@ -329,72 +333,71 @@
                                 </span>
                             </td>
 
-                            {{-- Thao tác --}}
+                            {{-- Joined Date --}}
+                            <td style="color: #64748b; font-size: 13px; white-space: nowrap;">
+                                {{ $user->created_at ? $user->created_at->format('M d, Y') : '—' }}
+                            </td>
+
+                            {{-- Actions --}}
                             <td class="admin-actions-cell">
                                 <div class="user-actions-cell">
-                                    {{-- Nút Sửa / Chi tiết (Sliders/Settings icon) --}}
+                                    {{-- Edit User --}}
                                     <button type="button"
                                             class="action-icon-btn"
-                                            title="Chỉnh sửa thông tin"
+                                            title="Edit User"
                                             onclick='openEditModal(@json($user))'>
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <line x1="4" y1="21" x2="4" y2="14"></line>
-                                            <line x1="4" y1="10" x2="4" y2="3"></line>
-                                            <line x1="12" y1="21" x2="12" y2="12"></line>
-                                            <line x1="12" y1="8" x2="12" y2="3"></line>
-                                            <line x1="20" y1="21" x2="20" y2="16"></line>
-                                            <line x1="20" y1="12" x2="20" y2="3"></line>
-                                            <line x1="1" y1="14" x2="7" y2="14"></line>
-                                            <line x1="9" y1="8" x2="15" y2="8"></line>
-                                            <line x1="17" y1="16" x2="23" y2="16"></line>
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                                         </svg>
                                     </button>
 
-                                    {{-- Nút Đổi mật khẩu (Key icon) --}}
+                                    {{-- Reset Password --}}
                                     <button type="button"
                                             class="action-icon-btn"
-                                            title="Đặt lại mật khẩu"
-                                            onclick="openResetPasswordModal({{ $user->user_id }}, '{{ addslashes($user->full_name ?: $user->user_name) }}')">
+                                            title="Reset Password"
+                                            onclick="openResetPasswordModal({{ $user->user_id }}, '{{ addslashes($user->full_name ?: $user->user_name) }}', '{{ addslashes($user->email) }}')">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                             <path d="M21 2l-2 2m-1.5 1.5L16 7l-2-2m-1.5 1.5L11 8l-2-2m-1.5 1.5L6 9l-4 4 3 3 2-2 2 2 2-2 2 2 7-7-1.5-1.5z"></path>
                                             <circle cx="16.5" cy="7.5" r="4.5"></circle>
                                         </svg>
                                     </button>
 
-                                    {{-- Nút Khóa / Mở khóa (Lock icon) --}}
-                                    <form method="POST" action="{{ route('admin.users.toggle-status', $user->user_id) }}" style="display: inline; margin: 0;">
-                                        @csrf
-                                        @method('PATCH')
-                                        <button type="submit"
-                                                class="action-icon-btn {{ $user->isLocked() ? 'danger' : '' }}"
-                                                title="{{ $user->isLocked() ? 'Mở khóa tài khoản' : 'Khóa tài khoản' }}"
-                                                onclick="return confirm('Bạn có chắc chắn muốn {{ $user->isLocked() ? 'MỞ KHÓA' : 'KHÓA' }} tài khoản {{ $user->full_name }}?')">
-                                            @if ($user->isLocked())
-                                                {{-- Icon Mở khóa --}}
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                                    <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
-                                                </svg>
-                                            @else
-                                                {{-- Icon Khóa --}}
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                                                </svg>
-                                            @endif
-                                        </button>
-                                    </form>
-
-                                    {{-- Nút Xóa / Thao tác khác (3 dots icon) --}}
+                                    {{-- Lock / Unlock --}}
                                     @if ($user->user_id !== auth()->id())
-                                        <form method="POST" action="{{ route('admin.users.destroy', $user->user_id) }}" style="display: inline; margin: 0;" onsubmit="return confirm('CẢNH BÁO: Bạn có chắc chắn muốn xóa vĩnh viễn tài khoản {{ $user->full_name }}? Thao tác này không thể hoàn tác!')">
+                                        <form method="POST" action="{{ route('admin.users.toggle-status', $user->user_id) }}" style="display: inline; margin: 0;">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit"
+                                                    class="action-icon-btn {{ $user->isLocked() ? 'danger' : '' }}"
+                                                    title="{{ $user->isLocked() ? 'Unlock Account' : 'Lock Account' }}"
+                                                    onclick="return confirm('Are you sure you want to {{ $user->isLocked() ? 'UNLOCK' : 'LOCK' }} user \'{{ addslashes($user->full_name ?: $user->user_name) }}\'?')">
+                                                @if ($user->isLocked())
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                                        <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+                                                    </svg>
+                                                @else
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                                    </svg>
+                                                @endif
+                                            </button>
+                                        </form>
+                                    @endif
+
+                                    {{-- Delete User --}}
+                                    @if ($user->user_id !== auth()->id())
+                                        <form method="POST" action="{{ route('admin.users.destroy', $user->user_id) }}" style="display: inline; margin: 0;" onsubmit="return confirm('Are you sure you want to permanently delete user \'{{ addslashes($user->full_name ?: $user->user_name) }}\'? This action cannot be undone.')">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="action-icon-btn danger" title="Xóa tài khoản">
+                                            <button type="submit" class="action-icon-btn danger" title="Delete User">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                    <circle cx="12" cy="12" r="1"></circle>
-                                                    <circle cx="12" cy="5" r="1"></circle>
-                                                    <circle cx="12" cy="19" r="1"></circle>
+                                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                                                    <line x1="14" y1="11" x2="14" y2="17"></line>
                                                 </svg>
                                             </button>
                                         </form>
@@ -404,15 +407,15 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" style="text-align: center; padding: 48px 20px; color: #64748b;">
+                            <td colspan="7" style="text-align: center; padding: 48px 20px; color: #64748b;">
                                 <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
                                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5">
                                         <circle cx="11" cy="11" r="8"></circle>
                                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                     </svg>
-                                    <p style="margin: 0; font-weight: 600; font-size: 15px;">Không tìm thấy tài khoản phù hợp</p>
-                                    <p style="margin: 0; font-size: 13px; color: #94a3b8;">Vui lòng thử từ khóa tìm kiếm hoặc thay đổi bộ lọc</p>
-                                    <a href="{{ route('admin.users.index') }}" class="btn-admin-action" style="margin-top: 10px;">Xóa bộ lọc</a>
+                                    <p style="margin: 0; font-weight: 600; font-size: 15px;">No matching users found</p>
+                                    <p style="margin: 0; font-size: 13px; color: #94a3b8;">Try adjusting your search query or filter options</p>
+                                    <a href="{{ route('admin.users.index') }}" class="btn-admin-action" style="margin-top: 10px;">Clear Filters</a>
                                 </div>
                             </td>
                         </tr>
@@ -421,15 +424,15 @@
             </table>
         </div>
 
-        {{-- 5. Thanh phân trang dưới cùng (Khớp đúng ảnh mẫu) --}}
+        {{-- 6. Table Footer & Dynamic Pagination --}}
         <div class="user-table-footer">
             <div class="user-footer-left">
                 <span>
-                    Hiển thị 1–{{ $users->count() }} trong tổng số {{ number_format($stats['total']) }} người dùng
+                    Showing {{ $users->firstItem() ?? 0 }}–{{ $users->lastItem() ?? 0 }} of {{ number_format($users->total()) }} users
                 </span>
 
                 <div class="user-per-page-select">
-                    <span>Số dòng:</span>
+                    <span>Rows per page:</span>
                     <input type="number"
                            class="per-page-input"
                            value="{{ $filters['per_page'] }}"
@@ -440,152 +443,298 @@
             </div>
 
             <div class="user-pagination">
-                {{-- Nút về trang đầu |< --}}
-                <a href="{{ $users->url(1) }}" class="page-btn {{ $users->onFirstPage() ? 'disabled' : '' }}" title="Trang đầu">
-                    &verbar;&lt;
-                </a>
-
-                {{-- Nút trang trước < --}}
-                <a href="{{ $users->previousPageUrl() }}" class="page-btn {{ $users->onFirstPage() ? 'disabled' : '' }}" title="Trang trước">
-                    &lt;
-                </a>
-
-                {{-- Trang 1 (Active) --}}
-                <a href="{{ $users->url(1) }}" class="page-btn {{ $users->currentPage() === 1 ? 'active' : '' }}">1</a>
-
-                @if ($users->lastPage() >= 2)
-                    <a href="{{ $users->url(2) }}" class="page-btn {{ $users->currentPage() === 2 ? 'active' : '' }}">2</a>
+                {{-- First Page |< --}}
+                @if ($users->onFirstPage())
+                    <span class="page-btn disabled" title="First page">&verbar;&lt;</span>
+                    <span class="page-btn disabled" title="Previous page">&lt;</span>
                 @else
-                    <span class="page-btn">2</span>
+                    <a href="{{ $users->url(1) }}" class="page-btn" title="First page">&verbar;&lt;</a>
+                    <a href="{{ $users->previousPageUrl() }}" class="page-btn" title="Previous page">&lt;</a>
                 @endif
 
-                @if ($users->lastPage() >= 3)
-                    <a href="{{ $users->url(3) }}" class="page-btn {{ $users->currentPage() === 3 ? 'active' : '' }}">3</a>
-                @else
-                    <span class="page-btn">3</span>
+                {{-- Sliding Window Page Numbers --}}
+                @php
+                    $cur = $users->currentPage();
+                    $last = $users->lastPage();
+                    $start = max(1, $cur - 2);
+                    $end = min($last, $cur + 2);
+                @endphp
+
+                @if ($start > 1)
+                    <a href="{{ $users->url(1) }}" class="page-btn">1</a>
+                    @if ($start > 2)
+                        <span class="page-btn disabled">...</span>
+                    @endif
                 @endif
 
-                <span class="page-btn disabled">...</span>
-                <span class="page-btn">355</span>
+                @for ($i = $start; $i <= $end; $i++)
+                    @if ($i === $cur)
+                        <span class="page-btn active">{{ $i }}</span>
+                    @else
+                        <a href="{{ $users->url($i) }}" class="page-btn">{{ $i }}</a>
+                    @endif
+                @endfor
 
-                {{-- Nút trang sau > --}}
-                <a href="{{ $users->nextPageUrl() ?: '#' }}" class="page-btn {{ !$users->hasMorePages() ? 'disabled' : '' }}" title="Trang sau">
-                    &gt;
-                </a>
+                @if ($end < $last)
+                    @if ($end < $last - 1)
+                        <span class="page-btn disabled">...</span>
+                    @endif
+                    <a href="{{ $users->url($last) }}" class="page-btn">{{ $last }}</a>
+                @endif
 
-                {{-- Nút về trang cuối >| --}}
-                <a href="{{ $users->url($users->lastPage()) }}" class="page-btn {{ !$users->hasMorePages() ? 'disabled' : '' }}" title="Trang cuối">
-                    &gt;&verbar;
-                </a>
+                {{-- Next Page > and Last Page >| --}}
+                @if ($users->hasMorePages())
+                    <a href="{{ $users->nextPageUrl() }}" class="page-btn" title="Next page">&gt;</a>
+                    <a href="{{ $users->url($last) }}" class="page-btn" title="Last page">&gt;&verbar;</a>
+                @else
+                    <span class="page-btn disabled" title="Next page">&gt;</span>
+                    <span class="page-btn disabled" title="Last page">&gt;&verbar;</span>
+                @endif
             </div>
         </div>
     </div>
 </div>
 
-{{-- MODAL 1: THÊM NGƯỜI DÙNG MỚI --}}
-<div id="modal-add-user" class="admin-modal-backdrop">
+{{-- MODAL 1: ADD NEW USER --}}
+@php
+    $openAddModal = $errors->any() && old('_modal') === 'modal-add-user';
+@endphp
+<div id="modal-add-user" class="admin-modal-backdrop {{ $openAddModal ? 'open' : '' }}">
     <div class="admin-modal-box">
         <div class="admin-modal-header">
-            <h3 class="admin-modal-title">Thêm người dùng mới</h3>
+            <h3 class="admin-modal-title">Add New User</h3>
             <button type="button" class="admin-modal-close" onclick="closeAdminModal('modal-add-user')">&times;</button>
         </div>
-        <form method="POST" action="{{ route('admin.users.store') }}">
+        <form id="form-add-user" method="POST" action="{{ route('admin.users.store') }}" novalidate autocomplete="off">
             @csrf
+            <input type="hidden" name="_modal" value="modal-add-user">
             <div class="admin-modal-body">
+                {{-- Full Name --}}
                 <div class="form-group-admin">
-                    <label>Họ và tên <span style="color: #dc2626;">*</span></label>
-                    <input type="text" name="full_name" class="form-control-admin" placeholder="Ví dụ: Nguyễn Văn A" required>
+                    <label>Full Name <span style="color: #dc2626;">*</span></label>
+                    <input type="text"
+                           id="add_full_name"
+                           name="full_name"
+                           value="{{ old('_modal') === 'modal-add-user' ? old('full_name') : '' }}"
+                           class="form-control-admin {{ $errors->has('full_name') && old('_modal') === 'modal-add-user' ? 'is-invalid' : '' }}"
+                           placeholder="e.g. John Doe"
+                           autocomplete="off">
+                    <span class="field-error-text" id="error-add_full_name">
+                        @if ($errors->has('full_name') && old('_modal') === 'modal-add-user')
+                            {{ $errors->first('full_name') }}
+                        @endif
+                    </span>
                 </div>
+
+                {{-- Email Address --}}
                 <div class="form-group-admin">
-                    <label>Địa chỉ Email <span style="color: #dc2626;">*</span></label>
-                    <input type="email" name="email" class="form-control-admin" placeholder="name@studyprep.edu.vn" required>
+                    <label>Email Address <span style="color: #dc2626;">*</span></label>
+                    <input type="email"
+                           id="add_email"
+                           name="email"
+                           value="{{ old('_modal') === 'modal-add-user' ? old('email') : '' }}"
+                           class="form-control-admin {{ $errors->has('email') && old('_modal') === 'modal-add-user' ? 'is-invalid' : '' }}"
+                           placeholder="user@studyprep.edu.vn"
+                           autocomplete="off">
+                    <span class="field-error-text" id="error-add_email">
+                        @if ($errors->has('email') && old('_modal') === 'modal-add-user')
+                            {{ $errors->first('email') }}
+                        @endif
+                    </span>
                 </div>
+
+                {{-- Username --}}
                 <div class="form-group-admin">
-                    <label>Tên đăng nhập (Username)</label>
-                    <input type="text" name="user_name" class="form-control-admin" placeholder="Để trống sẽ tự tạo theo Email">
+                    <label>Username</label>
+                    <input type="text"
+                           id="add_user_name"
+                           name="user_name"
+                           value="{{ old('_modal') === 'modal-add-user' ? old('user_name') : '' }}"
+                           class="form-control-admin {{ $errors->has('user_name') && old('_modal') === 'modal-add-user' ? 'is-invalid' : '' }}"
+                           placeholder="Leave empty to auto-generate from email"
+                           autocomplete="off">
+                    <span class="field-error-text" id="error-add_user_name">
+                        @if ($errors->has('user_name') && old('_modal') === 'modal-add-user')
+                            {{ $errors->first('user_name') }}
+                        @endif
+                    </span>
                 </div>
+
+                {{-- Initial Password --}}
                 <div class="form-group-admin">
-                    <label>Mật khẩu khởi tạo <span style="color: #dc2626;">*</span></label>
-                    <input type="password" name="password" class="form-control-admin" placeholder="Tối thiểu 6 ký tự" required>
+                    <label>Initial Password <span style="color: #dc2626;">*</span></label>
+                    <input type="password"
+                           id="add_password"
+                           name="password"
+                           class="form-control-admin {{ $errors->has('password') && old('_modal') === 'modal-add-user' ? 'is-invalid' : '' }}"
+                           placeholder="Minimum 6 characters"
+                           autocomplete="new-password">
+                    <span class="field-error-text" id="error-add_password">
+                        @if ($errors->has('password') && old('_modal') === 'modal-add-user')
+                            {{ $errors->first('password') }}
+                        @endif
+                    </span>
                 </div>
+
+                {{-- System Role --}}
                 <div class="form-group-admin">
-                    <label>Vai trò hệ thống <span style="color: #dc2626;">*</span></label>
-                    <select name="role" class="form-control-admin" required>
-                        <option value="student">Học viên (Student)</option>
-                        <option value="teacher">Giảng viên TOEIC & Chấm bài</option>
-                        <option value="admin">Quản trị viên (Admin)</option>
+                    <label>System Role <span style="color: #dc2626;">*</span></label>
+                    <select id="add_role" name="role" class="form-control-admin">
+                        <option value="student" {{ old('role') === 'student' ? 'selected' : '' }}>Student</option>
+                        <option value="teacher" {{ old('role') === 'teacher' ? 'selected' : '' }}>Teacher</option>
+                        <option value="admin" {{ old('role') === 'admin' ? 'selected' : '' }}>Admin</option>
                     </select>
                 </div>
+
+                {{-- Initial Status --}}
                 <div class="form-group-admin">
-                    <label>Trạng thái ban đầu <span style="color: #dc2626;">*</span></label>
-                    <select name="status" class="form-control-admin" required>
-                        <option value="ACTIVE">Hoạt động (Active)</option>
-                        <option value="PENDING">Chờ kích hoạt email (Pending)</option>
-                        <option value="LOCKED">Khóa tài khoản (Locked)</option>
+                    <label>Initial Status <span style="color: #dc2626;">*</span></label>
+                    <select id="add_status" name="status" class="form-control-admin">
+                        <option value="ACTIVE" {{ old('status') === 'ACTIVE' ? 'selected' : '' }}>Active</option>
+                        <option value="PENDING" {{ old('status') === 'PENDING' ? 'selected' : '' }}>Pending (Email unverified)</option>
+                        <option value="LOCKED" {{ old('status') === 'LOCKED' ? 'selected' : '' }}>Locked</option>
                     </select>
+                </div>
+
+                {{-- Initial Energy Points --}}
+                <div class="form-group-admin">
+                    <label>Initial Energy Points</label>
+                    <input type="number"
+                           id="add_energy"
+                           name="energy"
+                           value="{{ old('energy') }}"
+                           class="form-control-admin"
+                           placeholder="Default: 20 (999 for Admin)" min="0" max="99999">
                 </div>
             </div>
             <div class="admin-modal-footer">
-                <button type="button" class="btn-admin-action" onclick="closeAdminModal('modal-add-user')">Hủy bỏ</button>
-                <button type="submit" class="btn-admin-primary">Lưu người dùng</button>
+                <button type="button" class="btn-admin-action" onclick="closeAdminModal('modal-add-user')">Cancel</button>
+                <button type="submit" class="btn-admin-primary">Create User</button>
             </div>
         </form>
     </div>
 </div>
 
-{{-- MODAL 2: CHỈNH SỬA THÔNG TIN NGƯỜI DÙNG --}}
-<div id="modal-edit-user" class="admin-modal-backdrop">
+{{-- MODAL 2: EDIT USER --}}
+@php
+    $openEditModal = $errors->any() && old('_modal') === 'modal-edit-user';
+@endphp
+<div id="modal-edit-user" class="admin-modal-backdrop {{ $openEditModal ? 'open' : '' }}">
     <div class="admin-modal-box">
         <div class="admin-modal-header">
-            <h3 class="admin-modal-title">Cập nhật tài khoản</h3>
+            <h3 class="admin-modal-title">Edit User</h3>
             <button type="button" class="admin-modal-close" onclick="closeAdminModal('modal-edit-user')">&times;</button>
         </div>
-        <form id="form-edit-user" method="POST" action="">
+        <form id="form-edit-user" method="POST" action="{{ old('_edit_action', '') }}" novalidate>
             @csrf
             @method('PUT')
+            <input type="hidden" name="_modal" value="modal-edit-user">
+            <input type="hidden" id="edit_action_holder" name="_edit_action" value="{{ old('_edit_action', '') }}">
             <div class="admin-modal-body">
+                {{-- Full Name --}}
                 <div class="form-group-admin">
-                    <label>Họ và tên <span style="color: #dc2626;">*</span></label>
-                    <input type="text" id="edit_full_name" name="full_name" class="form-control-admin" required>
+                    <label>Full Name <span style="color: #dc2626;">*</span></label>
+                    <input type="text"
+                           id="edit_full_name"
+                           name="full_name"
+                           value="{{ old('_modal') === 'modal-edit-user' ? old('full_name') : '' }}"
+                           class="form-control-admin {{ $errors->has('full_name') && old('_modal') === 'modal-edit-user' ? 'is-invalid' : '' }}">
+                    <span class="field-error-text" id="error-edit_full_name">
+                        @if ($errors->has('full_name') && old('_modal') === 'modal-edit-user')
+                            {{ $errors->first('full_name') }}
+                        @endif
+                    </span>
                 </div>
+
+                {{-- Email Address --}}
                 <div class="form-group-admin">
-                    <label>Địa chỉ Email <span style="color: #dc2626;">*</span></label>
-                    <input type="email" id="edit_email" name="email" class="form-control-admin" required>
+                    <label>Email Address <span style="color: #dc2626;">*</span></label>
+                    <input type="email"
+                           id="edit_email"
+                           name="email"
+                           value="{{ old('_modal') === 'modal-edit-user' ? old('email') : '' }}"
+                           class="form-control-admin {{ $errors->has('email') && old('_modal') === 'modal-edit-user' ? 'is-invalid' : '' }}">
+                    <span class="field-error-text" id="error-edit_email">
+                        @if ($errors->has('email') && old('_modal') === 'modal-edit-user')
+                            {{ $errors->first('email') }}
+                        @endif
+                    </span>
                 </div>
+
+                {{-- Username --}}
                 <div class="form-group-admin">
-                    <label>Mật khẩu mới (Bỏ trống nếu không thay đổi)</label>
-                    <input type="password" name="password" class="form-control-admin" placeholder="Nhập mật khẩu mới nếu muốn đổi">
+                    <label>Username</label>
+                    <input type="text"
+                           id="edit_user_name"
+                           name="user_name"
+                           value="{{ old('_modal') === 'modal-edit-user' ? old('user_name') : '' }}"
+                           class="form-control-admin {{ $errors->has('user_name') && old('_modal') === 'modal-edit-user' ? 'is-invalid' : '' }}">
+                    <span class="field-error-text" id="error-edit_user_name">
+                        @if ($errors->has('user_name') && old('_modal') === 'modal-edit-user')
+                            {{ $errors->first('user_name') }}
+                        @endif
+                    </span>
                 </div>
+
+                {{-- Password --}}
                 <div class="form-group-admin">
-                    <label>Vai trò hệ thống</label>
-                    <select id="edit_role" name="role" class="form-control-admin" required>
-                        <option value="student">Học viên</option>
-                        <option value="teacher">Giảng viên TOEIC</option>
-                        <option value="admin">Quản trị viên</option>
+                    <label>New Password (Leave blank to keep unchanged)</label>
+                    <input type="password"
+                           id="edit_password"
+                           name="password"
+                           class="form-control-admin {{ $errors->has('password') && old('_modal') === 'modal-edit-user' ? 'is-invalid' : '' }}"
+                           placeholder="Enter new password if changing"
+                           autocomplete="new-password">
+                    <span class="field-error-text" id="error-edit_password">
+                        @if ($errors->has('password') && old('_modal') === 'modal-edit-user')
+                            {{ $errors->first('password') }}
+                        @endif
+                    </span>
+                </div>
+
+                {{-- System Role --}}
+                <div class="form-group-admin">
+                    <label>System Role <span style="color: #dc2626;">*</span></label>
+                    <select id="edit_role" name="role" class="form-control-admin">
+                        <option value="student">Student</option>
+                        <option value="teacher">Teacher</option>
+                        <option value="admin">Admin</option>
                     </select>
                 </div>
+
+                {{-- Account Status --}}
                 <div class="form-group-admin">
-                    <label>Trạng thái tài khoản</label>
-                    <select id="edit_status" name="status" class="form-control-admin" required>
-                        <option value="ACTIVE">Hoạt động (Active)</option>
-                        <option value="PENDING">Chờ kích hoạt (Pending)</option>
-                        <option value="LOCKED">Bị khóa (Locked)</option>
+                    <label>Account Status <span style="color: #dc2626;">*</span></label>
+                    <select id="edit_status" name="status" class="form-control-admin">
+                        <option value="ACTIVE">Active</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="LOCKED">Locked</option>
                     </select>
+                </div>
+
+                {{-- Energy Points --}}
+                <div class="form-group-admin">
+                    <label>Energy Points</label>
+                    <input type="number"
+                           id="edit_energy"
+                           name="energy"
+                           value="{{ old('_modal') === 'modal-edit-user' ? old('energy') : '' }}"
+                           class="form-control-admin" min="0" max="99999">
                 </div>
             </div>
             <div class="admin-modal-footer">
-                <button type="button" class="btn-admin-action" onclick="closeAdminModal('modal-edit-user')">Đóng</button>
-                <button type="submit" class="btn-admin-primary">Lưu thay đổi</button>
+                <button type="button" class="btn-admin-action" onclick="closeAdminModal('modal-edit-user')">Cancel</button>
+                <button type="submit" class="btn-admin-primary">Save Changes</button>
             </div>
         </form>
     </div>
 </div>
 
-{{-- MODAL 3: ĐẶT LẠI MẬT KHẨU --}}
+{{-- MODAL 3: RESET PASSWORD --}}
 <div id="modal-reset-pwd" class="admin-modal-backdrop">
     <div class="admin-modal-box">
         <div class="admin-modal-header">
-            <h3 class="admin-modal-title">Đặt lại mật khẩu</h3>
+            <h3 class="admin-modal-title">Reset User Password</h3>
             <button type="button" class="admin-modal-close" onclick="closeAdminModal('modal-reset-pwd')">&times;</button>
         </div>
         <form id="form-reset-pwd" method="POST" action="">
@@ -593,48 +742,59 @@
             @method('PATCH')
             <div class="admin-modal-body">
                 <p style="font-size: 14px; color: #475569; margin-top: 0;">
-                    Đặt lại mật khẩu đăng nhập cho tài khoản: <strong id="reset-pwd-user-name"></strong>
+                    Resetting password for: <strong id="reset-pwd-user-name"></strong>
                 </p>
                 <div class="form-group-admin">
-                    <label>Mật khẩu mới</label>
+                    <label>New Password</label>
                     <input type="text" name="new_password" class="form-control-admin" value="StudyPrep@2026">
                     <small style="color: #64748b; font-size: 12px; margin-top: 4px; display: block;">
-                        Mật khẩu mặc định gợi ý là <code>StudyPrep@2026</code>. Bạn có thể sửa thành mật khẩu khác.
+                        Default suggested password is <code>StudyPrep@2026</code>. You can customize it as needed.
                     </small>
                 </div>
             </div>
             <div class="admin-modal-footer">
-                <button type="button" class="btn-admin-action" onclick="closeAdminModal('modal-reset-pwd')">Hủy</button>
-                <button type="submit" class="btn-admin-primary">Xác nhận đặt lại</button>
+                <button type="button" class="btn-admin-action" onclick="closeAdminModal('modal-reset-pwd')">Cancel</button>
+                <button type="submit" class="btn-admin-primary">Confirm Reset</button>
             </div>
         </form>
     </div>
 </div>
 
-{{-- MODAL 4: NHẬP DANH SÁCH TỪ FILE CSV --}}
+{{-- MODAL 4: IMPORT USERS FROM CSV --}}
 <div id="modal-import" class="admin-modal-backdrop">
     <div class="admin-modal-box">
         <div class="admin-modal-header">
-            <h3 class="admin-modal-title">Nhập danh sách tài khoản</h3>
+            <h3 class="admin-modal-title">Import Users from CSV</h3>
             <button type="button" class="admin-modal-close" onclick="closeAdminModal('modal-import')">&times;</button>
         </div>
         <form method="POST" action="{{ route('admin.users.import') }}" enctype="multipart/form-data">
             @csrf
             <div class="admin-modal-body">
                 <p style="font-size: 13.5px; color: #475569; margin-top: 0;">
-                    Hỗ trợ tệp <code>.CSV</code> có các cột: <strong>Họ tên, Email, Vai trò (user / teacher)</strong>.
+                    Upload a <code>.CSV</code> file with the following columns:
+                    <strong>Full Name, Email, Role (student / teacher / admin), Status (ACTIVE / PENDING / LOCKED), Password</strong>.
                 </p>
+                <div style="margin-bottom: 16px;">
+                    <a href="{{ route('admin.users.sample-csv') }}" class="btn-admin-action" style="font-size: 12.5px; padding: 6px 12px; display: inline-flex; align-items: center; gap: 6px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        <span>Download Sample CSV Template</span>
+                    </a>
+                </div>
                 <div class="form-group-admin">
-                    <label>Chọn tệp CSV từ máy tính</label>
+                    <label>Select CSV File</label>
                     <input type="file" name="csv_file" accept=".csv,.txt" class="form-control-admin" required>
                 </div>
-                <div style="background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 10px; padding: 12px; font-size: 12.5px; color: #64748b;">
-                    Mẫu dòng dữ liệu: <code>Nguyễn Văn A, nguyen@studyprep.edu.vn, user</code>
+                <div style="background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 10px; padding: 12px; font-size: 12px; color: #64748b;">
+                    Example row: <code>John Doe, john.doe@example.com, student, ACTIVE, StudyPrep@123</code>
                 </div>
             </div>
             <div class="admin-modal-footer">
-                <button type="button" class="btn-admin-action" onclick="closeAdminModal('modal-import')">Hủy</button>
-                <button type="submit" class="btn-admin-primary">Tải lên & Nhập</button>
+                <button type="button" class="btn-admin-action" onclick="closeAdminModal('modal-import')">Cancel</button>
+                <button type="submit" class="btn-admin-primary">Upload & Import</button>
             </div>
         </form>
     </div>
@@ -653,7 +813,7 @@
         if (el) el.classList.remove('open');
     }
 
-    // Đóng modal khi click ra ngoài vùng backdrop
+    // Close modal when clicking outside
     document.querySelectorAll('.admin-modal-backdrop').forEach(function(backdrop) {
         backdrop.addEventListener('click', function(e) {
             if (e.target === backdrop) {
@@ -662,34 +822,246 @@
         });
     });
 
-    // Mở modal Edit với dữ liệu người dùng
+    // Helper functions for field errors
+    function showFieldError(inputId, message) {
+        var input = document.getElementById(inputId);
+        if (input) {
+            input.classList.add('is-invalid');
+        }
+        var errSpan = document.getElementById('error-' + inputId);
+        if (errSpan) {
+            errSpan.innerText = message;
+            errSpan.style.display = 'block';
+        }
+    }
+
+    function clearFieldError(inputId) {
+        var input = document.getElementById(inputId);
+        if (input) {
+            input.classList.remove('is-invalid');
+        }
+        var errSpan = document.getElementById('error-' + inputId);
+        if (errSpan) {
+            errSpan.innerText = '';
+        }
+    }
+
+    // Real-time clear on typing
+    document.querySelectorAll('.form-control-admin').forEach(function(input) {
+        input.addEventListener('input', function() {
+            if (this.id) {
+                clearFieldError(this.id);
+            }
+        });
+    });
+
+    // Client-side instant validation on submit for Add User
+    document.getElementById('form-add-user')?.addEventListener('submit', function(e) {
+        var hasError = false;
+        var fullNameInput = document.getElementById('add_full_name');
+        var emailInput = document.getElementById('add_email');
+        var passwordInput = document.getElementById('add_password');
+
+        clearFieldError('add_full_name');
+        clearFieldError('add_email');
+        clearFieldError('add_password');
+
+        if (!fullNameInput.value.trim()) {
+            showFieldError('add_full_name', 'Please enter the user full name.');
+            if (!hasError) fullNameInput.focus();
+            hasError = true;
+        }
+
+        var emailVal = emailInput.value.trim();
+        var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailVal) {
+            showFieldError('add_email', 'Please enter an email address.');
+            if (!hasError) emailInput.focus();
+            hasError = true;
+        } else if (!emailRegex.test(emailVal)) {
+            showFieldError('add_email', 'The email address format is invalid.');
+            if (!hasError) emailInput.focus();
+            hasError = true;
+        }
+
+        var passVal = passwordInput.value;
+        if (!passVal) {
+            showFieldError('add_password', 'Please enter an initial password.');
+            if (!hasError) passwordInput.focus();
+            hasError = true;
+        } else if (passVal.length < 6) {
+            showFieldError('add_password', 'The password must be at least 6 characters.');
+            if (!hasError) passwordInput.focus();
+            hasError = true;
+        }
+
+        if (hasError) {
+            e.preventDefault();
+        }
+    });
+
+    // Client-side instant validation on submit for Edit User
+    document.getElementById('form-edit-user')?.addEventListener('submit', function(e) {
+        var hasError = false;
+        var fullNameInput = document.getElementById('edit_full_name');
+        var emailInput = document.getElementById('edit_email');
+        var passwordInput = document.getElementById('edit_password');
+
+        clearFieldError('edit_full_name');
+        clearFieldError('edit_email');
+        clearFieldError('edit_password');
+
+        if (!fullNameInput.value.trim()) {
+            showFieldError('edit_full_name', 'Please enter the user full name.');
+            if (!hasError) fullNameInput.focus();
+            hasError = true;
+        }
+
+        var emailVal = emailInput.value.trim();
+        var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailVal) {
+            showFieldError('edit_email', 'Please enter an email address.');
+            if (!hasError) emailInput.focus();
+            hasError = true;
+        } else if (!emailRegex.test(emailVal)) {
+            showFieldError('edit_email', 'The email address format is invalid.');
+            if (!hasError) emailInput.focus();
+            hasError = true;
+        }
+
+        if (passwordInput.value && passwordInput.value.length < 6) {
+            showFieldError('edit_password', 'The new password must be at least 6 characters.');
+            if (!hasError) passwordInput.focus();
+            hasError = true;
+        }
+
+        if (hasError) {
+            e.preventDefault();
+        }
+    });
+
+    // Populate and open Edit Modal
     function openEditModal(user) {
         var form = document.getElementById('form-edit-user');
-        form.action = '/admin/users/' + user.user_id;
+        var actionUrl = '/admin/users/' + user.user_id;
+        form.action = actionUrl;
+        document.getElementById('edit_action_holder').value = actionUrl;
+
+        clearFieldError('edit_full_name');
+        clearFieldError('edit_email');
+        clearFieldError('edit_user_name');
+        clearFieldError('edit_password');
+
         document.getElementById('edit_full_name').value = user.full_name || user.user_name || '';
         document.getElementById('edit_email').value = user.email || '';
-        document.getElementById('edit_role').value = user.role || 'user';
-        document.getElementById('edit_status').value = user.status || 'ACTIVE';
+        document.getElementById('edit_user_name').value = user.user_name || '';
+        document.getElementById('edit_password').value = '';
+        document.getElementById('edit_energy').value = (user.energy !== undefined && user.energy !== null) ? user.energy : 20;
+
+        var roleVal = 'student';
+        var lowerRole = (user.role || '').toLowerCase();
+        if (['teacher', 'instructor', 'giang_vien'].includes(lowerRole)) {
+            roleVal = 'teacher';
+        } else if (['admin', 'super_admin'].includes(lowerRole)) {
+            roleVal = 'admin';
+        }
+        document.getElementById('edit_role').value = roleVal;
+
+        var statusVal = (user.status || 'ACTIVE').toUpperCase();
+        if (user.locked_until && new Date(user.locked_until) > new Date()) {
+            statusVal = 'LOCKED';
+        }
+        document.getElementById('edit_status').value = statusVal;
+
         openAdminModal('modal-edit-user');
     }
 
-    // Mở modal Reset Password
-    function openResetPasswordModal(userId, userName) {
+    // Populate and open Reset Password Modal
+    function openResetPasswordModal(userId, userName, userEmail) {
         var form = document.getElementById('form-reset-pwd');
         form.action = '/admin/users/' + userId + '/reset-password';
-        document.getElementById('reset-pwd-user-name').innerText = userName;
+        document.getElementById('reset-pwd-user-name').innerText = userName + (userEmail ? ' (' + userEmail + ')' : '');
         openAdminModal('modal-reset-pwd');
     }
 
-    // Check all checkbox
+    // Handle Checkboxes & Bulk Action Bar
     var checkAll = document.getElementById('check-all-users');
     if (checkAll) {
         checkAll.addEventListener('change', function() {
             var checked = this.checked;
-            document.querySelectorAll('.user-row-checkbox').forEach(function(cb) {
+            document.querySelectorAll('.user-row-checkbox:not(:disabled)').forEach(function(cb) {
                 cb.checked = checked;
             });
+            updateSelectionBar();
         });
+    }
+
+    function handleRowCheckboxChange() {
+        var allBoxes = document.querySelectorAll('.user-row-checkbox:not(:disabled)');
+        var checkedBoxes = document.querySelectorAll('.user-row-checkbox:checked');
+        if (checkAll) {
+            checkAll.checked = allBoxes.length > 0 && allBoxes.length === checkedBoxes.length;
+        }
+        updateSelectionBar();
+    }
+
+    function updateSelectionBar() {
+        var checkedBoxes = document.querySelectorAll('.user-row-checkbox:checked');
+        var bar = document.getElementById('user-selection-bar');
+        var badge = document.getElementById('selected-badge-count');
+        if (checkedBoxes.length > 0) {
+            if (bar) bar.style.display = 'flex';
+            if (badge) badge.innerText = checkedBoxes.length;
+        } else {
+            if (bar) bar.style.display = 'none';
+        }
+    }
+
+    function clearAllSelections() {
+        if (checkAll) checkAll.checked = false;
+        document.querySelectorAll('.user-row-checkbox').forEach(function(cb) {
+            cb.checked = false;
+        });
+        updateSelectionBar();
+    }
+
+    function submitBulkAction(actionType) {
+        var checkedBoxes = document.querySelectorAll('.user-row-checkbox:checked');
+        if (checkedBoxes.length === 0) {
+            alert('Please select at least one user.');
+            return;
+        }
+
+        var actionLabels = {
+            'delete': 'PERMANENTLY DELETE',
+            'lock': 'LOCK',
+            'unlock': 'UNLOCK'
+        };
+
+        var label = actionLabels[actionType] || actionType.toUpperCase();
+        var confirmMsg = 'Are you sure you want to ' + label + ' ' + checkedBoxes.length + ' selected user(s)?';
+        if (actionType === 'delete') {
+            confirmMsg += ' This action cannot be undone!';
+        }
+
+        if (!confirm(confirmMsg)) {
+            return;
+        }
+
+        var form = document.getElementById('bulk-action-form');
+        document.getElementById('bulk-action-input').value = actionType;
+        var container = document.getElementById('bulk-action-ids-container');
+        container.innerHTML = '';
+
+        checkedBoxes.forEach(function(cb) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'user_ids[]';
+            input.value = cb.value;
+            container.appendChild(input);
+        });
+
+        form.submit();
     }
 </script>
 @endpush

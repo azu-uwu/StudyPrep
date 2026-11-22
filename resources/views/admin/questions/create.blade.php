@@ -218,9 +218,10 @@
                 <div class="qcreate-field-group">
                     <label class="qcreate-field-label">Độ khó (Target TOEIC)</label>
                     <select name="difficulty" id="difficultySelect" class="qcreate-input-control">
-                        <option value="EASY" {{ old('difficulty', 'MEDIUM') === 'EASY' ? 'selected' : '' }}>EASY - Cơ bản (&lt; 500)</option>
+                        <option value="UNSET" {{ old('difficulty') === 'UNSET' ? 'selected' : '' }}>Tự động (AI đánh giá theo chuẩn TOEIC)</option>
+                        <option value="EASY" {{ old('difficulty') === 'EASY' ? 'selected' : '' }}>EASY - Cơ bản (&lt; 500)</option>
                         <option value="MEDIUM" {{ old('difficulty', 'MEDIUM') === 'MEDIUM' ? 'selected' : '' }}>MEDIUM - Trung bình (500 - 750)</option>
-                        <option value="HARD" {{ old('difficulty', 'MEDIUM') === 'HARD' ? 'selected' : '' }}>HARD - Nâng cao (750+)</option>
+                        <option value="HARD" {{ old('difficulty') === 'HARD' ? 'selected' : '' }}>HARD - Nâng cao (750+)</option>
                     </select>
                 </div>
 

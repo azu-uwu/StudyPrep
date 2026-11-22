@@ -190,7 +190,7 @@ CREATE TABLE IF NOT EXISTS Vocabularies (
     topic_id BIGINT NOT NULL,
     word VARCHAR(150) NOT NULL,
     meaning_vi TEXT NOT NULL,
-    part_of_speech VARCHAR(30) NULL,
+    part_of_speech VARCHAR(100) NULL,
     pronunciation VARCHAR(150) NULL,
     example_en TEXT NULL,
     example_vi TEXT NULL,

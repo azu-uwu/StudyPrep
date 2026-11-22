@@ -16,22 +16,22 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class UserController extends Controller
 {
     /**
-     * Hiển thị danh sách tài khoản & bộ lọc quản lý người dùng.
+     * Display the list of users with search, role, status, and time filters.
      */
     public function index(Request $request): View
     {
         $search = trim((string) $request->input('search', ''));
         $role = strtolower((string) $request->input('role', 'all'));
-        $status = $request->input('status', 'all');
-        $timeFilter = $request->input('time', '30');
-        $perPage = (int) $request->input('per_page', 25);
+        $status = strtoupper((string) $request->input('status', 'ALL'));
+        $timeFilter = (string) $request->input('time', 'all');
+        $perPage = (int) $request->input('per_page', 20);
         if ($perPage < 5 || $perPage > 100) {
-            $perPage = 25;
+            $perPage = 20;
         }
 
         $query = User::query()->withCount('attempts');
 
-        // 1. Tìm kiếm theo Họ tên, Email, Mã ID, Username
+        // 1. Search by Full Name, Email, Username, or numeric ID
         if ($search !== '') {
             $cleanId = preg_replace('/[^0-9]/', '', $search);
             $query->where(function ($q) use ($search, $cleanId) {
@@ -45,18 +45,18 @@ class UserController extends Controller
             });
         }
 
-        // 2. Lọc theo Vai trò
+        // 2. Filter by Role
         if (in_array($role, ['student', 'learner', 'user'], true)) {
             $query->whereIn('role', ['student', 'learner', 'user']);
         } elseif (in_array($role, ['teacher', 'instructor', 'giang_vien'], true)) {
             $query->whereIn('role', ['teacher', 'instructor', 'giang_vien']);
-        } elseif ($role === 'admin') {
+        } elseif (in_array($role, ['admin', 'super_admin'], true)) {
             $query->whereIn('role', ['admin', 'super_admin']);
         } else {
             $role = 'all';
         }
 
-        // 3. Lọc theo Trạng thái
+        // 3. Filter by Status
         if ($status === 'ACTIVE') {
             $query->where('status', 'ACTIVE')
                 ->where(function ($q) {
@@ -71,34 +71,41 @@ class UserController extends Controller
                         $sub->whereNotNull('locked_until')->where('locked_until', '>', now());
                     });
             });
+        } else {
+            $status = 'ALL';
         }
 
-        // 4. Lọc theo thời gian tạo
+        // 4. Filter by Created Time
         if ($timeFilter === '7') {
             $query->where('created_at', '>=', now()->subDays(7));
         } elseif ($timeFilter === '30') {
             $query->where('created_at', '>=', now()->subDays(30));
         } elseif ($timeFilter === '90') {
             $query->where('created_at', '>=', now()->subDays(90));
+        } else {
+            $timeFilter = 'all';
         }
 
-        // Sắp xếp ưu tiên: admin, teacher, các tài khoản mới nhất
-        $query->orderByRaw("CASE WHEN role = 'admin' THEN 1 WHEN role = 'teacher' THEN 2 ELSE 3 END")
-            ->orderByDesc('user_id');
+        // Order: Latest users first so newly created accounts appear immediately at the top
+        $query->orderByDesc('user_id');
 
         $users = $query->paginate($perPage)->withQueryString();
 
-        // Thống kê số liệu
-        $totalDbUsers = User::query()->count();
-        $totalDbTeachers = User::query()->whereIn('role', ['teacher', 'instructor', 'giang_vien'])->count();
-        $totalDbLocked = User::query()->locked()->count();
+        // Statistics
+        $totalUsers = User::count();
+        $totalStudents = User::whereIn('role', ['student', 'learner', 'user'])->count();
+        $totalTeachers = User::whereIn('role', ['teacher', 'instructor', 'giang_vien'])->count();
+        $totalAdmins = User::whereIn('role', ['admin', 'super_admin'])->count();
+        $totalLocked = User::locked()->count();
+        $totalActive = User::active()->count();
 
-        // Chỉ số hiển thị đồng bộ với giao diện mẫu của hệ thống
         $stats = [
-            'total' => $totalDbUsers,
-            'active' => User::query()->active()->count(),
-            'teachers' => $totalDbTeachers,
-            'locked' => $totalDbLocked,
+            'total' => $totalUsers,
+            'students' => $totalStudents,
+            'teachers' => $totalTeachers,
+            'admins' => $totalAdmins,
+            'locked' => $totalLocked,
+            'active' => $totalActive,
         ];
 
         return view('admin.users.index', [
@@ -115,7 +122,7 @@ class UserController extends Controller
     }
 
     /**
-     * Thêm tài khoản người dùng mới vào hệ thống.
+     * Store a newly created user in storage.
      */
     public function store(Request $request): RedirectResponse
     {
@@ -123,52 +130,66 @@ class UserController extends Controller
             'full_name' => 'required|string|max:100',
             'email' => 'required|email|max:255|unique:users,email',
             'user_name' => 'nullable|string|max:100|unique:users,user_name',
-            'role' => 'required|in:student,teacher,admin,user,learner',
+            'role' => 'required|in:student,teacher,admin,user',
             'status' => 'required|in:ACTIVE,PENDING,LOCKED',
             'password' => 'required|string|min:6',
+            'energy' => 'nullable|integer|min:0|max:99999',
         ], [
-            'full_name.required' => 'Vui lòng nhập họ và tên.',
-            'email.required' => 'Vui lòng nhập địa chỉ email.',
-            'email.email' => 'Địa chỉ email không hợp lệ.',
-            'email.unique' => 'Địa chỉ email này đã tồn tại trên hệ thống.',
-            'user_name.unique' => 'Tên đăng nhập này đã được sử dụng.',
-            'password.required' => 'Vui lòng nhập mật khẩu khởi tạo.',
-            'password.min' => 'Mật khẩu phải chứa ít nhất 6 ký tự.',
+            'full_name.required' => 'Please provide the user full name.',
+            'email.required' => 'Please provide a valid email address.',
+            'email.email' => 'The email address format is invalid.',
+            'email.unique' => 'This email address is already registered in the system.',
+            'user_name.unique' => 'This username is already taken.',
+            'password.required' => 'Please enter an initial password.',
+            'password.min' => 'The password must be at least 6 characters.',
         ]);
 
         $userName = ! empty($validated['user_name'])
             ? Str::slug($validated['user_name'])
             : Str::slug(explode('@', $validated['email'])[0]);
 
-        // Đảm bảo username duy nhất
-        $baseUserName = $userName;
+        $baseUserName = $userName ?: 'user';
         $counter = 1;
         while (User::where('user_name', $userName)->exists()) {
             $userName = $baseUserName.$counter;
             $counter++;
         }
 
+        $role = $validated['role'] === 'user' ? 'student' : $validated['role'];
         $isLocked = $validated['status'] === 'LOCKED';
+        $energy = isset($validated['energy']) && $validated['energy'] !== null
+            ? (int) $validated['energy']
+            : ($role === 'admin' ? 999 : 20);
 
         $user = new User;
         $user->full_name = $validated['full_name'];
         $user->email = $validated['email'];
         $user->user_name = $userName;
-        $user->role = $validated['role'];
+        $user->role = $role;
         $user->status = $validated['status'];
         $user->password_hash = Hash::make($validated['password']);
-        $user->energy = $validated['role'] === 'admin' ? 999 : 20;
+        $user->energy = $energy;
         $user->created_at = now();
         $user->email_verified_at = $validated['status'] === 'PENDING' ? null : now();
         $user->locked_until = $isLocked ? now()->addDays(30) : null;
+        $user->failed_login_attempts = 0;
         $user->save();
 
+        // Activity log
+        $adminId = auth()->id() ?? 1;
+        DB::table('activity_log')->insert([
+            'user_id' => $adminId,
+            'action' => 'USER_CREATED',
+            'description' => "Created user {$user->full_name} ({$user->email}) with role {$user->role}",
+            'created_at' => now(),
+        ]);
+
         return redirect()->route('admin.users.index')
-            ->with('success', "Đã thêm tài khoản '{$user->full_name}' ({$user->email}) thành công!");
+            ->with('success', "User '{$user->full_name}' ({$user->email}) has been created successfully.");
     }
 
     /**
-     * Cập nhật thông tin tài khoản người dùng.
+     * Update the specified user in storage.
      */
     public function update(Request $request, User $user): RedirectResponse
     {
@@ -180,30 +201,45 @@ class UserController extends Controller
                 'max:255',
                 Rule::unique('users', 'email')->ignore($user->user_id, 'user_id'),
             ],
-            'role' => 'required|in:student,teacher,admin,user,learner',
+            'user_name' => [
+                'nullable',
+                'string',
+                'max:100',
+                Rule::unique('users', 'user_name')->ignore($user->user_id, 'user_id'),
+            ],
+            'role' => 'required|in:student,teacher,admin,user',
             'status' => 'required|in:ACTIVE,PENDING,LOCKED',
             'password' => 'nullable|string|min:6',
+            'energy' => 'nullable|integer|min:0|max:99999',
         ], [
-            'full_name.required' => 'Vui lòng nhập họ và tên.',
-            'email.required' => 'Vui lòng nhập địa chỉ email.',
-            'email.unique' => 'Địa chỉ email này đã tồn tại.',
-            'password.min' => 'Mật khẩu mới phải từ 6 ký tự trở lên.',
+            'full_name.required' => 'Please provide the user full name.',
+            'email.required' => 'Please provide a valid email address.',
+            'email.unique' => 'This email address is already in use by another user.',
+            'user_name.unique' => 'This username is already taken.',
+            'password.min' => 'The new password must be at least 6 characters.',
         ]);
 
-        // Không cho phép tự tước quyền quản trị của chính mình
+        // Security check: cannot demote own admin role
         if ($user->user_id === auth()->id() && $validated['role'] !== 'admin') {
-            return redirect()->back()->with('error', 'Bạn không thể tự hạ quyền quản trị viên của chính mình.');
+            return redirect()->back()->with('error', 'You cannot remove your own administrator privileges.');
         }
 
-        // Không cho phép tự khóa tài khoản của chính mình
+        // Security check: cannot lock own account
         if ($user->user_id === auth()->id() && $validated['status'] === 'LOCKED') {
-            return redirect()->back()->with('error', 'Bạn không thể tự khóa tài khoản của chính mình.');
+            return redirect()->back()->with('error', 'You cannot lock your own active account.');
         }
 
         $user->full_name = $validated['full_name'];
         $user->email = $validated['email'];
-        $user->role = $validated['role'];
+        if (! empty($validated['user_name'])) {
+            $user->user_name = Str::slug($validated['user_name']);
+        }
+        $user->role = $validated['role'] === 'user' ? 'student' : $validated['role'];
         $user->status = $validated['status'];
+
+        if (isset($validated['energy']) && $validated['energy'] !== null) {
+            $user->energy = (int) $validated['energy'];
+        }
 
         if ($validated['status'] === 'LOCKED') {
             $user->locked_until = now()->addDays(30);
@@ -221,92 +257,212 @@ class UserController extends Controller
 
         $user->save();
 
+        // Activity log
+        $adminId = auth()->id() ?? 1;
+        DB::table('activity_log')->insert([
+            'user_id' => $adminId,
+            'action' => 'USER_UPDATED',
+            'description' => "Updated user {$user->full_name} (ID #{$user->user_id})",
+            'created_at' => now(),
+        ]);
+
         return redirect()->route('admin.users.index')
-            ->with('success', "Đã cập nhật thông tin tài khoản '{$user->full_name}' thành công!");
+            ->with('success', "User '{$user->full_name}' has been updated successfully.");
     }
 
     /**
-     * Bật/tắt trạng thái Khóa / Mở khóa tài khoản nhanh.
+     * Toggle lock/unlock status of a user quickly.
      */
     public function toggleStatus(User $user): RedirectResponse
     {
         if ($user->user_id === auth()->id()) {
-            return redirect()->back()->with('error', 'Bạn không thể tự khóa tài khoản đang đăng nhập.');
+            return redirect()->back()->with('error', 'You cannot lock your own logged-in account.');
         }
 
-        DB::transaction(function () use ($user) {
-            $lockedUser = User::where('user_id', $user->user_id)->lockForUpdate()->firstOrFail();
+        $isCurrentlyLocked = $user->isLocked();
+
+        DB::transaction(function () use ($user, $isCurrentlyLocked) {
+            $targetUser = User::where('user_id', $user->user_id)->lockForUpdate()->firstOrFail();
             $adminId = auth()->id() ?? 1;
 
-            if ($lockedUser->isLocked()) {
-                $lockedUser->status = 'ACTIVE';
-                $lockedUser->locked_until = null;
-                $lockedUser->failed_login_attempts = 0;
-                $lockedUser->save();
+            if ($isCurrentlyLocked) {
+                $targetUser->status = 'ACTIVE';
+                $targetUser->locked_until = null;
+                $targetUser->failed_login_attempts = 0;
+                $targetUser->save();
 
                 DB::table('activity_log')->insert([
                     'user_id' => $adminId,
                     'action' => 'USER_UNLOCKED',
-                    'description' => "Mở khóa tài khoản {$lockedUser->email} (ID #{$lockedUser->user_id})",
+                    'description' => "Unlocked user {$targetUser->email} (ID #{$targetUser->user_id})",
                     'created_at' => now(),
                 ]);
             } else {
-                $lockedUser->status = 'LOCKED';
-                $lockedUser->locked_until = now()->addDays(30);
-                $lockedUser->save();
+                $targetUser->status = 'LOCKED';
+                $targetUser->locked_until = now()->addDays(30);
+                $targetUser->save();
 
                 DB::table('activity_log')->insert([
                     'user_id' => $adminId,
                     'action' => 'USER_LOCKED',
-                    'description' => "Khóa tài khoản {$lockedUser->email} (ID #{$lockedUser->user_id})",
+                    'description' => "Locked user {$targetUser->email} (ID #{$targetUser->user_id})",
                     'created_at' => now(),
                 ]);
             }
         });
 
         $message = $user->fresh()->isLocked()
-            ? "Đã khóa tài khoản '{$user->full_name}'."
-            : "Đã mở khóa thành công tài khoản '{$user->full_name}'.";
+            ? "User '{$user->full_name}' has been locked."
+            : "User '{$user->full_name}' has been unlocked successfully.";
 
         return redirect()->back()->with('success', $message);
     }
 
     /**
-     * Đặt lại mật khẩu mặc định hoặc tạo mới.
+     * Reset user password to default or custom string.
      */
     public function resetPassword(Request $request, User $user): RedirectResponse
     {
-        $newPass = $request->input('new_password', 'StudyPrep@'.date('Y'));
+        $newPass = trim((string) $request->input('new_password', ''));
+        if ($newPass === '') {
+            $newPass = 'StudyPrep@'.date('Y');
+        }
+
+        if (strlen($newPass) < 6) {
+            return redirect()->back()->with('error', 'The new password must be at least 6 characters long.');
+        }
+
         $user->password_hash = Hash::make($newPass);
         $user->save();
 
-        return redirect()->back()->with('success', "Đã đặt lại mật khẩu cho tài khoản '{$user->full_name}'. Mật khẩu mới là: {$newPass}");
+        $adminId = auth()->id() ?? 1;
+        DB::table('activity_log')->insert([
+            'user_id' => $adminId,
+            'action' => 'USER_PASSWORD_RESET',
+            'description' => "Reset password for user {$user->email} (ID #{$user->user_id})",
+            'created_at' => now(),
+        ]);
+
+        return redirect()->back()->with('success', "Password for user '{$user->full_name}' has been reset to: {$newPass}");
     }
 
     /**
-     * Xóa tài khoản người dùng khỏi hệ thống.
+     * Permanently remove a user from the system.
      */
     public function destroy(User $user): RedirectResponse
     {
         if ($user->user_id === auth()->id()) {
-            return redirect()->back()->with('error', 'Bạn không thể xóa tài khoản của chính mình đang đăng nhập.');
+            return redirect()->back()->with('error', 'You cannot delete your own logged-in account.');
         }
 
-        $userName = $user->full_name;
+        if ($user->isAdmin() && User::whereIn('role', ['admin', 'super_admin'])->count() <= 1) {
+            return redirect()->back()->with('error', 'Cannot delete the last remaining administrator account.');
+        }
+
+        $userName = $user->full_name ?: $user->user_name;
+        $userEmail = $user->email;
+        $userId = $user->user_id;
+
         $user->delete();
 
+        $adminId = auth()->id() ?? 1;
+        DB::table('activity_log')->insert([
+            'user_id' => $adminId,
+            'action' => 'USER_DELETED',
+            'description' => "Deleted user {$userName} ({$userEmail}) [ID #{$userId}]",
+            'created_at' => now(),
+        ]);
+
         return redirect()->route('admin.users.index')
-            ->with('success', "Đã xóa vĩnh viễn tài khoản '{$userName}' khỏi hệ thống.");
+            ->with('success', "User '{$userName}' has been deleted permanently.");
     }
 
     /**
-     * Xuất danh sách người dùng ra định dạng Excel (CSV hỗ trợ tiếng Việt UTF-8 BOM).
+     * Execute bulk action on selected users (delete, lock, unlock).
+     */
+    public function bulkAction(Request $request): RedirectResponse
+    {
+        $action = (string) $request->input('action', '');
+        $userIds = $request->input('user_ids', []);
+
+        if (! is_array($userIds) || empty($userIds)) {
+            return redirect()->back()->with('error', 'Please select at least one user to perform this bulk action.');
+        }
+
+        $adminId = auth()->id();
+        // Prevent action on self
+        $filteredIds = array_values(array_filter($userIds, fn ($id) => (int) $id !== (int) $adminId));
+
+        if (empty($filteredIds)) {
+            return redirect()->back()->with('error', 'Cannot perform bulk action on your own current account.');
+        }
+
+        if ($action === 'delete') {
+            // Check remaining admins
+            $adminCountInSelection = User::whereIn('user_id', $filteredIds)->whereIn('role', ['admin', 'super_admin'])->count();
+            $totalAdmins = User::whereIn('role', ['admin', 'super_admin'])->count();
+            if ($totalAdmins - $adminCountInSelection < 1) {
+                return redirect()->back()->with('error', 'Cannot delete all system administrators in bulk.');
+            }
+
+            $count = User::whereIn('user_id', $filteredIds)->delete();
+
+            DB::table('activity_log')->insert([
+                'user_id' => $adminId ?? 1,
+                'action' => 'BULK_USER_DELETE',
+                'description' => "Bulk deleted {$count} user(s)",
+                'created_at' => now(),
+            ]);
+
+            return redirect()->route('admin.users.index')
+                ->with('success', "Successfully deleted {$count} user(s).");
+        }
+
+        if ($action === 'lock') {
+            $count = User::whereIn('user_id', $filteredIds)->update([
+                'status' => 'LOCKED',
+                'locked_until' => now()->addDays(30),
+            ]);
+
+            DB::table('activity_log')->insert([
+                'user_id' => $adminId ?? 1,
+                'action' => 'BULK_USER_LOCK',
+                'description' => "Bulk locked {$count} user(s)",
+                'created_at' => now(),
+            ]);
+
+            return redirect()->route('admin.users.index')
+                ->with('success', "Successfully locked {$count} user(s).");
+        }
+
+        if ($action === 'unlock') {
+            $count = User::whereIn('user_id', $filteredIds)->update([
+                'status' => 'ACTIVE',
+                'locked_until' => null,
+                'failed_login_attempts' => 0,
+            ]);
+
+            DB::table('activity_log')->insert([
+                'user_id' => $adminId ?? 1,
+                'action' => 'BULK_USER_UNLOCK',
+                'description' => "Bulk unlocked {$count} user(s)",
+                'created_at' => now(),
+            ]);
+
+            return redirect()->route('admin.users.index')
+                ->with('success', "Successfully unlocked {$count} user(s).");
+        }
+
+        return redirect()->back()->with('error', 'Invalid bulk action requested.');
+    }
+
+    /**
+     * Export all users to a standard CSV file with UTF-8 BOM.
      */
     public function export(): StreamedResponse
     {
-        $fileName = 'danh_sach_nguoi_dung_studyprep_'.date('Y_m_d_His').'.csv';
-
-        $users = User::orderByDesc('user_id')->get();
+        $fileName = 'studyprep_users_'.date('Y_m_d_His').'.csv';
+        $users = User::withCount('attempts')->orderByDesc('user_id')->get();
 
         $headers = [
             'Content-Type' => 'text/csv; charset=UTF-8',
@@ -318,19 +474,19 @@ class UserController extends Controller
 
         return response()->stream(function () use ($users) {
             $output = fopen('php://output', 'w');
-            // Chèn BOM UTF-8 để Microsoft Excel mở trực tiếp không bị lỗi font tiếng Việt
             fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
 
             fputcsv($output, [
-                'Mã ID',
-                'Mã hệ thống',
-                'Họ và tên',
+                'User ID',
+                'STP Code',
+                'Full Name',
                 'Email',
-                'Tên đăng nhập',
-                'Vai trò',
-                'Trạng thái',
-                'Gói đào tạo',
-                'Ngày tạo tài khoản',
+                'Username',
+                'Role',
+                'Status',
+                'Energy',
+                'Exam Attempts',
+                'Created At',
             ]);
 
             foreach ($users as $u) {
@@ -342,8 +498,9 @@ class UserController extends Controller
                     $u->user_name,
                     $u->role_display,
                     $u->status_label,
-                    '',
-                    $u->created_at ? $u->created_at->format('d/m/Y H:i') : '',
+                    $u->energy,
+                    $u->attempts_count ?? 0,
+                    $u->created_at ? $u->created_at->format('Y-m-d H:i:s') : '',
                 ]);
             }
 
@@ -352,49 +509,110 @@ class UserController extends Controller
     }
 
     /**
-     * Nhập danh sách tài khoản từ file CSV.
+     * Download a sample CSV file for importing users.
+     */
+    public function sampleCsv(): StreamedResponse
+    {
+        $fileName = 'sample_users_template.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$fileName}\"",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
+        ];
+
+        return response()->stream(function () {
+            $output = fopen('php://output', 'w');
+            fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            fputcsv($output, ['Full Name', 'Email', 'Role', 'Status', 'Password']);
+            fputcsv($output, ['John Doe', 'john.doe@example.com', 'student', 'ACTIVE', 'StudyPrep@123']);
+            fputcsv($output, ['Sarah Jenkins', 'sarah.jenkins@example.com', 'teacher', 'ACTIVE', 'StudyPrep@123']);
+            fputcsv($output, ['Michael Chang', 'michael.chang@example.com', 'student', 'ACTIVE', 'StudyPrep@123']);
+
+            fclose($output);
+        }, 200, $headers);
+    }
+
+    /**
+     * Import users from a CSV file.
      */
     public function import(Request $request): RedirectResponse
     {
         $request->validate([
             'csv_file' => 'required|file|mimes:csv,txt|max:5120',
         ], [
-            'csv_file.required' => 'Vui lòng chọn file CSV để nhập.',
-            'csv_file.mimes' => 'Định dạng file phải là CSV.',
+            'csv_file.required' => 'Please select a CSV file to upload.',
+            'csv_file.mimes' => 'The file format must be CSV.',
         ]);
 
         $file = $request->file('csv_file');
         $handle = fopen($file->getRealPath(), 'r');
         $importedCount = 0;
-        $header = fgetcsv($handle); // Đọc dòng tiêu đề
+        $skippedCount = 0;
+
+        // Skip UTF-8 BOM if present
+        $bom = fread($handle, 3);
+        if ($bom !== "\xEF\xBB\xBF") {
+            rewind($handle);
+        }
+
+        // Header line
+        $header = fgetcsv($handle);
 
         while (($row = fgetcsv($handle)) !== false) {
-            if (empty($row[1]) && empty($row[2])) {
+            if (empty($row[0]) && empty($row[1])) {
                 continue;
             }
 
-            $name = trim($row[0] ?? 'Học viên');
+            $name = trim($row[0] ?? 'User');
             $email = trim($row[1] ?? '');
+            $rawRole = strtolower(trim($row[2] ?? 'student'));
+            $rawStatus = strtoupper(trim($row[3] ?? 'ACTIVE'));
+            $rawPassword = trim($row[4] ?? 'StudyPrep@123');
 
             if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $skippedCount++;
+
                 continue;
             }
 
             if (User::where('email', $email)->exists()) {
+                $skippedCount++;
+
                 continue;
             }
 
-            $role = in_array(strtolower(trim($row[2] ?? '')), ['teacher', 'giang_vien']) ? 'teacher' : 'student';
+            $role = match ($rawRole) {
+                'teacher', 'instructor', 'giang_vien' => 'teacher',
+                'admin', 'super_admin' => 'admin',
+                default => 'student',
+            };
+
+            $status = in_array($rawStatus, ['ACTIVE', 'PENDING', 'LOCKED'], true) ? $rawStatus : 'ACTIVE';
+            $password = strlen($rawPassword) >= 6 ? $rawPassword : 'StudyPrep@123';
+
+            $userName = Str::slug(explode('@', $email)[0]);
+            $baseName = $userName;
+            $ctr = 1;
+            while (User::where('user_name', $userName)->exists()) {
+                $userName = $baseName.$ctr;
+                $ctr++;
+            }
 
             User::create([
                 'full_name' => $name,
                 'email' => $email,
-                'user_name' => Str::slug(explode('@', $email)[0]),
+                'user_name' => $userName,
                 'role' => $role,
-                'status' => 'ACTIVE',
-                'password_hash' => Hash::make('StudyPrep@123'),
+                'status' => $status,
+                'password_hash' => Hash::make($password),
+                'energy' => $role === 'admin' ? 999 : 20,
                 'created_at' => now(),
-                'email_verified_at' => now(),
+                'email_verified_at' => $status === 'PENDING' ? null : now(),
+                'locked_until' => $status === 'LOCKED' ? now()->addDays(30) : null,
             ]);
 
             $importedCount++;
@@ -402,7 +620,19 @@ class UserController extends Controller
 
         fclose($handle);
 
-        return redirect()->route('admin.users.index')
-            ->with('success', "Đã nhập thành công {$importedCount} tài khoản mới vào hệ thống.");
+        $adminId = auth()->id() ?? 1;
+        DB::table('activity_log')->insert([
+            'user_id' => $adminId,
+            'action' => 'USERS_IMPORTED',
+            'description' => "Imported {$importedCount} users from CSV (skipped {$skippedCount})",
+            'created_at' => now(),
+        ]);
+
+        $msg = "Successfully imported {$importedCount} new user(s).";
+        if ($skippedCount > 0) {
+            $msg .= " ({$skippedCount} row(s) were skipped due to duplicate or invalid emails).";
+        }
+
+        return redirect()->route('admin.users.index')->with('success', $msg);
     }
 }

@@ -382,4 +382,130 @@ PROMPT;
 
         return 'Từ vựng & Cấu trúc ngữ pháp TOEIC (Vocabulary & Grammar)';
     }
+
+    /**
+     * Đánh giá mức độ khó (EASY / MEDIUM / HARD) của câu hỏi theo chuẩn TOEIC ETS cho từng kỹ năng & part.
+     * Tránh mặc định là HARD; áp dụng quy chuẩn phân loại kỹ năng chính thức.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public static function assessToeicDifficulty(?string $skill, ?string $partCode, string $content = '', ?string $stimulus = '', array $options = []): string
+    {
+        $part = strtoupper(trim((string) $partCode));
+        $skill = strtolower(trim((string) $skill));
+        $contentLower = mb_strtolower($content);
+        $stimulusLower = mb_strtolower((string) $stimulus);
+        $allText = $contentLower.' '.$stimulusLower;
+
+        // 1. LISTENING SKILL (Part 1 - Part 4)
+        if (in_array($part, ['PART1', 'PART2', 'PART3', 'PART4'], true) || $skill === 'listening') {
+            if ($part === 'PART1') {
+                // Thể bị động, miêu tả khung cảnh/đồ vật phức tạp không người -> MEDIUM; hành động trực tiếp của người -> EASY
+                if (preg_match('/(being \w+ed|has been \w+ed|have been \w+ed|unoccupied|overlooking|scattered|displayed)/i', $allText)) {
+                    return 'MEDIUM';
+                }
+
+                return 'EASY';
+            }
+
+            if ($part === 'PART2') {
+                // Wh-question trực tiếp (Where, When, Who) -> EASY
+                if (preg_match('/^(who|where|when)\b/i', trim($contentLower))) {
+                    return 'EASY';
+                }
+                // Câu hỏi gợi ý hoặc Yes/No hoặc Why/How -> MEDIUM
+                if (preg_match('/^(why|how|would you|could you|should we|why don\'t|can i)\b/i', trim($contentLower))) {
+                    return 'MEDIUM';
+                }
+                // Dạng phát biểu hoặc trả lời gián tiếp -> HARD
+                if (! str_ends_with(trim($contentLower), '?')) {
+                    return 'HARD';
+                }
+
+                return 'MEDIUM';
+            }
+
+            // Part 3 & Part 4:
+            // Câu hỏi suy luận ngầm (imply, suggest), nhìn bảng biểu biểu đồ (graphic/chart), ngữ điệu -> HARD
+            if (preg_match('/(imply|suggest|look at the graphic|graphic|chart|schedule|table|mean when (he|she) says|tone|attitude)/i', $contentLower)) {
+                return 'HARD';
+            }
+            // Chi tiết cụ thể trực tiếp (what time, where, who) -> EASY
+            if (preg_match('/(what time|how much|where does|who is|what is the man\'s name)/i', $contentLower)) {
+                return 'EASY';
+            }
+
+            return 'MEDIUM';
+        }
+
+        // 2. READING SKILL (Part 5 - Part 7)
+        if (in_array($part, ['PART5', 'PART6', 'PART7'], true) || $skill === 'reading') {
+            if ($part === 'PART5') {
+                // Ngữ pháp đảo ngữ, giả định, liên từ phức tạp, từ vựng C1/850+ -> HARD
+                if (preg_match('/(had \w+ known|should you require|scarcely|hardly|not only|not until|inasmuch as|notwithstanding|provided that|albeit)/i', $contentLower)) {
+                    return 'HARD';
+                }
+                $maxOptLen = 0;
+                foreach ($options as $opt) {
+                    $maxOptLen = max($maxOptLen, mb_strlen(trim((string) $opt)));
+                }
+                if ($maxOptLen > 25 || mb_strlen($contentLower) > 130) {
+                    return 'MEDIUM';
+                }
+
+                // Dạng từ cơ bản (Word Form: Noun/Verb/Adj/Adv) -> EASY
+                return 'EASY';
+            }
+
+            if ($part === 'PART6') {
+                // Điền nguyên câu vào đoạn văn -> HARD; từ vựng/ngữ pháp thông thường -> MEDIUM
+                if (preg_match('/(which of the following sentences|best completes the blank)/i', $contentLower)) {
+                    return 'HARD';
+                }
+
+                return 'MEDIUM';
+            }
+
+            if ($part === 'PART7') {
+                // Đoạn văn kép (Double) / ba (Triple) hoặc câu hỏi liên kết thông tin 2 văn bản -> HARD
+                if (preg_match('/(questions \d+\s*-\s*\d+ refer to the following (two|three|double|triple)|cross-reference|in the first e-mail|in the second|indicated in both|suggested about)/i', $allText)) {
+                    return 'HARD';
+                }
+                if (preg_match('/(imply|most likely|probably|infer|intended for)/i', $contentLower)) {
+                    return 'HARD';
+                }
+                if (mb_strlen($stimulusLower) > 800) {
+                    return 'HARD';
+                }
+
+                return 'MEDIUM';
+            }
+        }
+
+        // 3. SPEAKING SKILL
+        if (str_starts_with($part, 'SPK_') || $skill === 'speaking') {
+            if ($part === 'SPK_T1') {
+                return 'EASY'; // Read a text aloud
+            }
+            if ($part === 'SPK_T5') {
+                return 'HARD'; // Express an opinion
+            }
+
+            return 'MEDIUM'; // Describe a picture, respond to questions
+        }
+
+        // 4. WRITING SKILL
+        if (str_starts_with($part, 'WRITING_') || $skill === 'writing') {
+            if ($part === 'WRITING_T3') {
+                return 'HARD'; // Write an opinion essay
+            }
+            if ($part === 'WRITING_T1') {
+                return 'EASY'; // Write a sentence based on a picture
+            }
+
+            return 'MEDIUM'; // Respond to a written request
+        }
+
+        return 'MEDIUM';
+    }
 }

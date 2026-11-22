@@ -74,6 +74,16 @@ class User extends Authenticatable
         return in_array(Str::lower((string) $this->role), ['admin', 'super_admin'], true);
     }
 
+    public function isTeacher(): bool
+    {
+        return in_array(Str::lower((string) $this->role), ['teacher', 'instructor', 'giang_vien'], true);
+    }
+
+    public function isStudent(): bool
+    {
+        return in_array(Str::lower((string) $this->role), ['student', 'learner', 'user'], true);
+    }
+
     public function isLocked(): bool
     {
         if (Str::upper((string) $this->status) === 'LOCKED') {
@@ -183,9 +193,9 @@ class User extends Authenticatable
         $role = Str::lower((string) $this->role);
 
         return match ($role) {
-            'teacher', 'instructor', 'giang_vien' => 'Giảng viên TOEIC',
-            'admin', 'super_admin' => 'Quản trị viên',
-            default => 'Học viên',
+            'teacher', 'instructor', 'giang_vien' => 'Teacher',
+            'admin', 'super_admin' => 'Admin',
+            default => 'Student',
         };
     }
 
@@ -203,13 +213,13 @@ class User extends Authenticatable
     public function getStatusLabelAttribute(): string
     {
         if ($this->isLocked()) {
-            return 'Bị khóa';
+            return 'Locked';
         }
 
         return match (Str::upper((string) $this->status)) {
-            'PENDING' => 'Chờ kích hoạt',
-            'ACTIVE' => 'Hoạt động',
-            default => 'Không xác định',
+            'PENDING' => 'Pending',
+            'ACTIVE' => 'Active',
+            default => 'Inactive',
         };
     }
 

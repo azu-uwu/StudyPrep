@@ -151,11 +151,19 @@ trait CreatesStudyPrepSchema
             $table->unsignedBigInteger('topic_id');
             $table->string('word', 150);
             $table->text('meaning_vi');
-            $table->string('part_of_speech', 30)->nullable();
+            $table->string('part_of_speech', 100)->nullable();
             $table->string('pronunciation', 150)->nullable();
             $table->text('example_en')->nullable();
             $table->text('example_vi')->nullable();
             $table->string('image_url', 500)->nullable();
+        });
+
+        Schema::create('user_vocabulary', function (Blueprint $table): void {
+            $table->id('user_voca_id');
+            $table->unsignedBigInteger('vocabulary_id');
+            $table->unsignedBigInteger('user_id');
+            $table->dateTime('learned_at')->nullable();
+            $table->boolean('is_done')->default(false);
         });
 
         Schema::create('activity_log', function (Blueprint $table): void {

@@ -11,6 +11,7 @@ use App\Models\QuestionSet;
 use App\Models\QuestionType;
 use App\Models\Skill;
 use App\Models\TestForm;
+use App\Services\AiToeicService;
 use App\Services\ExamSampleDataService;
 use App\Services\TestFormService;
 use App\Services\TextToSpeechService;
@@ -390,7 +391,26 @@ class QuestionController extends Controller
 
         $status = $request->input('action_type') === 'draft' ? 'DRAFT' : ($validated['status'] ?? 'ACTIVE');
         $questionTypeId = Question::resolveQuestionTypeIdForPart($partCode);
+        $stimulusText = isset($validated['stimulus_text']) ? trim((string) $validated['stimulus_text']) : '';
+        $transcript = isset($validated['transcript']) ? trim((string) $validated['transcript']) : '';
+
         $difficulty = $validated['difficulty'] ?? 'UNSET';
+        if (empty($difficulty) || $difficulty === 'UNSET') {
+            $sectionModel = ExamSection::query()->with('skill')->find((int) $validated['section_id']);
+            $skillName = $sectionModel?->skill?->name ?? '';
+            $difficulty = AiToeicService::assessToeicDifficulty(
+                $skillName,
+                $partCode,
+                $validated['content'] ?? '',
+                $stimulusText,
+                [
+                    'A' => $validated['opt_a'] ?? '',
+                    'B' => $validated['opt_b'] ?? '',
+                    'C' => $validated['opt_c'] ?? '',
+                    'D' => $validated['opt_d'] ?? '',
+                ]
+            );
+        }
         $correctOption = strtoupper((string) ($validated['correct_option'] ?? $validated['correct_opt'] ?? 'A'));
         if ($isPart2 && ! in_array($correctOption, ['A', 'B', 'C'], true)) {
             $correctOption = 'A';
@@ -419,9 +439,6 @@ class QuestionController extends Controller
             }
             $savedAudioPath = preg_match('/^https?:\/\//i', $rawAudio) === 1 ? $rawAudio : ltrim($rawAudio, '/');
         }
-
-        $stimulusText = isset($validated['stimulus_text']) ? trim((string) $validated['stimulus_text']) : '';
-        $transcript = isset($validated['transcript']) ? trim((string) $validated['transcript']) : '';
 
         $question = DB::transaction(function () use (
             $request,
@@ -1193,12 +1210,23 @@ class QuestionController extends Controller
 
         $createdCount = 0;
         foreach ($subQuestions as $idx => $qData) {
+            $subDifficulty = $qData['difficulty'] ?? null;
+            if (empty($subDifficulty) || $subDifficulty === 'UNSET') {
+                $subDifficulty = AiToeicService::assessToeicDifficulty(
+                    'reading',
+                    (string) ($sectionForGroup?->code ?? 'PART7'),
+                    $qData['content'] ?? '',
+                    $stimulusText,
+                    is_array($qData['options'] ?? null) ? $qData['options'] : []
+                );
+            }
+
             $q = Question::query()->create([
                 'section_id' => $validated['section_id'],
                 'question_type_id' => $groupQuestionTypeId,
                 'question_set_id' => $qSet->question_set_id,
                 'content' => $qData['content'] ?? "Câu hỏi con #{$idx}",
-                'difficulty' => $qData['difficulty'] ?? 'MEDIUM',
+                'difficulty' => $subDifficulty,
                 'points' => '1.00',
                 'status' => $status,
                 'explanation' => $qData['explanation'] ?? null,

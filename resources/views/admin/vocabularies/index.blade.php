@@ -110,6 +110,25 @@
                 <span class="vcb-kpi-val-unit">bộ thẻ</span>
             </div>
         </div>
+
+        {{-- Card 3: Thống kê học viên học tập --}}
+        <div class="vcb-kpi-card">
+            <div class="vcb-kpi-head">
+                <span class="vcb-kpi-label">Lượt học viên tương tác</span>
+                <div class="vcb-kpi-icon-wrap" style="background: #eef2ff; color: #4f46e5;" title="Học viên đã học từ vựng">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                </div>
+            </div>
+            <div class="vcb-kpi-val">
+                <span>{{ number_format($totalLearnersInteractions) }}</span>
+                <span class="vcb-kpi-val-unit" style="color: #16a34a; font-size: 13px; font-weight: 600;">({{ number_format($totalMasteredCount) }} đã thuộc)</span>
+            </div>
+        </div>
     </div>
 
     {{-- Search & Filter Bar --}}
@@ -212,6 +231,7 @@
                                     <th style="text-align: center;">ẢNH</th>
                                     <th>NGỮ CẢNH TOEIC & VÍ DỤ</th>
                                     <th>BỘ THẺ FLASHCARD</th>
+                                    <th>HỌC VIÊN</th>
                                     <th class="vcb-actions-col">THAO TÁC</th>
                                 </tr>
                             </thead>
@@ -289,6 +309,20 @@
                                         {{-- BỘ THẺ FLASHCARD --}}
                                         <td class="vcb-deck-col">
                                             <span class="vcb-deck-badge">{{ $item->topic?->name ?? 'Bộ thẻ chung' }}</span>
+                                        </td>
+
+                                        {{-- HỌC VIÊN TIẾN ĐỘ --}}
+                                        <td class="vcb-learner-col" style="white-space: nowrap;">
+                                            <div style="font-size: 13px; font-weight: 700; color: #1e1b4b; display: flex; align-items: center; gap: 4px;">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                                    <circle cx="12" cy="7" r="4"></circle>
+                                                </svg>
+                                                <span>{{ number_format($item->learners_count ?? 0) }} học viên</span>
+                                            </div>
+                                            <div style="font-size: 11.5px; color: #16a34a; font-weight: 600; margin-top: 2px;">
+                                                ✓ {{ number_format($item->mastered_count ?? 0) }} đã ghi nhớ
+                                            </div>
                                         </td>
 
                                         {{-- THAO TÁC --}}
@@ -543,17 +577,18 @@
             <h3 class="vcb-modal-title">Thêm từ vựng mới vào hệ thống</h3>
             <button type="button" class="vcb-modal-close" onclick="closeModal('modal-new-vocab')">&times;</button>
         </div>
-        <form method="POST" action="{{ route('admin.vocabularies.store') }}">
+        <form id="form-new-vocab" method="POST" action="{{ route('admin.vocabularies.store') }}" onsubmit="return validateNewVocabForm(event)">
             @csrf
             <div class="vcb-modal-body">
                 <div class="vcb-form-row-2">
                     <div class="vcb-form-group">
                         <label class="vcb-form-label">Từ vựng (Word) <span style="color: #ef4444;">*</span></label>
-                        <input type="text" name="word" class="vcb-form-control" required placeholder="Ví dụ: extraordinary">
+                        <input type="text" id="new_vocab_word" name="word" class="vcb-form-control @error('word') is-invalid @enderror" required placeholder="Ví dụ: extraordinary" value="{{ old('word') }}" oninput="clearFieldError(this)">
+                        <span class="field-error-text text-danger" id="error-new-vocab-word" style="color: #dc2626; font-size: 12px; margin-top: 4px; display: {{ $errors->has('word') ? 'block' : 'none' }};">{{ $errors->first('word') }}</span>
                     </div>
                     <div class="vcb-form-group">
                         <label class="vcb-form-label">Phiên âm IPA</label>
-                        <input type="text" name="pronunciation" class="vcb-form-control" placeholder="Ví dụ: /ɪkˈstrɔːr.dən.er.i/">
+                        <input type="text" id="new_vocab_pronunciation" name="pronunciation" class="vcb-form-control" placeholder="Ví dụ: /ɪkˈstrɔːr.dən.er.i/" value="{{ old('pronunciation') }}" oninput="clearFieldError(this)">
                     </div>
                 </div>
 
@@ -561,23 +596,23 @@
                     <div class="vcb-form-group">
                         <label class="vcb-form-label">Từ loại (POS)</label>
                         <select name="part_of_speech" class="vcb-form-control">
-                            <option value="Noun">Danh từ (Noun)</option>
-                            <option value="Verb">Động từ (Verb)</option>
-                            <option value="Adj">Tính từ (Adj)</option>
-                            <option value="Adv" selected>Phó từ (Adv)</option>
-                            <option value="Collocation">Collocation</option>
-                            <option value="Noun Phrase">Noun Phrase</option>
+                            <option value="Noun" {{ old('part_of_speech') === 'Noun' ? 'selected' : '' }}>Danh từ (Noun)</option>
+                            <option value="Verb" {{ old('part_of_speech') === 'Verb' ? 'selected' : '' }}>Động từ (Verb)</option>
+                            <option value="Adj" {{ old('part_of_speech') === 'Adj' ? 'selected' : '' }}>Tính từ (Adj)</option>
+                            <option value="Adv" {{ old('part_of_speech', 'Adv') === 'Adv' ? 'selected' : '' }}>Phó từ (Adv)</option>
+                            <option value="Collocation" {{ old('part_of_speech') === 'Collocation' ? 'selected' : '' }}>Collocation</option>
+                            <option value="Noun Phrase" {{ old('part_of_speech') === 'Noun Phrase' ? 'selected' : '' }}>Noun Phrase</option>
                         </select>
                     </div>
                     <div class="vcb-form-group">
                         <label class="vcb-form-label">Mục tiêu (Level)</label>
                         <select name="level" class="vcb-form-control">
-                            <option value="450+">450+</option>
-                            <option value="550+">550+</option>
-                            <option value="650+">650+</option>
-                            <option value="750+" selected>750+</option>
-                            <option value="800+">800+</option>
-                            <option value="900+">900+</option>
+                            <option value="450+" {{ old('level') === '450+' ? 'selected' : '' }}>450+</option>
+                            <option value="550+" {{ old('level') === '550+' ? 'selected' : '' }}>550+</option>
+                            <option value="650+" {{ old('level') === '650+' ? 'selected' : '' }}>650+</option>
+                            <option value="750+" {{ old('level', '750+') === '750+' ? 'selected' : '' }}>750+</option>
+                            <option value="800+" {{ old('level') === '800+' ? 'selected' : '' }}>800+</option>
+                            <option value="900+" {{ old('level') === '900+' ? 'selected' : '' }}>900+</option>
                         </select>
                     </div>
                 </div>
@@ -586,34 +621,36 @@
                     <label class="vcb-form-label">Bộ thẻ Flashcard (Topic) <span style="color: #ef4444;">*</span></label>
                     <select name="topic_id" class="vcb-form-control">
                         @foreach ($topics as $t)
-                            <option value="{{ $t->topic_id }}">{{ $t->name }}</option>
+                            <option value="{{ $t->topic_id }}" {{ old('topic_id') == $t->topic_id ? 'selected' : '' }}>{{ $t->name }}</option>
                         @endforeach
                     </select>
                 </div>
 
                 <div class="vcb-form-group">
                     <label class="vcb-form-label">Nghĩa tiếng Việt <span style="color: #ef4444;">*</span></label>
-                    <input type="text" name="meaning_vi" class="vcb-form-control" required placeholder="Ví dụ: Đặc biệt, phi thường">
+                    <input type="text" id="new_vocab_meaning_vi" name="meaning_vi" class="vcb-form-control @error('meaning_vi') is-invalid @enderror" required placeholder="Ví dụ: Đặc biệt, phi thường" value="{{ old('meaning_vi') }}" oninput="clearFieldError(this)">
+                    <span class="field-error-text text-danger" id="error-new-vocab-meaning_vi" style="color: #dc2626; font-size: 12px; margin-top: 4px; display: {{ $errors->has('meaning_vi') ? 'block' : 'none' }};">{{ $errors->first('meaning_vi') }}</span>
                 </div>
 
                 <div class="vcb-form-group">
                     <label class="vcb-form-label">Định nghĩa tiếng Anh (English Definition)</label>
-                    <input type="text" name="definition_en" class="vcb-form-control" placeholder="Ví dụ: To a very unusual or remarkable degree">
+                    <input type="text" name="definition_en" class="vcb-form-control" placeholder="Ví dụ: To a very unusual or remarkable degree" value="{{ old('definition_en') }}">
                 </div>
 
                 <div class="vcb-form-group">
                     <label class="vcb-form-label">URL hình ảnh</label>
-                    <input type="url" name="image_url" class="vcb-form-control" placeholder="https://example.com/image.jpg">
+                    <input type="url" name="image_url" id="new_vocab_image_url" class="vcb-form-control @error('image_url') is-invalid @enderror" placeholder="https://example.com/image.jpg" value="{{ old('image_url') }}" oninput="clearFieldError(this)">
+                    <span class="field-error-text text-danger" id="error-new-vocab-image_url" style="color: #dc2626; font-size: 12px; margin-top: 4px; display: {{ $errors->has('image_url') ? 'block' : 'none' }};">{{ $errors->first('image_url') }}</span>
                 </div>
 
                 <div class="vcb-form-group">
                     <label class="vcb-form-label">Ví dụ ngữ cảnh TOEIC (Tiếng Anh)</label>
-                    <textarea name="example_en" rows="2" class="vcb-form-control" placeholder="Ví dụ: The quarter report demonstrated an extraordinarily high return on investment."></textarea>
+                    <textarea name="example_en" rows="2" class="vcb-form-control" placeholder="Ví dụ: The quarter report demonstrated an extraordinarily high return on investment.">{{ old('example_en') }}</textarea>
                 </div>
 
                 <div class="vcb-form-group">
                     <label class="vcb-form-label">Dịch ví dụ (Tiếng Việt)</label>
-                    <textarea name="example_vi" rows="2" class="vcb-form-control" placeholder="Ví dụ: Báo cáo quý cho thấy tỷ suất sinh lời đặc biệt cao."></textarea>
+                    <textarea name="example_vi" rows="2" class="vcb-form-control" placeholder="Ví dụ: Báo cáo quý cho thấy tỷ suất sinh lời đặc biệt cao.">{{ old('example_vi') }}</textarea>
                 </div>
             </div>
             <div class="vcb-modal-footer">
@@ -631,16 +668,17 @@
             <h3 class="vcb-modal-title">Tạo bộ thẻ Flashcard mới</h3>
             <button type="button" class="vcb-modal-close" onclick="closeModal('modal-new-topic')">&times;</button>
         </div>
-        <form method="POST" action="{{ route('admin.vocabularies.topics.store') }}">
+        <form id="form-new-topic" method="POST" action="{{ route('admin.vocabularies.topics.store') }}" onsubmit="return validateNewTopicForm(event)">
             @csrf
             <div class="vcb-modal-body">
                 <div class="vcb-form-group">
                     <label class="vcb-form-label">Tên bộ thẻ Flashcard <span style="color: #ef4444;">*</span></label>
-                    <input type="text" name="name" class="vcb-form-control" required placeholder="Ví dụ: Marketing & Promotion 2026">
+                    <input type="text" name="name" id="new_topic_name" class="vcb-form-control @error('name') is-invalid @enderror" required placeholder="Ví dụ: Marketing & Promotion 2026" value="{{ old('name') }}" oninput="clearFieldError(this)">
+                    <span class="field-error-text text-danger" id="error-new-topic-name" style="color: #dc2626; font-size: 12px; margin-top: 4px; display: {{ $errors->has('name') ? 'block' : 'none' }};">{{ $errors->first('name') }}</span>
                 </div>
                 <div class="vcb-form-group">
                     <label class="vcb-form-label">Mô tả bộ thẻ</label>
-                    <textarea name="description" rows="3" class="vcb-form-control" placeholder="Mô tả nội dung, chủ đề hoặc mục tiêu điểm số của bộ thẻ"></textarea>
+                    <textarea name="description" rows="3" class="vcb-form-control" placeholder="Mô tả nội dung, chủ đề hoặc mục tiêu điểm số của bộ thẻ">{{ old('description') }}</textarea>
                 </div>
             </div>
             <div class="vcb-modal-footer">
@@ -655,18 +693,34 @@
 <div id="modal-import" class="vcb-modal-overlay">
     <div class="vcb-modal-dialog">
         <div class="vcb-modal-head">
-            <h3 class="vcb-modal-title">Nhập từ vựng hàng loạt (CSV / Excel / Anki)</h3>
+            <h3 class="vcb-modal-title">Nhập từ vựng hàng loạt (CSV / TXT)</h3>
             <button type="button" class="vcb-modal-close" onclick="closeModal('modal-import')">&times;</button>
         </div>
-        <form method="POST" action="{{ route('admin.vocabularies.import') }}" enctype="multipart/form-data">
+        <form id="form-import-vocab" method="POST" action="{{ route('admin.vocabularies.import') }}" enctype="multipart/form-data" onsubmit="return validateImportForm(event)">
             @csrf
             <div class="vcb-modal-body">
                 <p style="font-size: 13.5px; color: #475569; margin-top: 0;">
-                    Tải lên file danh sách từ vựng định dạng <strong>.CSV</strong> hoặc <strong>.TXT</strong> theo thứ tự các cột: <code>Word, IPA, POS, Level, Meaning, Definition, Example, Translation</code>.
+                    Tải lên file danh sách từ vựng định dạng <strong>.CSV</strong> hoặc <strong>.TXT</strong> theo thứ tự các cột: <code>Word, POS, IPA, Definition, Meaning, Example, Translation, Level</code>.
                 </p>
                 <div class="vcb-form-group">
-                    <label class="vcb-form-label">Chọn tệp dữ liệu</label>
-                    <input type="file" name="file" accept=".csv, .txt, .xlsx" class="vcb-form-control" required>
+                    <label class="vcb-form-label">Chọn bộ thẻ đích <span style="color: #ef4444;">*</span></label>
+                    <select name="topic_id" id="import_topic_id" class="vcb-form-control">
+                        @foreach ($topics as $t)
+                            <option value="{{ $t->topic_id }}">{{ $t->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="vcb-form-group">
+                    <label class="vcb-form-label">Chế độ xử lý trùng lặp</label>
+                    <select name="import_mode" class="vcb-form-control">
+                        <option value="skip">Bỏ qua từ đã tồn tại (Giữ nguyên)</option>
+                        <option value="overwrite">Ghi đè cập nhật nội dung mới</option>
+                    </select>
+                </div>
+                <div class="vcb-form-group">
+                    <label class="vcb-form-label">Chọn tệp dữ liệu (.CSV, .TXT) <span style="color: #ef4444;">*</span></label>
+                    <input type="file" name="file" id="import_file_input" accept=".csv, .txt, .xlsx" class="vcb-form-control @error('file') is-invalid @enderror" required onchange="clearFieldError(this)">
+                    <span class="field-error-text text-danger" id="error-import-file" style="color: #dc2626; font-size: 12px; margin-top: 4px; display: {{ $errors->has('file') ? 'block' : 'none' }};">{{ $errors->first('file') }}</span>
                 </div>
             </div>
             <div class="vcb-modal-footer">
@@ -708,14 +762,15 @@
             <h3 class="vcb-modal-title">Chỉnh sửa từ vựng</h3>
             <button type="button" class="vcb-modal-close" onclick="closeModal('modal-edit-vocab')">&times;</button>
         </div>
-        <form id="form-edit-vocab" method="POST" action="">
+        <form id="form-edit-vocab" method="POST" action="" onsubmit="return validateEditVocabForm(event)">
             @csrf
             @method('PUT')
             <div class="vcb-modal-body">
                 <div class="vcb-form-row-2">
                     <div class="vcb-form-group">
                         <label class="vcb-form-label">Từ vựng (Word) <span style="color: #ef4444;">*</span></label>
-                        <input type="text" id="edit_vocab_word" name="word" class="vcb-form-control" required placeholder="Ví dụ: extraordinary">
+                        <input type="text" id="edit_vocab_word" name="word" class="vcb-form-control" required placeholder="Ví dụ: extraordinary" oninput="clearFieldError(this)">
+                        <span class="field-error-text text-danger" id="error-edit-vocab-word" style="color: #dc2626; font-size: 12px; margin-top: 4px; display: none;"></span>
                     </div>
                     <div class="vcb-form-group">
                         <label class="vcb-form-label">Phiên âm IPA</label>
@@ -759,7 +814,8 @@
 
                 <div class="vcb-form-group">
                     <label class="vcb-form-label">Nghĩa tiếng Việt <span style="color: #ef4444;">*</span></label>
-                    <input type="text" id="edit_vocab_meaning_vi" name="meaning_vi" class="vcb-form-control" required placeholder="Ví dụ: Đặc biệt, phi thường">
+                    <input type="text" id="edit_vocab_meaning_vi" name="meaning_vi" class="vcb-form-control" required placeholder="Ví dụ: Đặc biệt, phi thường" oninput="clearFieldError(this)">
+                    <span class="field-error-text text-danger" id="error-edit-vocab-meaning_vi" style="color: #dc2626; font-size: 12px; margin-top: 4px; display: none;"></span>
                 </div>
 
                 <div class="vcb-form-group">
@@ -769,7 +825,8 @@
 
                 <div class="vcb-form-group">
                     <label class="vcb-form-label">URL hình ảnh</label>
-                    <input type="url" id="edit_vocab_image_url" name="image_url" class="vcb-form-control" placeholder="https://example.com/image.jpg">
+                    <input type="url" id="edit_vocab_image_url" name="image_url" class="vcb-form-control" placeholder="https://example.com/image.jpg" oninput="clearFieldError(this)">
+                    <span class="field-error-text text-danger" id="error-edit-vocab-image_url" style="color: #dc2626; font-size: 12px; margin-top: 4px; display: none;"></span>
                 </div>
 
                 <div class="vcb-form-group">
@@ -853,13 +910,14 @@
             <h3 class="vcb-modal-title">Cập nhật bộ thẻ Flashcard</h3>
             <button type="button" class="vcb-modal-close" onclick="closeModal('modal-edit-topic')">&times;</button>
         </div>
-        <form id="form-edit-topic" method="POST" action="">
+        <form id="form-edit-topic" method="POST" action="" onsubmit="return validateEditTopicForm(event)">
             @csrf
             @method('PUT')
             <div class="vcb-modal-body">
                 <div class="vcb-form-group">
                     <label class="vcb-form-label">Tên bộ thẻ Flashcard <span style="color: #ef4444;">*</span></label>
-                    <input type="text" id="edit_topic_name" name="name" class="vcb-form-control" required>
+                    <input type="text" id="edit_topic_name" name="name" class="vcb-form-control" required oninput="clearFieldError(this)">
+                    <span class="field-error-text text-danger" id="error-edit-topic-name" style="color: #dc2626; font-size: 12px; margin-top: 4px; display: none;"></span>
                 </div>
                 <div class="vcb-form-group">
                     <label class="vcb-form-label">Mô tả bộ thẻ</label>
@@ -1097,6 +1155,104 @@
         }
     }
 
+    // Form Field Error Helpers
+    function clearFieldError(input) {
+        if (!input) return;
+        input.classList.remove('is-invalid');
+        input.style.borderColor = '';
+        var parent = input.closest('.vcb-form-group') || input.parentElement;
+        if (parent) {
+            var errEl = parent.querySelector('.field-error-text');
+            if (errEl) {
+                errEl.style.display = 'none';
+                errEl.innerText = '';
+            }
+        }
+    }
+
+    function showFieldError(input, message) {
+        if (!input) return;
+        input.classList.add('is-invalid');
+        input.style.borderColor = '#ef4444';
+        var parent = input.closest('.vcb-form-group') || input.parentElement;
+        if (parent) {
+            var errEl = parent.querySelector('.field-error-text');
+            if (errEl) {
+                errEl.innerText = message;
+                errEl.style.display = 'block';
+            }
+        }
+        input.focus();
+    }
+
+    function validateNewVocabForm(e) {
+        var wordInput = document.getElementById('new_vocab_word');
+        var meaningInput = document.getElementById('new_vocab_meaning_vi');
+        var isValid = true;
+        if (!meaningInput.value.trim()) {
+            showFieldError(meaningInput, 'Vui lòng nhập nghĩa tiếng Việt.');
+            isValid = false;
+        }
+        if (!wordInput.value.trim()) {
+            showFieldError(wordInput, 'Vui lòng nhập từ vựng (Word).');
+            isValid = false;
+        }
+        if (!isValid) {
+            e.preventDefault();
+            return false;
+        }
+        return true;
+    }
+
+    function validateEditVocabForm(e) {
+        var wordInput = document.getElementById('edit_vocab_word');
+        var meaningInput = document.getElementById('edit_vocab_meaning_vi');
+        var isValid = true;
+        if (!meaningInput.value.trim()) {
+            showFieldError(meaningInput, 'Vui lòng nhập nghĩa tiếng Việt.');
+            isValid = false;
+        }
+        if (!wordInput.value.trim()) {
+            showFieldError(wordInput, 'Vui lòng nhập từ vựng (Word).');
+            isValid = false;
+        }
+        if (!isValid) {
+            e.preventDefault();
+            return false;
+        }
+        return true;
+    }
+
+    function validateNewTopicForm(e) {
+        var nameInput = document.getElementById('new_topic_name');
+        if (!nameInput.value.trim()) {
+            showFieldError(nameInput, 'Vui lòng nhập tên bộ thẻ Flashcard.');
+            e.preventDefault();
+            return false;
+        }
+        return true;
+    }
+
+    function validateEditTopicForm(e) {
+        var nameInput = document.getElementById('edit_topic_name');
+        if (!nameInput.value.trim()) {
+            showFieldError(nameInput, 'Vui lòng nhập tên bộ thẻ Flashcard.');
+            e.preventDefault();
+            return false;
+        }
+        return true;
+    }
+
+    function validateImportForm(e) {
+        var fileInput = document.getElementById('import_file_input');
+        if (!fileInput.files || fileInput.files.length === 0) {
+            showFieldError(fileInput, 'Vui lòng chọn file dữ liệu để nhập.');
+            e.preventDefault();
+            return false;
+        }
+        return true;
+    }
+
     // Modal Helpers
     function openModal(id) {
         var m = document.getElementById(id);
@@ -1120,6 +1276,19 @@
             });
         }
     });
+
+    // Auto reopen modal on server validation errors
+    @if ($errors->any())
+    document.addEventListener('DOMContentLoaded', function() {
+        @if ($errors->has('name'))
+            openModal('modal-new-topic');
+        @elseif ($errors->has('file'))
+            openModal('modal-import');
+        @else
+            openModal('modal-new-vocab');
+        @endif
+    });
+    @endif
 </script>
 @endpush
 @endsection

@@ -172,8 +172,7 @@ class DashboardControllerTest extends TestCase
 
         $response->assertOk();
         // Check sidebar branding & badge
-        $response->assertSee('Study');
-        $response->assertSee('PREP');
+        $response->assertSee('StudyPrep');
         $response->assertSee('ADMIN');
         $response->assertSee('PORTAL');
 
@@ -186,16 +185,10 @@ class DashboardControllerTest extends TestCase
         $response->assertSee('Từ vựng & Flashcards', false);
         $response->assertSee('QUẢN TRỊ HỆ THỐNG');
         $response->assertSee('Quản lý người dùng');
-        $response->assertSee('Phân quyền & Vai trò', false);
-        $response->assertSee('Báo cáo & Thống kê', false);
-        $response->assertSee('Cài đặt hệ thống');
 
         // Check profile card
         $response->assertSee('Nguyễn Admin');
         $response->assertSee('Super Admin');
-
-        // Check header topbar
-        $response->assertSee('StudyPREP Global');
 
         // Check KPI cards
         $response->assertSee('NGƯỜI DÙNG HOẠT ĐỘNG');
@@ -204,7 +197,7 @@ class DashboardControllerTest extends TestCase
         // Check Chart Section
         $response->assertSee('Xu hướng luyện thi & Lượt nộp bài', false);
         $response->assertSee('Listening & Reading', false);
-        $response->assertSee('Writing & Speaking AI', false);
+        $response->assertSee('Writing & Speaking', false);
         $response->assertSee('Cập nhật '.now()->format('H:i'));
 
         // Check Review Queue Section

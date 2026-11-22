@@ -6,6 +6,7 @@ use App\Models\Topic;
 use App\Models\User;
 use App\Models\Vocabulary;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Tests\Concerns\CreatesStudyPrepSchema;
 use Tests\TestCase;
 
@@ -301,11 +302,11 @@ class VocabularyControllerTest extends TestCase
 
         $response->assertOk();
         $response->assertViewIs('admin.vocabularies.import');
-        $response->assertSee('Nhập từ vựng TOEIC hàng loạt từ file');
-        $response->assertSee('Tài nguyên dữ liệu đầu vào');
-        $response->assertSee('Trạng thái ánh xạ trường dữ liệu');
-        $response->assertSee('Cấu hình bộ thẻ đích đến');
-        $response->assertSee('Bắt đầu Nhập 242 từ vựng vào hệ thống');
+        $response->assertSee('Nhập từ vựng hàng loạt');
+        $response->assertSee('Chọn tệp từ vựng cần nhập');
+        $response->assertSee('Cấu hình Bộ thẻ &amp; Xử lý trùng lặp', false);
+        $response->assertSee('Tải file Excel/CSV mẫu');
+        $response->assertSee('Tải lên &amp; Nhập từ vựng', false);
     }
 
     public function test_admin_can_download_sample_csv(): void
@@ -329,6 +330,91 @@ class VocabularyControllerTest extends TestCase
         $response->assertSessionHas('info');
         $this->assertDatabaseHas('vocabularies', [
             'word' => 'negotiate',
+        ]);
+    }
+
+    public function test_admin_can_import_csv_and_render_imported_table_in_view(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $topic = Topic::create([
+            'user_id' => null,
+            'name' => 'ETS TOEIC Import Test',
+            'description' => 'Test bộ thẻ',
+        ]);
+
+        $csv = "Word,POS,IPA,Definition,Meaning,Example,Translation,Level\naccelerate,Verb,/əkˈsel.ə.reɪt/,Increase speed,Tăng tốc độ,The firm accelerated growth,Công ty tăng trưởng nhanh,750+";
+        $file = UploadedFile::fake()->createWithContent('import.csv', $csv);
+
+        $response = $this->actingAs($admin)->post(route('admin.vocabularies.import'), [
+            'file' => $file,
+            'topic_id' => $topic->topic_id,
+            'import_mode' => 'skip',
+            'return_to_import_view' => 1,
+        ]);
+
+        $response->assertRedirect(route('admin.vocabularies.import-view'));
+        $response->assertSessionHas('imported_ids');
+        $response->assertSessionHas('success');
+
+        $viewResponse = $this->actingAs($admin)->get(route('admin.vocabularies.import-view'));
+        $viewResponse->assertOk();
+        $viewResponse->assertSee('accelerate');
+        $viewResponse->assertSee('/əkˈsel.ə.reɪt/');
+        $viewResponse->assertSee('Tăng tốc độ');
+        $viewResponse->assertSee('Danh sách từ vựng vừa Import');
+    }
+
+    public function test_admin_can_quick_edit_imported_vocab_with_redirect_back(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $topic = Topic::create([
+            'user_id' => null,
+            'name' => 'Topic Quick Edit',
+            'description' => 'Mô tả',
+        ]);
+        $vocab = Vocabulary::create([
+            'word' => 'quick_edit_me',
+            'meaning_vi' => 'Nghĩa ban đầu',
+            'topic_id' => $topic->topic_id,
+        ]);
+
+        $response = $this->actingAs($admin)->from(route('admin.vocabularies.import-view'))->put(route('admin.vocabularies.update', $vocab->vocabulary_id), [
+            'word' => 'quick_edited_done',
+            'meaning_vi' => 'Nghĩa đã sửa',
+            'topic_id' => $topic->topic_id,
+            'redirect_back' => 1,
+        ]);
+
+        $response->assertRedirect(route('admin.vocabularies.import-view'));
+        $response->assertSessionHas('success');
+        $this->assertDatabaseHas('vocabularies', [
+            'vocabulary_id' => $vocab->vocabulary_id,
+            'word' => 'quick_edited_done',
+        ]);
+    }
+
+    public function test_admin_can_quick_delete_imported_vocab_with_redirect_back(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $topic = Topic::create([
+            'user_id' => null,
+            'name' => 'Topic Quick Del',
+            'description' => 'Mô tả',
+        ]);
+        $vocab = Vocabulary::create([
+            'word' => 'quick_delete_me',
+            'meaning_vi' => 'Nghĩa xóa',
+            'topic_id' => $topic->topic_id,
+        ]);
+
+        $response = $this->actingAs($admin)->from(route('admin.vocabularies.import-view'))->delete(route('admin.vocabularies.destroy', $vocab->vocabulary_id), [
+            'redirect_back' => 1,
+        ]);
+
+        $response->assertRedirect(route('admin.vocabularies.import-view'));
+        $response->assertSessionHas('success');
+        $this->assertDatabaseMissing('vocabularies', [
+            'vocabulary_id' => $vocab->vocabulary_id,
         ]);
     }
 }
