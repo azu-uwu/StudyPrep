@@ -12,6 +12,7 @@ use App\Http\Controllers\PersonalTopicController;
 use App\Http\Controllers\ReadingPracticeController;
 use App\Http\Controllers\VocabularyPracticeController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\StudySettingController;
 
 // use Illuminate\Support\Facades\Route;
 
@@ -93,7 +94,12 @@ Route::view('/ho-so', 'pages.ho-so')->name('ho-so');
 Route::view('/ho-so/muc-tieu-thiet-lap', 'pages.muc-tieu-thiet-lap')->name('ho-so.muc-tieu-thiet-lap');
 Route::view('/muc-tieu-trang-chu', 'pages.muc-tieu-trang-chu')->name('muc-tieu-trang-chu');
 
-Route::view('/cai-dat', 'pages.cai-dat')->name('cai-dat');
+Route::middleware('auth')->group(function () {
+    // Hiển thị trang cài đặt
+    Route::get('/cai-dat',[StudySettingController::class, 'index'])->name('cai-dat');
+    // Xử lý lưu cài đặt
+    Route::put('/cai-dat', [StudySettingController::class, 'update'])->name('settings.update');
+});
 
 // Trang demo component của nhóm (giữ nguyên không làm ảnh hưởng)
 Route::view('/component-demo', 'components.component-demo');
@@ -165,11 +171,7 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
     });
 });
 
-/*
-|--------------------------------------------------------------------------
-| AUTHENTICATION - STUDYPREP
-|--------------------------------------------------------------------------
-*/
+// AUTHENTICATION - STUDYPREP
 
 // Khách chưa đăng nhập
 Route::middleware('guest')->group(function () {
