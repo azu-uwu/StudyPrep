@@ -12,6 +12,7 @@ use App\Models\QuestionType;
 use App\Models\Skill;
 use App\Models\TestForm;
 use App\Services\AiToeicService;
+use App\Services\DocxToStandardXmlService;
 use App\Services\ExamSampleDataService;
 use App\Services\TestFormService;
 use App\Services\TextToSpeechService;
@@ -1083,6 +1084,333 @@ class QuestionController extends Controller
 
         return redirect()->route('admin.questions.index')
             ->with('success', 'Đã tải lên tệp và hoàn tất đồng bộ danh sách câu hỏi vào Ngân hàng thành công.');
+    }
+
+    /**
+     * Bước 1 quy trình Staging: Phân tích file Word (.docx) sang cấu trúc XML chuẩn StudyPrep,
+     * trích xuất ảnh tạm và chuyển sang màn hình Đối chiếu 2 cột (Split-View).
+     */
+    public function previewStagingImport(Request $request, DocxToStandardXmlService $docxService): RedirectResponse
+    {
+        $request->validate([
+            'import_file' => 'required|file|mimes:docx|max:15360',
+        ], [
+            'import_file.required' => 'Vui lòng chọn tệp Word (.docx) để phân tích & đối chiếu.',
+            'import_file.mimes' => 'Quy trình Đối chiếu XML hiện chỉ hỗ trợ tệp định dạng .docx (Word).',
+        ]);
+
+        $file = $request->file('import_file');
+        $importScope = strtoupper(trim((string) $request->input('import_scope', 'AUTO')));
+        $targetTestId = $request->filled('target_test_id') ? (int) $request->input('target_test_id') : null;
+        $publishStatus = $request->input('publish_status', 'live') === 'draft' ? 'DRAFT' : 'ACTIVE';
+
+        $staging = $docxService->stageDocxImport(
+            $file,
+            $importScope,
+            $targetTestId && $targetTestId > 0 ? $targetTestId : null,
+            $publishStatus
+        );
+
+        if (empty($staging['sets'])) {
+            $docxService->forgetStagingPayload((string) $staging['batch_id']);
+
+            return redirect()->route('admin.questions.bulk-import')
+                ->withErrors(['import_file' => 'Không nhận diện được câu hỏi TOEIC nào trong tệp Word vừa tải lên. Vui lòng kiểm tra lại cấu trúc tiêu đề Part / Question.']);
+        }
+
+        return redirect()->route('admin.questions.import.review', ['batchId' => $staging['batch_id']])
+            ->with('success', "Đã phân tích tệp \"{$staging['file_name']}\" thành {$staging['summary']['total_questions']} câu hỏi. Vui lòng đối chiếu và duyệt lưu bên dưới.");
+    }
+
+    /**
+     * Bước 2 quy trình Staging: Hiển thị màn hình Đối chiếu 2 cột (File gốc vs Mẫu XML chuẩn StudyPrep).
+     */
+    public function showStagingReview(string $batchId, DocxToStandardXmlService $docxService): View|RedirectResponse
+    {
+        $staging = $docxService->getStagingPayload($batchId);
+        if (! is_array($staging)) {
+            return redirect()->route('admin.questions.bulk-import')
+                ->withErrors(['import_file' => 'Phiên đối chiếu đã hết hạn hoặc không tồn tại. Vui lòng tải lại tệp Word (.docx).']);
+        }
+
+        $sections = ExamSection::with('skill')->orderBy('sequence_no')->get();
+        $availableTests = Schema::hasTable('test_form')
+            ? TestForm::query()->with('blueprint')->orderByDesc('test_form_id')->get()
+            : collect();
+
+        $xmlPreview = $docxService->toStandardXml($staging['sets']);
+
+        return view('admin.questions.bulk-import-review', [
+            'batchId' => $batchId,
+            'staging' => $staging,
+            'sections' => $sections,
+            'availableTests' => $availableTests,
+            'xmlPreview' => $xmlPreview,
+        ]);
+    }
+
+    /**
+     * Xuất tải về file XML chuẩn StudyPrep từ phiên staging.
+     */
+    public function downloadStagingXml(string $batchId, DocxToStandardXmlService $docxService): Response|RedirectResponse
+    {
+        $staging = $docxService->getStagingPayload($batchId);
+        if (! is_array($staging)) {
+            return redirect()->route('admin.questions.bulk-import')
+                ->withErrors(['import_file' => 'Phiên đối chiếu đã hết hạn. Vui lòng tải lại tệp Word.']);
+        }
+
+        $xml = $docxService->toStandardXml($staging['sets'] ?? []);
+
+        return response($xml, 200, [
+            'Content-Type' => 'application/xml; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="studyprep_import_'.$batchId.'.xml"',
+        ]);
+    }
+
+    /**
+     * Bước 3 quy trình Staging: Di chuyển ảnh, sinh Audio TTS, lưu DB trong transaction & xóa staging.
+     */
+    public function commitStagingImport(
+        Request $request,
+        string $batchId,
+        DocxToStandardXmlService $docxService,
+        TextToSpeechService $ttsService
+    ): RedirectResponse {
+        $staging = $docxService->getStagingPayload($batchId);
+        if (! is_array($staging)) {
+            return redirect()->route('admin.questions.bulk-import')
+                ->withErrors(['import_file' => 'Phiên đối chiếu đã hết hạn hoặc đã được lưu trước đó.']);
+        }
+
+        $submittedSets = $request->input('sets', []);
+        $sets = is_array($submittedSets) && ! empty($submittedSets)
+            ? array_values($submittedSets)
+            : ($staging['sets'] ?? []);
+
+        $publishStatus = strtoupper((string) $request->input('publish_status', $staging['publish_status'] ?? 'ACTIVE'));
+        if (! in_array($publishStatus, ['ACTIVE', 'DRAFT'], true)) {
+            $publishStatus = 'ACTIVE';
+        }
+
+        $targetTestId = $request->filled('target_test_id')
+            ? (int) $request->input('target_test_id')
+            : ($staging['target_test_id'] ? (int) $staging['target_test_id'] : null);
+        $autoGenerateTts = $request->boolean('auto_generate_tts', true);
+
+        $sectionsByCode = ExamSection::query()->pluck('section_id', 'code');
+        $promotedImageCache = [];
+        $ttsAudioCount = 0;
+        $promotedImageCount = 0;
+
+        // Chuẩn bị file ảnh & Audio TTS trước khi mở DB transaction
+        $preparedSets = [];
+        foreach ($sets as $setData) {
+            if (! is_array($setData) || empty($setData['questions'])) {
+                continue;
+            }
+
+            $partCode = strtoupper(trim((string) ($setData['part'] ?? 'PART5')));
+            $rawSetMedia = trim((string) ($setData['media_url'] ?? ''));
+            $promotedSetMedia = null;
+            if ($rawSetMedia !== '') {
+                if (! array_key_exists($rawSetMedia, $promotedImageCache)) {
+                    $moved = $docxService->promoteStagingImage($rawSetMedia, $batchId);
+                    $promotedImageCache[$rawSetMedia] = $moved;
+                    if ($moved !== null && str_starts_with($moved, 'storage/questions/images/')) {
+                        $promotedImageCount++;
+                    }
+                }
+                $promotedSetMedia = $promotedImageCache[$rawSetMedia];
+            }
+
+            $transcript = trim((string) ($setData['transcript'] ?? ''));
+            $audioUrl = trim((string) ($setData['audio_url'] ?? ''));
+            $needsTts = $autoGenerateTts
+                && $audioUrl === ''
+                && $transcript !== ''
+                && in_array($partCode, ['PART1', 'PART2', 'PART3', 'PART4', 'SPK_T3', 'SPK_T4'], true);
+
+            if ($needsTts) {
+                $partNum = (int) preg_replace('/[^0-9]/', '', $partCode);
+                if ($partNum < 1 || $partNum > 4) {
+                    $partNum = 1;
+                }
+                try {
+                    $ttsResult = $ttsService->synthesize($transcript, $partNum);
+                    $audioUrl = $ttsResult['relative_path'];
+                    $ttsAudioCount++;
+                } catch (\Throwable $e) {
+                    // Không làm gián đoạn quá trình lưu câu hỏi nếu mạng/TTS tạm thời lỗi
+                }
+            }
+
+            $preparedQuestions = [];
+            foreach ($setData['questions'] as $qIdx => $qItem) {
+                if (! is_array($qItem)) {
+                    continue;
+                }
+                $qContentTrimmed = trim((string) ($qItem['content'] ?? ''));
+                if ($qContentTrimmed === '') {
+                    $hasPart6Context = $partCode === 'PART6' && (trim((string) ($setData['stimulus'] ?? '')) !== '' || ! empty($qItem['options']));
+                    if (! $hasPart6Context) {
+                        continue;
+                    }
+                    $seq = (int) ($qItem['seq'] ?? (131 + $qIdx));
+                    $qItem['content'] = "Blank {$seq} (Complete the text)";
+                }
+                $qRawMedia = trim((string) ($qItem['media_url'] ?? ''));
+                $qPromotedMedia = null;
+                if ($qRawMedia !== '') {
+                    if (! array_key_exists($qRawMedia, $promotedImageCache)) {
+                        $movedQ = $docxService->promoteStagingImage($qRawMedia, $batchId);
+                        $promotedImageCache[$qRawMedia] = $movedQ;
+                        if ($movedQ !== null && str_starts_with($movedQ, 'storage/questions/images/')) {
+                            $promotedImageCount++;
+                        }
+                    }
+                    $qPromotedMedia = $promotedImageCache[$qRawMedia];
+                }
+                $qItem['media_url'] = $qPromotedMedia;
+                $preparedQuestions[] = $qItem;
+            }
+
+            if (empty($preparedQuestions)) {
+                continue;
+            }
+
+            $setData['part'] = $partCode;
+            $setData['media_url'] = $promotedSetMedia;
+            $setData['audio_url'] = $audioUrl !== '' ? $audioUrl : null;
+            $setData['transcript'] = $transcript !== '' ? $transcript : null;
+            $setData['questions'] = $preparedQuestions;
+            $preparedSets[] = $setData;
+        }
+
+        $savedQuestionIds = [];
+        $attachResult = null;
+
+        DB::transaction(function () use (
+            $preparedSets,
+            $sectionsByCode,
+            $publishStatus,
+            $targetTestId,
+            &$savedQuestionIds,
+            &$attachResult
+        ): void {
+            foreach ($preparedSets as $setData) {
+                $partCode = $setData['part'];
+                $sectionId = (int) ($sectionsByCode[$partCode] ?? $sectionsByCode['PART5'] ?? 5);
+                $isProductive = in_array($partCode, WordQuestionImportService::PRODUCTIVE_PART_CODES, true);
+                $isListening = in_array($partCode, ['PART1', 'PART2', 'PART3', 'PART4'], true);
+
+                $stimulus = trim((string) ($setData['stimulus'] ?? ''));
+                $transcript = $setData['transcript'];
+                $setMedia = $setData['media_url'];
+                $setAudio = $setData['audio_url'];
+
+                $sharedSetId = null;
+                if ($stimulus !== '' || $transcript !== null || $setMedia !== null || $setAudio !== null) {
+                    $mediaType = $setMedia !== null
+                        ? 'IMAGE'
+                        : ($setAudio !== null || $isListening ? 'AUDIO' : 'READING_PASSAGE');
+
+                    $qSet = QuestionSet::query()->create([
+                        'title' => trim((string) ($setData['title'] ?? '')) ?: "Cụm {$partCode}",
+                        'stimulus_text' => $stimulus !== '' ? $stimulus : null,
+                        'media_url' => $setMedia,
+                        'audio_url' => $setAudio,
+                        'media_type' => $mediaType,
+                        'transcript' => $transcript,
+                    ]);
+                    $sharedSetId = $qSet->question_set_id;
+                }
+
+                foreach ($setData['questions'] as $qItem) {
+                    $qSetIdForQuestion = $sharedSetId;
+                    if (! empty($qItem['media_url']) && $qItem['media_url'] !== $setMedia) {
+                        $ownSet = QuestionSet::query()->create([
+                            'title' => "Ngữ cảnh {$partCode}",
+                            'stimulus_text' => $stimulus !== '' ? $stimulus : null,
+                            'media_url' => $qItem['media_url'],
+                            'audio_url' => $setAudio,
+                            'media_type' => 'IMAGE',
+                            'transcript' => $transcript,
+                        ]);
+                        $qSetIdForQuestion = $ownSet->question_set_id;
+                    }
+
+                    $difficulty = strtoupper((string) ($qItem['difficulty'] ?? 'UNSET'));
+                    if (! in_array($difficulty, ['UNSET', 'EASY', 'MEDIUM', 'HARD'], true)) {
+                        $difficulty = 'UNSET';
+                    }
+
+                    $question = Question::query()->create([
+                        'section_id' => $sectionId,
+                        'question_type_id' => Question::resolveQuestionTypeIdForPart($partCode),
+                        'question_set_id' => $qSetIdForQuestion,
+                        'content' => trim((string) $qItem['content']),
+                        'difficulty' => $difficulty,
+                        'points' => '1.00',
+                        'status' => $publishStatus,
+                        'explanation' => trim((string) ($qItem['explanation'] ?? '')) ?: null,
+                        'created_at' => now(),
+                    ]);
+
+                    if (! $isProductive) {
+                        $correctLetter = strtoupper((string) ($qItem['correct'] ?? 'A'));
+                        $options = is_array($qItem['options'] ?? null) ? $qItem['options'] : [];
+                        $allowedLetters = $partCode === 'PART2' ? ['A', 'B', 'C'] : ['A', 'B', 'C', 'D'];
+                        foreach ($allowedLetters as $letter) {
+                            $optText = trim((string) ($options[$letter] ?? ''));
+                            if ($optText === '' && $partCode !== 'PART1') {
+                                continue;
+                            }
+                            AnswerOption::query()->create([
+                                'question_id' => $question->question_id,
+                                'label' => $letter,
+                                'content' => $optText !== '' ? $optText : "Option {$letter}",
+                                'is_correct' => $letter === $correctLetter,
+                            ]);
+                        }
+                    }
+
+                    $savedQuestionIds[] = $question->question_id;
+                }
+            }
+
+            if ($targetTestId !== null && $targetTestId > 0 && ! empty($savedQuestionIds) && Schema::hasTable('test_form')) {
+                $testForm = TestForm::query()->find($targetTestId);
+                if ($testForm !== null) {
+                    $attachResult = app(TestFormService::class)->attachQuestions($testForm, $savedQuestionIds);
+                }
+            }
+        });
+
+        $docxService->forgetStagingPayload($batchId);
+
+        $savedCount = count($savedQuestionIds);
+        $msg = "Đã duyệt và lưu thành công {$savedCount} câu hỏi vào Ngân hàng đề";
+        $details = [];
+        if ($promotedImageCount > 0) {
+            $details[] = "{$promotedImageCount} ảnh minh họa";
+        }
+        if ($ttsAudioCount > 0) {
+            $details[] = "{$ttsAudioCount} file Audio MP3 (TTS)";
+        }
+        if ($attachResult !== null) {
+            $details[] = "gắn {$attachResult['attached']}/{$savedCount} câu vào đề thi";
+        }
+        if (! empty($details)) {
+            $msg .= ' ('.implode(', ', $details).')';
+        }
+        $msg .= '!';
+
+        if ($targetTestId !== null && $targetTestId > 0 && $attachResult !== null) {
+            return redirect()->route('admin.tests.show', $targetTestId)->with('success', $msg);
+        }
+
+        return redirect()->route('admin.questions.index')->with('success', $msg);
     }
 
     /**

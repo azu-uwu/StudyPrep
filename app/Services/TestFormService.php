@@ -687,7 +687,61 @@ class TestFormService
     }
 
     /**
-     * Phát hiện câu hỏi trùng lặp (trùng question_id hoặc trùng nội dung chuẩn hóa trong cùng Part).
+     * Tạo khóa nhận diện duy nhất cho câu hỏi dựa trên Part, nội dung và toàn bộ ngữ liệu đính kèm
+     * (ảnh, audio, transcript, đoạn văn/stimulus, các phương án trả lời) để tránh báo trùng giả.
+     */
+    public function buildQuestionFingerprint(Question $question): string
+    {
+        $sectionKey = $question->section_id !== null
+            ? (string) $question->section_id
+            : strtoupper((string) ($question->section?->code ?? ''));
+
+        $content = $this->normalizeFingerprintPart((string) $question->content);
+        $questionSet = $question->questionSet;
+
+        $mediaUrl = $this->normalizeFingerprintPart($questionSet?->media_url);
+        $audioUrl = $this->normalizeFingerprintPart($questionSet?->audio_url);
+        $transcript = $this->normalizeFingerprintPart($questionSet?->transcript);
+        $stimulus = $this->normalizeFingerprintPart($questionSet?->stimulus_text);
+
+        $options = $question->relationLoaded('options')
+            ? $question->options
+            : $question->options()->get();
+
+        $optionParts = $options
+            ->sortBy(fn ($opt) => strtoupper((string) $opt->label))
+            ->map(function ($opt): string {
+                $label = strtoupper(trim((string) $opt->label));
+                $text = $this->normalizeFingerprintPart((string) $opt->option_text);
+
+                return $label.':'.$text;
+            })
+            ->values()
+            ->all();
+
+        return implode('||', [
+            'sec='.$sectionKey,
+            'cnt='.$content,
+            'img='.$mediaUrl,
+            'aud='.$audioUrl,
+            'trs='.$transcript,
+            'stm='.$stimulus,
+            'opt='.implode('|', $optionParts),
+        ]);
+    }
+
+    private function normalizeFingerprintPart(?string $value): string
+    {
+        $trimmed = trim((string) $value);
+        if ($trimmed === '') {
+            return '';
+        }
+
+        return mb_strtolower((string) preg_replace('/\s+/u', ' ', $trimmed), 'UTF-8');
+    }
+
+    /**
+     * Phát hiện câu hỏi trùng lặp (trùng question_id hoặc trùng fingerprint đầy đủ gồm nội dung + ngữ liệu đính kèm).
      *
      * @param  Collection<int, Question>  $attachedQuestions
      * @return array{duplicate_ids: list<int>, duplicate_groups: list<array{keep_id: int, duplicate_ids: list<int>, sample: string}>}
@@ -706,7 +760,6 @@ class TestFormService
 
         foreach ($attachedQuestions as $question) {
             $qId = (int) $question->question_id;
-            $partCode = strtoupper((string) ($question->section?->code ?? ''));
 
             if (isset($seenQuestionIds[$qId])) {
                 $duplicateIds[] = $qId;
@@ -716,12 +769,23 @@ class TestFormService
             $seenQuestionIds[$qId] = true;
 
             $rawContent = trim((string) $question->content);
-            $normalized = mb_strtolower((string) preg_replace('/\s+/u', ' ', $rawContent));
-            if ($normalized === '' || in_array($normalized, $genericPlaceholders, true)) {
+            $normalized = $this->normalizeFingerprintPart($rawContent);
+            if ($normalized === '') {
                 continue;
             }
 
-            $key = $partCode.'|'.$normalized;
+            $questionSet = $question->questionSet;
+            $hasAttachedContext = $this->normalizeFingerprintPart($questionSet?->media_url) !== ''
+                || $this->normalizeFingerprintPart($questionSet?->audio_url) !== ''
+                || $this->normalizeFingerprintPart($questionSet?->transcript) !== ''
+                || $this->normalizeFingerprintPart($questionSet?->stimulus_text) !== ''
+                || ($question->relationLoaded('options') ? $question->options->isNotEmpty() : $question->options()->exists());
+
+            if (in_array($normalized, $genericPlaceholders, true) && ! $hasAttachedContext) {
+                continue;
+            }
+
+            $key = $this->buildQuestionFingerprint($question);
             if (! isset($seenByContentKey[$key])) {
                 $seenByContentKey[$key] = [
                     'keep_id' => $qId,

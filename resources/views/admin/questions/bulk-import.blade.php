@@ -202,9 +202,21 @@
                     </div>
                 </div>
 
-                <div style="padding-top: 16px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px;">
-                    <button type="submit" class="qimport-btn-submit" id="btnSubmitBulk" style="width: 100%; justify-content: center; padding: 12px 20px; font-size: 14.5px;">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <div style="padding-top: 16px; border-top: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 10px;">
+                    <button type="submit"
+                            formaction="{{ route('admin.questions.import.preview') }}"
+                            class="qimport-btn-submit"
+                            id="btnPreviewStaging"
+                            style="width: 100%; justify-content: center; padding: 12px 20px; font-size: 14.5px; background: linear-gradient(135deg, #4338ca, #6366f1);">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                            <line x1="12" y1="3" x2="12" y2="21"></line>
+                        </svg>
+                        <span>Phân tích &amp; Đối chiếu (Split-View + XML)</span>
+                    </button>
+
+                    <button type="submit" class="btn-admin-action" id="btnSubmitBulk" style="width: 100%; justify-content: center; padding: 10px 16px; font-size: 13.5px; font-weight: 700;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                             <polyline points="7 10 12 15 17 10"></polyline>
                             <line x1="12" y1="15" x2="12" y2="3"></line>

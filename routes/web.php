@@ -7,14 +7,14 @@ use App\Http\Controllers\Admin\TestController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VocabularyController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\GoalController;
 use App\Http\Controllers\ListeningPracticeController;
 use App\Http\Controllers\PersonalTopicController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReadingPracticeController;
+use App\Http\Controllers\StudySettingController;
 use App\Http\Controllers\VocabularyPracticeController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\GoalController;
-use App\Http\Controllers\StudySettingController;
 
 // use Illuminate\Support\Facades\Route;
 
@@ -100,23 +100,23 @@ Route::middleware('auth')->group(function () {
     Route::post('/ho-so', [ProfileController::class, 'update'])->name('profile.update');
 
     // Đổi mật khẩu
-    Route::post('/ho-so/doi-mat-khau',[ProfileController::class, 'changePassword'])->middleware('throttle:5,1')->name('profile.password');
+    Route::post('/ho-so/doi-mat-khau', [ProfileController::class, 'changePassword'])->middleware('throttle:5,1')->name('profile.password');
 
     // Cập nhật ảnh đại diện
-    Route::post('/ho-so/anh-dai-dien',[ProfileController::class, 'uploadAvatar'])->name('profile.avatar');
+    Route::post('/ho-so/anh-dai-dien', [ProfileController::class, 'uploadAvatar'])->name('profile.avatar');
 });
 Route::middleware('auth')->group(function () {
-    Route::get('/ho-so/muc-tieu-thiet-lap',[GoalController::class, 'edit'])->name('profile.goal.edit');
-    Route::post('/ho-so/muc-tieu-thiet-lap',[GoalController::class, 'store'])->name('profile.goal.update');
+    Route::get('/ho-so/muc-tieu-thiet-lap', [GoalController::class, 'edit'])->name('profile.goal.edit');
+    Route::post('/ho-so/muc-tieu-thiet-lap', [GoalController::class, 'store'])->name('profile.goal.update');
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/muc-tieu-trang-chu',[GoalController::class, 'index'])->name('muc-tieu-trang-chu');
+    Route::get('/muc-tieu-trang-chu', [GoalController::class, 'index'])->name('muc-tieu-trang-chu');
 });
 
 Route::middleware('auth')->group(function () {
     // Hiển thị trang cài đặt
-    Route::get('/cai-dat',[StudySettingController::class, 'index'])->name('cai-dat');
+    Route::get('/cai-dat', [StudySettingController::class, 'index'])->name('cai-dat');
     // Xử lý lưu cài đặt
     Route::put('/cai-dat', [StudySettingController::class, 'update'])->name('settings.update');
 });
@@ -165,6 +165,10 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::get('/questions/export', [QuestionController::class, 'export'])->name('questions.export');
         Route::get('/questions/sample-docx', [QuestionController::class, 'sampleDocx'])->name('questions.sample-docx');
         Route::get('/questions/bulk-import', [QuestionController::class, 'importView'])->name('questions.bulk-import');
+        Route::post('/questions/import/preview', [QuestionController::class, 'previewStagingImport'])->name('questions.import.preview');
+        Route::get('/questions/import/review/{batchId}', [QuestionController::class, 'showStagingReview'])->name('questions.import.review');
+        Route::get('/questions/import/review/{batchId}/xml', [QuestionController::class, 'downloadStagingXml'])->name('questions.import.xml');
+        Route::post('/questions/import/review/{batchId}/commit', [QuestionController::class, 'commitStagingImport'])->name('questions.import.commit');
         Route::post('/questions/import', [QuestionController::class, 'import'])->name('questions.import');
         Route::put('/questions/{question}', [QuestionController::class, 'update'])->whereNumber('question')->name('questions.update');
         Route::patch('/questions/{question}/status', [QuestionController::class, 'toggleStatus'])->whereNumber('question')->name('questions.toggle-status');

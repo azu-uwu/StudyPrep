@@ -1895,4 +1895,5 @@
     }
 </script>
 @endpush
+@include('admin.questions.partials.question-preview-modal')
 @endsection

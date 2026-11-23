@@ -181,6 +181,16 @@ class TextToSpeechService
     }
 
     /**
+     * Sinh file audio MP3 từ transcript và lưu vào storage/app/public/audio/questions/.
+     *
+     * @return array{audio_url: string, relative_path: string, file_path: string, file_size: int, duration_estimate: int, cleaned_text: string}
+     */
+    public function synthesize(string $transcript, int $partNumber = 1, ?string $customFilename = null): array
+    {
+        return $this->generateAudio($transcript, $partNumber, $customFilename, 'en', 'audio/questions');
+    }
+
+    /**
      * Ghép kịch bản đọc chuẩn TOEIC cho một QuestionSet theo từng Part (1, 2, 3, 4).
      */
     public function buildToeicListeningScript(QuestionSet $set): string
@@ -456,9 +466,8 @@ class TextToSpeechService
         // Phát hiện các cụm ngoặc chứa ký tự tiếng Việt có dấu
         $cleaned = preg_replace('/\([^\)]*[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđĐ][^\)]*\)/u', '', $rawText);
 
-        // 3. Chuẩn hóa nhãn người nói: 'W:' -> 'Woman: ', 'M:' -> 'Man: '
-        $cleaned = preg_replace('/^\s*W:\s*/mi', '', $cleaned);
-        $cleaned = preg_replace('/^\s*M:\s*/mi', '', $cleaned);
+        // 3. Chuẩn hóa nhãn người nói: 'W:', 'M:', 'M-Au:', 'W-Am:', 'Narrator:', 'Transcript:'
+        $cleaned = preg_replace('/^\s*(?:Transcript|Narrator|Man|Woman|[MW](?:-[A-Za-z]+)?)\s*:\s*/mi', '', $cleaned);
 
         // 4. Bỏ các ký tự đặc biệt thừa
         $cleaned = str_replace(["\r\n", "\r"], "\n", $cleaned);

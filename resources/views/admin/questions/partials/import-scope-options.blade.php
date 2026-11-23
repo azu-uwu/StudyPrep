@@ -3,6 +3,8 @@
 <option value="READING">READING — Kỹ năng Reading (Tự động chia Part 5, 6, 7 theo tiêu đề trong file)</option>
 <option value="SPEAKING">SPEAKING — Kỹ năng Speaking (Tự động chia Task 1–5 chuẩn 11 câu ETS)</option>
 <option value="WRITING">WRITING — Kỹ năng Writing (Tự động chia Task 1–3 chuẩn 8 câu ETS)</option>
+<option value="FULL_LR">FULL_LR — Full Test Listening + Reading (Tự động chia Part 1–4 Listening &amp; Part 5–7 Reading chuẩn 200 câu ETS)</option>
+<option value="FULL_SW">FULL_SW — Full Test Speaking + Writing (Tự động chia Task 1–5 Speaking &amp; Task 1–3 Writing chuẩn 19 câu ETS)</option>
 <optgroup label="Ép toàn bộ file vào 1 Part/Task cố định">
     <option value="PART1">Listening - Part 1: Photographs (Mô tả tranh)</option>
     <option value="PART2">Listening - Part 2: Question-Response (Hỏi - Đáp, 3 phương án A–C)</option>

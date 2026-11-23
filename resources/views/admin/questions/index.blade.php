@@ -1011,7 +1011,7 @@
 </div>
 
 {{-- MODAL 3: XEM TRƯỚC MÔ PHỎNG ĐỀ THI TOEIC THẬT --}}
-@include('admin.questions.partials.preview-modal')
+@include('admin.questions.partials.question-preview-modal')
 
 {{-- MODAL 4: NHẬP WORD (.DOCX) / EXCEL / JSON --}}
 <div id="modal-import-qbank" class="admin-modal-backdrop">

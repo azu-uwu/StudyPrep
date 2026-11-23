@@ -11,7 +11,9 @@ use App\Models\Skill;
 use App\Models\TestBlueprint;
 use App\Models\TestForm;
 use App\Models\User;
+use App\Services\DocxToStandardXmlService;
 use App\Services\TestFormService;
+use App\Services\TextToSpeechService;
 use App\Services\WordQuestionImportService;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -783,7 +785,7 @@ class QuestionControllerTest extends TestCase
         $questions = Question::query()->with(['options', 'section', 'questionSet'])->orderBy('question_id')->get();
         $this->assertCount(4, $questions);
 
-        $codes = $questions->map(fn (Question $q) => strtoupper((string) $q->section?->code))->all();
+        $codes = $questions->map(fn ($q) => strtoupper((string) $q->section?->code))->all();
         $this->assertEquals(['SPK_T1', 'SPK_T2', 'WRITING_T2', 'WRITING_T3'], $codes);
 
         // Tuyệt đối không tạo AnswerOption A/B/C/D cho Speaking & Writing
@@ -1275,5 +1277,608 @@ class QuestionControllerTest extends TestCase
         $response->assertOk();
         $response->assertSee('What are the speakers discussing?');
         $response->assertDontSee('Bộ lọc nâng cao');
+    }
+
+    public function test_admin_can_preview_docx_staging_export_xml_and_commit_with_images_and_tts(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $lcSkill = Skill::create(['skill_id' => 1, 'code' => 'LC', 'skill_name' => 'Listening']);
+        $rcSkill = Skill::create(['skill_id' => 2, 'code' => 'RC', 'skill_name' => 'Reading']);
+        ExamSection::create(['section_id' => 1, 'skill_id' => $lcSkill->skill_id, 'code' => 'PART1', 'name' => 'Part 1', 'sequence_no' => 1]);
+        ExamSection::create(['section_id' => 5, 'skill_id' => $rcSkill->skill_id, 'code' => 'PART5', 'name' => 'Part 5', 'sequence_no' => 5]);
+        QuestionType::create(['question_type_id' => 1, 'name' => 'Multiple Choice', 'response_mode' => 'SINGLE_CHOICE']);
+        QuestionType::create(['question_type_id' => 3, 'name' => 'Audio Listening', 'response_mode' => 'SINGLE_CHOICE']);
+
+        // Mock TextToSpeechService::synthesize so test runs offline deterministically
+        $this->mock(TextToSpeechService::class, function ($mock): void {
+            $mock->shouldReceive('synthesize')
+                ->once()
+                ->andReturn([
+                    'audio_url' => asset('storage/audio/questions/mock_p1.mp3'),
+                    'relative_path' => 'storage/audio/questions/mock_p1.mp3',
+                    'file_path' => storage_path('app/public/audio/questions/mock_p1.mp3'),
+                    'file_size' => 1024,
+                    'duration_estimate' => 5,
+                    'cleaned_text' => '(A) A man is typing.',
+                ]);
+        });
+
+        // Build a real .docx with an embedded PNG image + Part 1 + Part 5
+        $docxPath = tempnam(sys_get_temp_dir(), 'studyprep_stage_').'.docx';
+        $zip = new \ZipArchive;
+        $zip->open($docxPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+        $zip->addFromString('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+        $zip->addFromString('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+        $zip->addFromString('word/_rels/document.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdImg1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image1.png"/></Relationships>');
+        $zip->addFromString('word/media/image1.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='));
+        $zip->addFromString('word/document.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><w:body>'
+            .'<w:p><w:r><w:t>[Part 1]</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:drawing><a:blip r:embed="rIdImg1"/></w:drawing></w:r></w:p>'
+            .'<w:p><w:r><w:t>Question 1: Look at the picture.</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>(A) A man is typing. *(B) A woman is reading. (C) They are walking. (D) The desk is empty.</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>[Part 5]</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Question 101: The director ------- the proposal yesterday.</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>(A) approve (B) approved* (C) approving (D) approval</w:t></w:r></w:p>'
+            .'</w:body></w:document>');
+        $zip->close();
+
+        $uploadedFile = new UploadedFile($docxPath, 'staging_test.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', null, true);
+
+        // Step 1: Preview staging
+        $previewResp = $this->actingAs($admin)->post(route('admin.questions.import.preview'), [
+            'import_file' => $uploadedFile,
+            'import_scope' => 'AUTO',
+            'publish_status' => 'live',
+        ]);
+        $previewResp->assertRedirect();
+        $reviewUrl = (string) $previewResp->headers->get('Location');
+        $this->assertStringContainsString('/admin/questions/import/review/', $reviewUrl);
+        $batchId = basename($reviewUrl);
+
+        // Step 2: Review page + XML download
+        $reviewPage = $this->actingAs($admin)->get($reviewUrl);
+        $reviewPage->assertOk();
+        $reviewPage->assertViewIs('admin.questions.bulk-import-review');
+        $reviewPage->assertSee('Duyệt &amp; Lưu vào Ngân hàng đề', false);
+
+        $xmlResp = $this->actingAs($admin)->get(route('admin.questions.import.xml', ['batchId' => $batchId]));
+        $xmlResp->assertOk();
+        $xmlContent = $xmlResp->getContent();
+        $this->assertStringContainsString('<studyprep_exam>', $xmlContent);
+        $this->assertStringContainsString('part="PART1"', $xmlContent);
+        $this->assertStringContainsString('correct="B"', $xmlContent);
+
+        // Step 3: Commit staging
+        $commitResp = $this->actingAs($admin)->post(route('admin.questions.import.commit', ['batchId' => $batchId]), [
+            'auto_generate_tts' => '1',
+            'publish_status' => 'ACTIVE',
+        ]);
+        $commitResp->assertRedirect(route('admin.questions.index'));
+        $commitResp->assertSessionHas('success');
+
+        $this->assertDatabaseHas('questions', [
+            'content' => 'The director ------- the proposal yesterday.',
+            'status' => 'ACTIVE',
+        ]);
+        $this->assertDatabaseHas('question_set', [
+            'audio_url' => 'storage/audio/questions/mock_p1.mp3',
+        ]);
+
+        // Cleanup promoted image created during test
+        $promotedImg = QuestionSet::query()->whereNotNull('media_url')->value('media_url');
+        if ($promotedImg) {
+            @unlink(public_path($promotedImg));
+        }
+        @unlink($docxPath);
+    }
+
+    public function test_docx_staging_maps_mislabeled_reading_part1_2_3_to_part5_6_7_and_separates_invoice_stimulus(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $rcSkill = Skill::create(['skill_id' => 2, 'code' => 'RC', 'skill_name' => 'Reading']);
+        ExamSection::create(['section_id' => 5, 'skill_id' => $rcSkill->skill_id, 'code' => 'PART5', 'name' => 'Part 5', 'sequence_no' => 5]);
+        ExamSection::create(['section_id' => 6, 'skill_id' => $rcSkill->skill_id, 'code' => 'PART6', 'name' => 'Part 6', 'sequence_no' => 6]);
+        ExamSection::create(['section_id' => 7, 'skill_id' => $rcSkill->skill_id, 'code' => 'PART7', 'name' => 'Part 7', 'sequence_no' => 7]);
+
+        $docxPath = tempnam(sys_get_temp_dir(), 'studyprep_rc_').'.docx';
+        $zip = new \ZipArchive;
+        $zip->open($docxPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+        $zip->addFromString('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+        $zip->addFromString('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+
+        $paragraphs = [
+            '0/100',
+            'Audio 00:00 / 00:00',
+            '▶',
+            'Tốc độ: 1x',
+            'PART 1',
+            '101. All employees must submit their travel receipts ------- Friday.',
+            '(A) until (B) by (C) since (D) while',
+            'Answer: B',
+            'Giải thích chi tiết ▲',
+            'PART 2',
+            'Questions 131-134 refer to the following memo.',
+            'Our office will relocate to the third floor next month. [131] please pack your desks.',
+            '131. (A) Therefore (B) However (C) Although (D) Unless',
+            'Answer: A',
+            'PART 3',
+            'Questions 149-150 refer to the following invoice.',
+            'Apex Supplies Invoice #4491 | Subtotal: $200.00 | Shipping: $25.00 | Total Due: $225.00',
+            '150. What is the total amount due on the invoice?',
+            'A. $200.00',
+            'B. $25.00',
+            'C. $225.00',
+            'D. $250.00',
+            'Answer: C',
+        ];
+        $bodyXml = '';
+        foreach ($paragraphs as $p) {
+            $bodyXml .= '<w:p><w:r><w:t xml:space="preserve">'.htmlspecialchars($p, ENT_XML1 | ENT_QUOTES, 'UTF-8').'</w:t></w:r></w:p>';
+        }
+        $zip->addFromString('word/document.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'.$bodyXml.'</w:body></w:document>');
+        $zip->close();
+
+        $uploadedFile = new UploadedFile($docxPath, 'Actual_Test_R1.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', null, true);
+
+        $previewResp = $this->actingAs($admin)->post(route('admin.questions.import.preview'), [
+            'import_file' => $uploadedFile,
+            'import_scope' => 'AUTO',
+            'publish_status' => 'live',
+        ]);
+        $previewResp->assertRedirect();
+        $batchId = basename((string) $previewResp->headers->get('Location'));
+
+        $staging = app(DocxToStandardXmlService::class)->getStagingPayload($batchId);
+        $this->assertIsArray($staging);
+        $this->assertSame(0, $staging['summary']['transcript_count']);
+
+        $parts = array_column($staging['sets'], 'part');
+        $this->assertSame(['PART5', 'PART6', 'PART7'], $parts);
+
+        $part7Set = $staging['sets'][2];
+        $this->assertStringContainsString('Apex Supplies Invoice #4491', (string) $part7Set['stimulus']);
+        $this->assertSame('What is the total amount due on the invoice?', $part7Set['questions'][0]['content']);
+        $this->assertSame('C', $part7Set['questions'][0]['correct']);
+
+        app(DocxToStandardXmlService::class)->forgetStagingPayload($batchId);
+        @unlink($docxPath);
+    }
+
+    public function test_word_parser_cleans_pipes_and_infers_answers_from_real_reading_sample(): void
+    {
+        $parser = app(WordQuestionImportService::class);
+        $rawText = <<<'TXT'
+Part 1:
+Q101-130
+Question 1 : 101. Edison Delivery’s trucks leave the warehouse promptly ------- 6:00 A.M. each morning.
+A.at
+B.on
+C.for
+D.with
+Giải thích chi tiết ▲
+| At + mốc thời gian nhất định   | Xe tải của Edison Delivery rời khỏi nhà kho đúng lúc 6 giờ sáng mỗi ngày.   | Warehouse (n) kho hàng  Promptly (adv) đúng lúc, kịp thời   |
+Part 2:
+Q131-134
+Questions 131–134 refer to the following letter.
+To: Roger Wall
+From: Guillermo Torres
+This is in response to your ------- 131 e-mail notifying us that you did not receive your April shipment.
+Question 31 : 131
+A.constant
+B.nearby
+C.early
+D.recent
+Giải thích chi tiết ▲
+| Chọn từ có nghĩa phù hợp với câu.  A. liên tục  D. gần đây (về thời gian)   | This is in response to your recent e-mail notifying us that you did not receive your April shipment.   |
+Part 3:
+Q149-150
+Green’s Athletic Shoes
+Receipt number: 5926
+A receipt is required to make a return.
+Question 50 : 150.What must a customer do to return an item?
+A.Complete an online form
+B.Bring the item back within six months
+C.Show an original store receipt
+D.Mail the item to the manufacturer
+Giải thích chi tiết ▲
+| Khách hàng phải làm gì để trả lại hàng? | Dòng cuối cùng tờ biên lai: A receipt is required to make a return = Show an original store receipt (xuất trình biên lai gốc của cửa hàng) |
+TXT;
+
+        $parsed = $parser->parseLines(explode("\n", $rawText), 'AUTO');
+        $this->assertCount(3, $parsed);
+
+        // 101 -> PART5, suy ra đáp án A ("at"), sạch dấu | và "Giải thích chi tiết ▲"
+        $this->assertSame('PART5', $parsed[0]['part_code']);
+        $this->assertSame('A', $parsed[0]['correct']);
+        $this->assertStringNotContainsString('|', (string) $parsed[0]['explanation']);
+        $this->assertStringNotContainsString('Giải thích chi tiết', (string) $parsed[0]['explanation']);
+
+        // 131 -> PART6, suy ra đáp án D ("recent" từ "your recent e-mail")
+        $this->assertSame('PART6', $parsed[1]['part_code']);
+        $this->assertSame('D', $parsed[1]['correct']);
+        $this->assertStringContainsString('April shipment', (string) $parsed[1]['stimulus_text']);
+
+        // 150 -> PART7, gom Q149-150 stimulus, suy ra đáp án C ("= Show an original store receipt")
+        $this->assertSame('PART7', $parsed[2]['part_code']);
+        $this->assertSame('C', $parsed[2]['correct']);
+        $this->assertStringContainsString('Receipt number: 5926', (string) $parsed[2]['stimulus_text']);
+    }
+
+    public function test_part6_without_individual_stem_is_100_percent_valid_in_review_and_commits_to_database(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $rcSkill = Skill::create(['skill_id' => 2, 'code' => 'RC', 'skill_name' => 'Reading']);
+        $part6Section = ExamSection::create(['section_id' => 6, 'skill_id' => $rcSkill->skill_id, 'code' => 'PART6', 'name' => 'Part 6', 'sequence_no' => 6]);
+        QuestionType::create(['question_type_id' => 1, 'name' => 'Multiple Choice', 'response_mode' => 'SINGLE_CHOICE']);
+
+        $docxPath = tempnam(sys_get_temp_dir(), 'studyprep_p6_').'.docx';
+        $zip = new \ZipArchive;
+        $zip->open($docxPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+        $zip->addFromString('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+        $zip->addFromString('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+
+        $paragraphs = [
+            'Part 2:',
+            'Q131-134',
+            'Questions 131-134 refer to the following letter.',
+            'This is in response to your ------- 131 e-mail notifying us about the April shipment. Rest assured the error will not ------- 132 again.',
+            'Question 31 : 131',
+            'A.constant',
+            'B.nearby',
+            'C.early',
+            'D.recent',
+            'Giải thích chi tiết ▲',
+            '| This is in response to your recent e-mail notifying us about the April shipment. |',
+            'Question 32 : 132',
+            'A.combine',
+            'B.revise',
+            'C.affect',
+            'D.occur',
+            'Giải thích chi tiết ▲',
+            '| Rest assured the error will not occur again. |',
+        ];
+        $bodyXml = '';
+        foreach ($paragraphs as $p) {
+            $bodyXml .= '<w:p><w:r><w:t xml:space="preserve">'.htmlspecialchars($p, ENT_XML1 | ENT_QUOTES, 'UTF-8').'</w:t></w:r></w:p>';
+        }
+        $zip->addFromString('word/document.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'.$bodyXml.'</w:body></w:document>');
+        $zip->close();
+
+        $uploadedFile = new UploadedFile($docxPath, 'Reading_Part6.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', null, true);
+
+        $previewResp = $this->actingAs($admin)->post(route('admin.questions.import.preview'), [
+            'import_file' => $uploadedFile,
+            'import_scope' => 'AUTO',
+            'publish_status' => 'live',
+        ]);
+        $previewResp->assertRedirect();
+        $batchId = basename((string) $previewResp->headers->get('Location'));
+
+        $staging = app(DocxToStandardXmlService::class)->getStagingPayload($batchId);
+        $this->assertIsArray($staging);
+        $this->assertSame(2, $staging['summary']['total_questions']);
+        $this->assertSame(2, $staging['summary']['valid_questions']);
+        $this->assertSame(0, $staging['summary']['error_questions']);
+        $this->assertSame('Blank 131 (Complete the text)', $staging['sets'][0]['questions'][0]['content']);
+        $this->assertSame('Blank 132 (Complete the text)', $staging['sets'][0]['questions'][1]['content']);
+
+        // Review page không hiển thị cảnh báo lỗi trống nội dung
+        $reviewPage = $this->actingAs($admin)->get(route('admin.questions.import.review', ['batchId' => $batchId]));
+        $reviewPage->assertOk();
+        $reviewPage->assertDontSee('Nội dung câu hỏi đang trống');
+
+        // Commit lưu vào Ngân hàng câu hỏi
+        $commitResp = $this->actingAs($admin)->post(route('admin.questions.import.commit', ['batchId' => $batchId]), [
+            'publish_status' => 'ACTIVE',
+        ]);
+        $commitResp->assertRedirect(route('admin.questions.index'));
+        $commitResp->assertSessionHas('success');
+
+        $this->assertDatabaseHas('questions', [
+            'section_id' => $part6Section->section_id,
+            'content' => 'Blank 131 (Complete the text)',
+            'status' => 'ACTIVE',
+        ]);
+        $this->assertDatabaseHas('questions', [
+            'section_id' => $part6Section->section_id,
+            'content' => 'Blank 132 (Complete the text)',
+            'status' => 'ACTIVE',
+        ]);
+
+        @unlink($docxPath);
+    }
+
+    public function test_speaking_docx_staging_parses_all_11_questions_without_duplicate_seq_3_and_includes_3_spk_t4_questions(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $spkSkill = Skill::create(['skill_id' => 3, 'code' => 'SPK', 'skill_name' => 'Speaking']);
+        ExamSection::create(['section_id' => 11, 'skill_id' => $spkSkill->skill_id, 'code' => 'SPK_T1', 'name' => 'Read a text aloud', 'sequence_no' => 1]);
+        ExamSection::create(['section_id' => 12, 'skill_id' => $spkSkill->skill_id, 'code' => 'SPK_T2', 'name' => 'Describe a picture', 'sequence_no' => 2]);
+        ExamSection::create(['section_id' => 13, 'skill_id' => $spkSkill->skill_id, 'code' => 'SPK_T3', 'name' => 'Respond to questions', 'sequence_no' => 3]);
+        ExamSection::create(['section_id' => 14, 'skill_id' => $spkSkill->skill_id, 'code' => 'SPK_T4', 'name' => 'Respond using information', 'sequence_no' => 4]);
+        ExamSection::create(['section_id' => 15, 'skill_id' => $spkSkill->skill_id, 'code' => 'SPK_T5', 'name' => 'Express an opinion', 'sequence_no' => 5]);
+
+        $png1 = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==');
+        $png2 = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAEklEQVR42mNk+M9QzwAEjDAGACCKAoFF73uPAAAAAElFTkSuQmCC');
+
+        $docxPath = tempnam(sys_get_temp_dir(), 'studyprep_spk_').'.docx';
+        $zip = new \ZipArchive;
+        $zip->open($docxPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+        $zip->addFromString('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+        $zip->addFromString('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+        $zip->addFromString('word/_rels/document.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            .'<Relationship Id="rIdImg1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image1.png"/>'
+            .'<Relationship Id="rIdImg2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image2.png"/>'
+            .'</Relationships>');
+        $zip->addFromString('word/media/image1.png', $png1);
+        $zip->addFromString('word/media/image2.png', $png2);
+
+        $bodyXml = ''
+            .'<w:p><w:r><w:t>1. Dạng câu hỏi Read a text aloud (câu 1, 2)</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Câu 1: Welcome to our annual technology conference in Seattle.</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Câu 2: Please turn off all mobile devices before the keynote begins.</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>2. Dạng câu hỏi Describe a picture (câu 3, 4)</w:t></w:r></w:p>'
+            .'<w:tbl>'
+            .'<w:tr><w:tc><w:p><w:r><w:t>Câu 3</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Câu 4</w:t></w:r></w:p></w:tc></w:tr>'
+            .'<w:tr><w:tc><w:p><w:r><w:drawing><a:blip r:embed="rIdImg1"/></w:drawing></w:r></w:p></w:tc><w:tc><w:p><w:r><w:drawing><a:blip r:embed="rIdImg2"/></w:drawing></w:r></w:p></w:tc></w:tr>'
+            .'</w:tbl>'
+            .'<w:p><w:r><w:t>3. Dạng câu hỏi Respond to questions (câu 5, 6, 7)</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Hướng dẫn: Bạn sẽ trả lời 3 câu hỏi về thói quen mua sắm.</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Imagine that a local magazine is conducting a survey on shopping habits.</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Câu 5: How often do you shop for clothes online?</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Câu 6: What factors are most important to you when choosing a store?</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Câu 7: Would you recommend online shopping to your friends? Why or why not?</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>4. Dạng câu hỏi Respond to questions using information (câu 8, 9, 10)</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Hướng dẫn: Bạn sẽ có 45 giây đọc thông tin trước khi trả lời 3 câu hỏi.</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Job Seeking Seminar - June 15</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>9:00 AM - Resume Writing Workshop with Bruce Geller</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>What day is the seminar on and what time does it start?</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>I think I saw that Bruce Geller is leading the first workshop, right?</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>I have an important appointment at 9:30 AM. Can you tell me what workshops are in the afternoon?</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>5. Dạng câu hỏi Express an opinion (câu 11)</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Câu 11: Do you agree or disagree that employees should work from home at least two days a week?</w:t></w:r></w:p>';
+
+        $zip->addFromString('word/document.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><w:body>'.$bodyXml.'</w:body></w:document>');
+        $zip->close();
+
+        $uploadedFile = new UploadedFile($docxPath, 'S.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', null, true);
+
+        $previewResp = $this->actingAs($admin)->post(route('admin.questions.import.preview'), [
+            'import_file' => $uploadedFile,
+            'import_scope' => 'AUTO',
+            'publish_status' => 'live',
+        ]);
+        $previewResp->assertRedirect();
+        $batchId = basename((string) $previewResp->headers->get('Location'));
+
+        $staging = app(DocxToStandardXmlService::class)->getStagingPayload($batchId);
+        $this->assertIsArray($staging);
+        $this->assertSame(11, $staging['summary']['total_questions']);
+        $this->assertSame(11, $staging['summary']['valid_questions']);
+        $this->assertSame(0, $staging['summary']['error_questions']);
+
+        $allSeqs = [];
+        $spkT2Media = [];
+        $spkT4Set = null;
+        foreach ($staging['sets'] as $set) {
+            foreach ($set['questions'] as $q) {
+                $allSeqs[] = (int) $q['seq'];
+                if ($set['part'] === 'SPK_T2') {
+                    $spkT2Media[(int) $q['seq']] = $q['media_url'] ?: $set['media_url'];
+                }
+            }
+            if ($set['part'] === 'SPK_T4') {
+                $spkT4Set = $set;
+            }
+        }
+
+        $this->assertSame([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], $allSeqs);
+        $this->assertArrayHasKey(3, $spkT2Media);
+        $this->assertArrayHasKey(4, $spkT2Media);
+        $this->assertNotEmpty($spkT2Media[3]);
+        $this->assertNotEmpty($spkT2Media[4]);
+        $this->assertNotSame($spkT2Media[3], $spkT2Media[4]);
+
+        $this->assertNotNull($spkT4Set);
+        $this->assertCount(3, $spkT4Set['questions']);
+        $this->assertStringContainsString('Job Seeking Seminar', (string) ($spkT4Set['stimulus'] ?? ''));
+
+        $reviewPage = $this->actingAs($admin)->get(route('admin.questions.import.review', ['batchId' => $batchId]));
+        $reviewPage->assertOk();
+        $reviewPage->assertSee('Xem trước');
+        $reviewPage->assertSee('modal-preview-question');
+
+        @unlink($docxPath);
+    }
+
+    public function test_combined_speaking_and_writing_docx_parses_all_19_questions_with_5_writing_t1_images_and_writing_t3(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $spkSkill = Skill::create(['skill_id' => 3, 'code' => 'SPK', 'skill_name' => 'Speaking']);
+        $wriSkill = Skill::create(['skill_id' => 4, 'code' => 'WRI', 'skill_name' => 'Writing']);
+
+        ExamSection::create(['section_id' => 11, 'skill_id' => $spkSkill->skill_id, 'code' => 'SPK_T1', 'name' => 'Read a text aloud', 'sequence_no' => 1]);
+        ExamSection::create(['section_id' => 12, 'skill_id' => $spkSkill->skill_id, 'code' => 'SPK_T2', 'name' => 'Describe a picture', 'sequence_no' => 2]);
+        ExamSection::create(['section_id' => 13, 'skill_id' => $spkSkill->skill_id, 'code' => 'SPK_T3', 'name' => 'Respond to questions', 'sequence_no' => 3]);
+        ExamSection::create(['section_id' => 14, 'skill_id' => $spkSkill->skill_id, 'code' => 'SPK_T4', 'name' => 'Respond using information', 'sequence_no' => 4]);
+        ExamSection::create(['section_id' => 15, 'skill_id' => $spkSkill->skill_id, 'code' => 'SPK_T5', 'name' => 'Express an opinion', 'sequence_no' => 5]);
+        ExamSection::create(['section_id' => 16, 'skill_id' => $wriSkill->skill_id, 'code' => 'WRITING_T1', 'name' => 'Write a sentence', 'sequence_no' => 6]);
+        ExamSection::create(['section_id' => 17, 'skill_id' => $wriSkill->skill_id, 'code' => 'WRITING_T2', 'name' => 'Respond to a written request', 'sequence_no' => 7]);
+        ExamSection::create(['section_id' => 18, 'skill_id' => $wriSkill->skill_id, 'code' => 'WRITING_T3', 'name' => 'Opinion essay', 'sequence_no' => 8]);
+
+        $png1 = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==');
+        $png2 = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAEklEQVR42mNk+M9QzwAEjDAGACCKAoFF73uPAAAAAElFTkSuQmCC');
+
+        $docxPath = tempnam(sys_get_temp_dir(), 'studyprep_sw_').'.docx';
+        $zip = new \ZipArchive;
+        $zip->open($docxPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+        $zip->addFromString('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+        $zip->addFromString('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+
+        $rels = '';
+        for ($i = 1; $i <= 7; $i++) {
+            $rels .= '<Relationship Id="rIdImg'.$i.'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image'.$i.'.png"/>';
+            $zip->addFromString("word/media/image{$i}.png", $i % 2 === 0 ? $png2 : $png1);
+        }
+        $zip->addFromString('word/_rels/document.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'.$rels.'</Relationships>');
+
+        $bodyXml = ''
+            // SPEAKING (11 câu)
+            .'<w:p><w:r><w:t>SPEAKING</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>1. Read a text aloud (câu 1, 2)</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Question 1: Welcome to the City Art Museum audio tour.</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Question 2: Please check your coats and bags at the front desk.</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>2. Describe a picture (câu 3, 4)</w:t></w:r></w:p>'
+            .'<w:tbl>'
+            .'<w:tr><w:tc><w:p><w:r><w:t>Câu 3</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Câu 4</w:t></w:r></w:p></w:tc></w:tr>'
+            .'<w:tr><w:tc><w:p><w:r><w:drawing><a:blip r:embed="rIdImg1"/></w:drawing></w:r></w:p></w:tc><w:tc><w:p><w:r><w:drawing><a:blip r:embed="rIdImg2"/></w:drawing></w:r></w:p></w:tc></w:tr>'
+            .'</w:tbl>'
+            .'<w:p><w:r><w:t>3. Respond to questions (câu 5, 6, 7)</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Question 5: Where do you usually buy groceries?</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Question 6: How do you decide which products to purchase?</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Question 7: Do you prefer shopping alone or with friends?</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>4. Respond to questions using information (câu 8, 9, 10)</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Hướng dẫn: Đọc thông tin hội thảo trong 45 giây.</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Annual Marketing Workshop - October 20</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>10:00 AM - Social Media Strategy by Sarah Lin</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>When is the marketing workshop taking place?</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Who is leading the Social Media Strategy session?</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Please tell me the exact time the morning session begins.</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>5. Express an opinion (câu 11)</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Question 11: Should companies offer flexible working hours to all employees?</w:t></w:r></w:p>'
+            // WRITING (8 câu)
+            .'<w:p><w:r><w:t>WRITING</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Writing Task 1: Write a sentence based on a picture</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Question 1: man / laptop</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:drawing><a:blip r:embed="rIdImg3"/></w:drawing></w:r></w:p>'
+            .'<w:p><w:r><w:t>Question 2: woman / coffee</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:drawing><a:blip r:embed="rIdImg4"/></w:drawing></w:r></w:p>'
+            .'<w:p><w:r><w:t>Question 3: fall / block</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Question 4: cashier / items</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:drawing><a:blip r:embed="rIdImg5"/></w:drawing></w:r></w:p>'
+            .'<w:p><w:r><w:drawing><a:blip r:embed="rIdImg6"/></w:drawing></w:r></w:p>'
+            .'<w:p><w:r><w:t>Question 5: workers / meeting</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:drawing><a:blip r:embed="rIdImg7"/></w:drawing></w:r></w:p>'
+            .'<w:p><w:r><w:t>Writing Task 2: Respond to a written request</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Question 6: Respond to the e-mail as if you are a customer service manager.</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>From: Alice Brown</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Subject: Order #101 Delay</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Dear Support, my order #101 has not arrived yet.</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Question 7: Respond to the e-mail as if you are an HR coordinator.</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>From: David Chen</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Subject: Interview Schedule</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Hello, could we reschedule my interview to Friday?</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Question 8: Opinion Essay</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Directions: In this part of the test, you will write an essay in response to a question.</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Some people prefer to work for a large company, while others prefer to work for a small business. Which do you prefer and why?</w:t></w:r></w:p>';
+
+        $zip->addFromString('word/document.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><w:body>'.$bodyXml.'</w:body></w:document>');
+        $zip->close();
+
+        $uploadedFile = new UploadedFile($docxPath, 'S+W.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', null, true);
+
+        $previewResp = $this->actingAs($admin)->post(route('admin.questions.import.preview'), [
+            'import_file' => $uploadedFile,
+            'import_scope' => 'AUTO',
+            'publish_status' => 'live',
+        ]);
+        $previewResp->assertRedirect();
+        $batchId = basename((string) $previewResp->headers->get('Location'));
+
+        $staging = app(DocxToStandardXmlService::class)->getStagingPayload($batchId);
+        $this->assertIsArray($staging);
+        $this->assertSame(19, $staging['summary']['total_questions']);
+        $this->assertSame(19, $staging['summary']['valid_questions']);
+        $this->assertSame(0, $staging['summary']['error_questions']);
+
+        $partCounts = [];
+        $writingT1Images = [];
+        $writingT2Stimuli = [];
+        $writingT3Contents = [];
+
+        foreach ($staging['sets'] as $set) {
+            $part = $set['part'];
+            $partCounts[$part] = ($partCounts[$part] ?? 0) + count($set['questions']);
+            if ($part === 'WRITING_T1') {
+                foreach ($set['questions'] as $q) {
+                    $writingT1Images[] = $q['media_url'] ?: $set['media_url'];
+                }
+            } elseif ($part === 'WRITING_T2') {
+                foreach ($set['questions'] as $q) {
+                    $writingT2Stimuli[(int) $q['seq']] = (string) ($set['stimulus'] ?? '');
+                }
+            } elseif ($part === 'WRITING_T3') {
+                foreach ($set['questions'] as $q) {
+                    $writingT3Contents[] = $q['content'];
+                }
+            }
+        }
+
+        $this->assertSame(3, $partCounts['SPK_T4'] ?? 0);
+        $this->assertSame(5, $partCounts['WRITING_T1'] ?? 0);
+        $this->assertSame(2, $partCounts['WRITING_T2'] ?? 0);
+        $this->assertSame(1, $partCounts['WRITING_T3'] ?? 0);
+
+        $this->assertCount(5, array_filter($writingT1Images));
+        $this->assertSame(5, count(array_unique($writingT1Images)));
+
+        $this->assertStringContainsString('Interview Schedule', $writingT2Stimuli[7] ?? '');
+        $this->assertStringNotContainsString('Order #101 Delay', $writingT2Stimuli[7] ?? '');
+
+        $this->assertNotEmpty($writingT3Contents);
+        $this->assertStringContainsString('large company', $writingT3Contents[0]);
+
+        @unlink($docxPath);
+    }
+
+    public function test_full_lr_and_full_sw_import_scopes_render_in_ui_and_parse_accurately(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $bulkPage = $this->actingAs($admin)->get(route('admin.questions.bulk-import'));
+        $bulkPage->assertOk();
+        $bulkPage->assertSee('FULL_LR');
+        $bulkPage->assertSee('FULL_SW');
+
+        $wordService = app(WordQuestionImportService::class);
+
+        // 1. Kiểm thử chế độ FULL_LR: Listening (1..100) tự chuyển sang Reading (101..200) và khóa không nhận nhầm Speaking/Writing
+        $lrParsed = $wordService->parseLines([
+            'Question 1: Look at the picture.',
+            '(A) A man is walking. *(B) A woman is reading. (C) They are sitting. (D) The room is empty.',
+            'Question 7: Where is the meeting room?',
+            '(A) On the second floor. (B) At 2 P.M. (C) Yes, I did.',
+            'Question 101: The manager ------- the report yesterday.',
+            '(A) submit *(B) submitted (C) submitting (D) submission',
+            'Question 147: What is the notice mainly about?',
+            '(A) Office relocation *(B) New parking rules (C) Holiday hours (D) Staff training',
+        ], 'FULL_LR');
+
+        $this->assertCount(4, $lrParsed);
+        $this->assertSame('PART1', $lrParsed[0]['part_code']);
+        $this->assertSame('PART2', $lrParsed[1]['part_code']);
+        $this->assertSame('PART5', $lrParsed[2]['part_code']);
+        $this->assertSame('PART7', $lrParsed[3]['part_code']);
+
+        // 2. Kiểm thử chế độ FULL_SW: Speaking (T1..T5) tự chuyển sang Writing khi gặp "Questions 1–5: Write a sentence based on a picture"
+        $swParsed = $wordService->parseLines([
+            'Question 1: Welcome to the city library audio guide.',
+            'Question 11: Do you agree or disagree that students should wear uniforms?',
+            'Questions 1–5: Write a sentence based on a picture',
+            'Question 1: woman / laptop',
+            'Question 6: Respond to the e-mail as if you are a travel agent.',
+            'From: John Doe',
+            'Subject: Flight Change',
+            'Question 8: Opinion Essay',
+            'Directions: Write an essay in response to the following question.',
+            'Some people prefer living in big cities while others prefer small towns. Which do you prefer?',
+        ], 'FULL_SW');
+
+        $this->assertCount(5, $swParsed);
+        $this->assertSame('SPK_T1', $swParsed[0]['part_code']);
+        $this->assertSame('SPK_T5', $swParsed[1]['part_code']);
+        $this->assertSame('WRITING_T1', $swParsed[2]['part_code']);
+        $this->assertSame('WRITING_T2', $swParsed[3]['part_code']);
+        $this->assertSame('WRITING_T3', $swParsed[4]['part_code']);
     }
 }

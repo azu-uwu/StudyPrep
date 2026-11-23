@@ -204,6 +204,9 @@ class TestController extends Controller
 
         if ($actionType === 'approve') {
             $msg = "Đã lưu và duyệt xuất bản chính thức đề thi \"{$testForm->title}\" ({$testForm->test_code}) lúc {$savedTime}!";
+
+            return redirect()->route('admin.tests.index')
+                ->with('success', $msg);
         } elseif ($partName) {
             $msg = "Đã lưu dữ liệu phần thi \"{$partName}\" của đề {$testForm->test_code} lúc {$savedTime}.";
         } else {

@@ -377,7 +377,7 @@ class TestControllerTest extends TestCase
         $saveResp = $this->actingAs($admin)->post(route('admin.tests.save', $testForm->test_form_id), [
             'action_type' => 'approve',
         ]);
-        $saveResp->assertRedirect(route('admin.tests.show', $testForm->test_form_id));
+        $saveResp->assertRedirect(route('admin.tests.index'));
 
         $detachResp = $this->actingAs($admin)->delete(route('admin.tests.questions.detach', [
             'id' => $testForm->test_form_id,
@@ -713,5 +713,95 @@ TXT;
                 'point' => 1.00,
             ]);
         }
+    }
+
+    public function test_spk_t2_questions_with_same_content_but_different_media_url_are_not_flagged_as_duplicates_and_exact_duplicates_are_cleaned_up(): void
+    {
+        $this->seedSectionsAndBlueprints();
+        $admin = User::factory()->admin()->create();
+        $service = app(TestFormService::class);
+
+        $testForm = $service->create([
+            'title' => 'Speaking Task 2 Fingerprint Test',
+            'exam_type' => TestForm::EXAM_TYPE_SPEAKING,
+        ]);
+
+        $spkT2SectionId = (int) ExamSection::where('code', 'SPK_T2')->value('section_id');
+        $prompt = 'Describe the picture on your screen in as much detail as you can.';
+
+        $set1Id = (int) DB::table('question_set')->insertGetId([
+            'title' => 'SPK_T2 Image 1',
+            'media_url' => '/storage/import/image1.png',
+        ]);
+        $set2Id = (int) DB::table('question_set')->insertGetId([
+            'title' => 'SPK_T2 Image 2',
+            'media_url' => '/storage/import/image2.png',
+        ]);
+
+        $q1Id = (int) DB::table('questions')->insertGetId([
+            'section_id' => $spkT2SectionId,
+            'question_set_id' => $set1Id,
+            'question_type_id' => 1,
+            'content' => $prompt,
+            'difficulty' => 'MEDIUM',
+            'points' => 1.00,
+            'status' => Question::STATUS_ACTIVE,
+            'created_at' => now(),
+        ]);
+        $q2Id = (int) DB::table('questions')->insertGetId([
+            'section_id' => $spkT2SectionId,
+            'question_set_id' => $set2Id,
+            'question_type_id' => 1,
+            'content' => $prompt,
+            'difficulty' => 'MEDIUM',
+            'points' => 1.00,
+            'status' => Question::STATUS_ACTIVE,
+            'created_at' => now(),
+        ]);
+
+        DB::table('test_form_question')->insert([
+            ['test_form_id' => $testForm->test_form_id, 'question_id' => $q1Id, 'sequence_no' => 1, 'point' => 1.00],
+            ['test_form_id' => $testForm->test_form_id, 'question_id' => $q2Id, 'sequence_no' => 2, 'point' => 1.00],
+        ]);
+
+        // 1. Hai câu SPK_T2 cùng content nhưng khác media_url => 0 cảnh báo trùng lặp, cleanup không xóa nhầm
+        $detail = $service->detail($testForm);
+        $this->assertSame([], $detail['quality']['duplicate_ids']);
+
+        $cleanupNoop = $this->actingAs($admin)->post(route('admin.tests.cleanup-issues', $testForm->test_form_id));
+        $cleanupNoop->assertRedirect(route('admin.tests.show', $testForm->test_form_id));
+        $this->assertSame(2, $testForm->questions()->count());
+
+        // 2. Thêm câu thứ 3 giống hệt cả content lẫn media_url (/storage/import/image1.png) => bắt trùng chuẩn xác & xóa đúng 1 câu
+        $set1DupId = (int) DB::table('question_set')->insertGetId([
+            'title' => 'SPK_T2 Image 1 Duplicate',
+            'media_url' => '/storage/import/image1.png',
+        ]);
+        $q3DupId = (int) DB::table('questions')->insertGetId([
+            'section_id' => $spkT2SectionId,
+            'question_set_id' => $set1DupId,
+            'question_type_id' => 1,
+            'content' => $prompt,
+            'difficulty' => 'MEDIUM',
+            'points' => 1.00,
+            'status' => Question::STATUS_ACTIVE,
+            'created_at' => now(),
+        ]);
+        DB::table('test_form_question')->insert([
+            'test_form_id' => $testForm->test_form_id,
+            'question_id' => $q3DupId,
+            'sequence_no' => 3,
+            'point' => 1.00,
+        ]);
+
+        $detailWithDup = $service->detail($testForm);
+        $this->assertSame([$q3DupId], $detailWithDup['quality']['duplicate_ids']);
+
+        $cleanupResp = $this->actingAs($admin)->post(route('admin.tests.cleanup-issues', $testForm->test_form_id));
+        $cleanupResp->assertRedirect(route('admin.tests.show', $testForm->test_form_id));
+        $this->assertSame(2, $testForm->questions()->count());
+        $this->assertDatabaseHas('test_form_question', ['test_form_id' => $testForm->test_form_id, 'question_id' => $q1Id]);
+        $this->assertDatabaseHas('test_form_question', ['test_form_id' => $testForm->test_form_id, 'question_id' => $q2Id]);
+        $this->assertDatabaseMissing('test_form_question', ['test_form_id' => $testForm->test_form_id, 'question_id' => $q3DupId]);
     }
 }

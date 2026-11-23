@@ -123,6 +123,9 @@ class WordQuestionImportService
             $publicTargetDir = public_path('storage/'.$batchDir);
 
             foreach ($relsDom->getElementsByTagName('Relationship') as $relNode) {
+                if (! $relNode instanceof \DOMElement) {
+                    continue;
+                }
                 $rId = $relNode->getAttribute('Id');
                 $target = $relNode->getAttribute('Target');
                 if ($rId === '' || ! str_contains(strtolower($target), 'media/')) {
@@ -251,7 +254,7 @@ class WordQuestionImportService
                     }
                 } elseif ($bodyNode->nodeName === 'w:tbl') {
                     $rows = $xpath->query('./w:tr', $bodyNode);
-                    if ($rows === false) {
+                    if ($rows->length === 0) {
                         continue;
                     }
 
@@ -261,7 +264,7 @@ class WordQuestionImportService
 
                     foreach ($rows as $rowNode) {
                         $cells = $xpath->query('./w:tc', $rowNode);
-                        if ($cells === false) {
+                        if ($cells->length === 0) {
                             continue;
                         }
                         $rowCells = [];
@@ -452,9 +455,9 @@ class WordQuestionImportService
         $scope = strtoupper(trim($importScope)) ?: 'AUTO';
         $forcedPart = in_array($scope, self::FIXED_PART_CODES, true) ? $scope : null;
         $activeSkill = match ($scope) {
-            'LISTENING' => 'listening',
+            'LISTENING', 'FULL_LR' => 'listening',
             'READING' => 'reading',
-            'SPEAKING' => 'speaking',
+            'SPEAKING', 'FULL_SW' => 'speaking',
             'WRITING' => 'writing',
             default => $forcedPart !== null ? $this->skillOfPartCode($forcedPart) : 'auto',
         };
@@ -495,7 +498,7 @@ class WordQuestionImportService
         };
 
         $flushQuestion = function () use (&$questions, &$currentQuestion): void {
-            if ($currentQuestion !== null && (trim((string) $currentQuestion['content']) !== '' || ! empty($currentQuestion['image_url']))) {
+            if ($currentQuestion !== null && (trim((string) $currentQuestion['content']) !== '' || ! empty($currentQuestion['image_url']) || ! empty($currentQuestion['options']))) {
                 $pCode = strtoupper((string) ($currentQuestion['part_code'] ?? 'PART5'));
                 $isProductive = in_array($pCode, self::PRODUCTIVE_PART_CODES, true);
 
@@ -516,7 +519,23 @@ class WordQuestionImportService
                     $currentQuestion['explanation'] = $this->appendExplanation($currentQuestion['explanation'] ?? null, $formattedVn);
                 }
 
-                unset($currentQuestion['_vn_lines'], $currentQuestion['_vn_options'], $currentQuestion['_in_vn_block'], $currentQuestion['_in_explanation']);
+                if (! empty($currentQuestion['explanation'])) {
+                    $currentQuestion['explanation'] = $this->cleanExplanationText((string) $currentQuestion['explanation']);
+                }
+
+                if (! $isProductive && empty($currentQuestion['_has_explicit_answer'])) {
+                    $inferred = $this->inferCorrectOptionFromExplanation($currentQuestion);
+                    if ($inferred !== null) {
+                        $currentQuestion['correct'] = $inferred;
+                    }
+                }
+
+                if ($pCode === 'PART6' && trim((string) ($currentQuestion['content'] ?? '')) === '') {
+                    $qNum = (int) ($currentQuestion['question_number'] ?? 131);
+                    $currentQuestion['content'] = "Blank {$qNum} (Complete the text)";
+                }
+
+                unset($currentQuestion['_vn_lines'], $currentQuestion['_vn_options'], $currentQuestion['_in_vn_block'], $currentQuestion['_in_explanation'], $currentQuestion['_has_explicit_answer']);
 
                 $questions[] = $currentQuestion;
             }
@@ -525,7 +544,17 @@ class WordQuestionImportService
 
         foreach ($lines as $rawLine) {
             $line = trim(preg_replace('/^\xEF\xBB\xBF/', '', (string) $rawLine));
-            if ($line === '' || str_starts_with($line, '//') || preg_match('/^={3,}$/', $line) === 1) {
+            if (
+                $line === ''
+                || str_starts_with($line, '//')
+                || preg_match('/^={3,}$/', $line) === 1
+                || preg_match('/^\d{1,3}\s*\/\s*\d{1,3}$/', $line) === 1
+                || preg_match('/^Audio$/iu', $line) === 1
+                || preg_match('/^(?:Audio\s+)?\d{2}:\d{2}\s*\/\s*\d{2}:\d{2}$/iu', $line) === 1
+                || preg_match('/^(?:▶|►|⏸|⏹|🔊)$/u', $line) === 1
+                || preg_match('/^Tốc\s*độ\s*:\s*[\d\.]+x$/iu', $line) === 1
+                || preg_match('/^Xem\s+đáp\s+án$/iu', $line) === 1
+            ) {
                 continue;
             }
 
@@ -595,9 +624,9 @@ class WordQuestionImportService
                     $currentPart = 'SPK_T2';
                     $hasExplicitPartHeader = true;
                 }
-                $autoSpkCounter++;
+                $autoSpkCounter = $autoSpkCounter < 3 ? 3 : ($autoSpkCounter + 1);
                 $currentQuestion = [
-                    'question_number' => max(3, $autoSpkCounter),
+                    'question_number' => $autoSpkCounter,
                     'part_code' => $forcedPart ?? 'SPK_T2',
                     'group_key' => null,
                     'group_title' => null,
@@ -629,7 +658,17 @@ class WordQuestionImportService
                     && empty($currentQuestion['_in_explanation']);
 
                 if ($canAttachToCurrent) {
-                    $currentQuestion['image_url'] = $url;
+                    $lastIdx = count($questions) - 1;
+                    if (
+                        $currentQuestion['part_code'] === 'WRITING_T1'
+                        && $lastIdx >= 0
+                        && ($questions[$lastIdx]['part_code'] ?? '') === 'WRITING_T1'
+                        && empty($questions[$lastIdx]['image_url'])
+                    ) {
+                        $questions[$lastIdx]['image_url'] = $url;
+                    } else {
+                        $currentQuestion['image_url'] = $url;
+                    }
                 } else {
                     if ($currentGroupKey !== null && $currentGroupImageUrl === null && $currentQuestion === null) {
                         $currentGroupImageUrl = $url;
@@ -654,7 +693,7 @@ class WordQuestionImportService
 
             // 1. Nhận diện tiêu đề Kỹ năng / Part / Task
             if ($forcedPart === null) {
-                $detectedSection = $this->detectPartOrSkillHeader($line, $activeSkill);
+                $detectedSection = $this->detectPartOrSkillHeader($line, $activeSkill, $scope);
                 if ($detectedSection !== null) {
                     $flushQuestion();
                     $capturingStimulus = false;
@@ -688,6 +727,11 @@ class WordQuestionImportService
                 $inDirectionsBlock = true;
                 $capturingStimulus = false;
 
+                continue;
+            }
+
+            // Bỏ qua dòng tiêu đề bảng 2 cột kiểu "Câu 3 | Câu 4" hoặc "Question 3 | Question 4"
+            if (preg_match('/^(?:Câu|Question|Questions?)\s*\d+\s*\|\s*(?:Câu|Question|Questions?)\s*\d+\s*$/iu', $line)) {
                 continue;
             }
 
@@ -741,13 +785,30 @@ class WordQuestionImportService
                 continue;
             }
 
-            // 2. Nhận diện tiêu đề nhóm câu hỏi ("Questions 131-134...", "Questions 147-148 refer to...")
-            if (preg_match('/^(?:Questions|Câu)\s+(\d{1,3})\s*[\-\–]\s*(\d{1,3})(?:\s+(?:refer\s+to|dựa\s+vào|liên\s+quan|sau\s+đây).*|:.*)?$/iu', $line, $m)) {
+            // 2. Nhận diện tiêu đề nhóm câu hỏi ("Questions 131-134...", "Q131-134", "Q149-150", "Q101-130")
+            if (preg_match('/^(?:Questions|Câu|Q)\s*(\d{1,3})\s*[\-\–]\s*(\d{1,3})(?:\s+(?:refer\s+to|dựa\s+vào|liên\s+quan|sau\s+đây).*|:.*)?$/iu', $line, $m)) {
                 $flushQuestion();
                 $inReadingTranscriptBlock = false;
                 $inDirectionsBlock = false;
                 $rangeStart = (int) $m[1];
                 $rangeEnd = (int) $m[2];
+
+                // Dải Q101-130 là tiêu đề Part 5 câu đơn (không phải nhóm stimulus)
+                if ($rangeStart === 101 && $rangeEnd === 130) {
+                    if ($forcedPart === null) {
+                        $activeSkill = 'reading';
+                        $currentPart = 'PART5';
+                        $hasExplicitPartHeader = true;
+                    }
+                    $currentGroupKey = null;
+                    $currentGroupTitle = null;
+                    $currentGroupRangeStart = null;
+                    $currentGroupRangeEnd = null;
+                    $currentStimulus = null;
+                    $capturingStimulus = false;
+
+                    continue;
+                }
 
                 if ($forcedPart === null && $activeSkill === 'speaking') {
                     $currentPart = $this->inferSpeakingPartByNumber($rangeStart);
@@ -755,7 +816,8 @@ class WordQuestionImportService
                 } elseif ($forcedPart === null && $activeSkill === 'writing') {
                     $currentPart = $this->inferWritingPartByNumber($rangeStart);
                     $hasExplicitPartHeader = true;
-                } elseif ($forcedPart === null && $activeSkill === 'reading') {
+                } elseif ($forcedPart === null && ($activeSkill === 'reading' || $rangeStart >= 131)) {
+                    $activeSkill = 'reading';
                     if ($rangeStart >= 131 && $rangeStart <= 146) {
                         $currentPart = 'PART6';
                     } elseif ($rangeStart >= 147) {
@@ -824,6 +886,7 @@ class WordQuestionImportService
             // 3. Nhận diện đáp án đúng: "Đáp án: B", "Answer: B", "[ANS: B]"
             if ($currentQuestion !== null && preg_match('/^(?:Đáp\s*án(?:\s*đúng)?|Đ\/A|Answer|Key|Correct|\[ANS)\s*[:\-]\s*\(?([A-D])\)?\]?/iu', $line, $m)) {
                 $currentQuestion['correct'] = strtoupper($m[1]);
+                $currentQuestion['_has_explicit_answer'] = true;
 
                 continue;
             }
@@ -986,6 +1049,7 @@ class WordQuestionImportService
                     continue;
                 }
 
+                $wasWritingT2Question = $currentQuestion !== null && ($currentQuestion['part_code'] ?? '') === 'WRITING_T2';
                 $flushQuestion();
                 $capturingStimulus = false;
                 $inDirectionsBlock = false;
@@ -1006,8 +1070,10 @@ class WordQuestionImportService
                 }
                 $pendingAudioUrl = null;
 
-                // Nếu câu mới nằm ngoài phạm vi range nhóm cũ, reset ngữ cảnh nhóm cũ
-                if ($currentGroupRangeStart !== null && $currentGroupRangeEnd !== null && ($qNum < $currentGroupRangeStart || $qNum > $currentGroupRangeEnd)) {
+                // Nếu câu mới nằm ngoài phạm vi range nhóm cũ, hoặc chuyển sang câu mới trong WRITING_T2 (Question 6 -> Question 7), reset ngữ cảnh cũ
+                $shouldResetGroup = ($currentGroupRangeStart !== null && $currentGroupRangeEnd !== null && ($qNum < $currentGroupRangeStart || $qNum > $currentGroupRangeEnd))
+                    || $wasWritingT2Question;
+                if ($shouldResetGroup) {
                     $currentGroupKey = null;
                     $currentGroupTitle = null;
                     $currentGroupRangeStart = null;
@@ -1019,6 +1085,9 @@ class WordQuestionImportService
                 }
 
                 $inferredPart = $this->resolvePartCodeForQuestion($qNum, $currentPart, $activeSkill, $forcedPart, $hasExplicitPartHeader);
+                if ($scope === 'FULL_LR' && $qNum >= 101 && $qNum <= 200) {
+                    $activeSkill = 'reading';
+                }
                 $isListening = in_array($inferredPart, ['PART1', 'PART2', 'PART3', 'PART4'], true);
                 $isProductive = in_array($inferredPart, self::PRODUCTIVE_PART_CODES, true);
                 $effectiveImageUrl = $inlineImageUrl ?: $currentGroupImageUrl;
@@ -1050,13 +1119,34 @@ class WordQuestionImportService
                 continue;
             }
 
-            // 8b. Speaking Task 4 (SPK_T4 - Câu 8, 9, 10 không đánh số): 3 câu hỏi tiếng Anh liên tiếp kết thúc bằng dấu ?
+            // Thoát khối Directions/Hướng dẫn chung khi gặp dòng nội dung tiếng Anh
+            if (
+                $inDirectionsBlock
+                && $currentQuestion === null
+                && ! $this->isVietnameseText($line)
+                && ! preg_match('/^Directions?\s*[:\-]/i', $line)
+            ) {
+                $inDirectionsBlock = false;
+                if (in_array($currentPart, ['SPK_T3', 'SPK_T4', 'WRITING_T2'], true)) {
+                    $capturingStimulus = true;
+                    $currentStimulus = ($currentStimulus === null || $currentStimulus === '')
+                        ? $line
+                        : ($currentStimulus."\n".$line);
+
+                    continue;
+                }
+            }
+
+            // 8b. Speaking Task 4 (SPK_T4 - Câu 8, 9, 10 không đánh số): các câu hỏi tiếng Anh độc lập
             if (
                 $currentPart === 'SPK_T4'
                 && ! $inDirectionsBlock
                 && ($currentStimulus !== null || $currentGroupImageUrl !== null || ! empty($pendingImageQueue) || $currentQuestion !== null)
                 && ! $this->isVietnameseText($line)
-                && preg_match('/\?\s*$/u', $line) === 1
+                && (
+                    preg_match('/\?\s*$/u', $line) === 1
+                    || preg_match('/^(?:Please\s+tell\s+me|Could\s+you|Can\s+you|Would\s+you|I\s+would\s+like\s+to\s+know)/i', $line) === 1
+                )
                 && ($currentQuestion === null || empty($currentQuestion['_in_explanation']))
             ) {
                 $flushQuestion();
@@ -1885,7 +1975,28 @@ class WordQuestionImportService
      *
      * @return array{skill: ?string, part_code: ?string}|null
      */
-    private function detectPartOrSkillHeader(string $line, string $activeSkill): ?array
+    private function detectPartOrSkillHeader(string $line, string $activeSkill, string $importScope = 'AUTO'): ?array
+    {
+        $detected = $this->detectRawPartOrSkillHeader($line, $activeSkill);
+        if ($detected === null) {
+            return null;
+        }
+
+        if ($importScope === 'FULL_LR' && ! in_array($detected['skill'], ['listening', 'reading'], true)) {
+            return null;
+        }
+
+        if ($importScope === 'FULL_SW' && ! in_array($detected['skill'], ['speaking', 'writing'], true)) {
+            return null;
+        }
+
+        return $detected;
+    }
+
+    /**
+     * @return array{skill: string|null, part_code: string|null}|null
+     */
+    private function detectRawPartOrSkillHeader(string $line, string $activeSkill): ?array
     {
         $clean = trim($line, " \t[]=-_*#");
 
@@ -1900,7 +2011,7 @@ class WordQuestionImportService
         }
 
         // 1. Tiêu đề Part 1..7 rõ ràng
-        if (preg_match('/^(?:(?:Listening|Reading)\s*[\-\:\•]\s*)?Part\s*([1-7])(?:\s*[:\-\(].*)?$/iu', $clean, $m)) {
+        if (preg_match('/^(?:(?:Listening|Reading)\s*[\-\:\•]\s*)?Part\s*([1-7])(?:\s*[:;\-\(].*)?$/iu', $clean, $m)) {
             $num = (int) $m[1];
 
             return [
@@ -2008,12 +2119,34 @@ class WordQuestionImportService
             return $forcedPart;
         }
 
+        // Ép chuẩn dải số câu Reading TOEIC (101–200) kể cả khi file ghi nhầm PART 1 / PART 2 / PART 3
+        if ($qNum >= 101 && $qNum <= 200 && in_array($activeSkill, ['reading', 'auto', 'listening'], true)) {
+            if ($qNum <= 130) {
+                return 'PART5';
+            }
+            if ($qNum <= 146) {
+                return 'PART6';
+            }
+
+            return 'PART7';
+        }
+
         if ($activeSkill === 'speaking') {
             return $hasExplicitPartHeader ? $currentPart : $this->inferSpeakingPartByNumber($qNum);
         }
 
         if ($activeSkill === 'writing') {
-            return $hasExplicitPartHeader ? $currentPart : $this->inferWritingPartByNumber($qNum);
+            if (! $hasExplicitPartHeader) {
+                return $this->inferWritingPartByNumber($qNum);
+            }
+            if ($currentPart === 'WRITING_T1' && $qNum >= 6 && $qNum <= 7) {
+                return 'WRITING_T2';
+            }
+            if (in_array($currentPart, ['WRITING_T1', 'WRITING_T2'], true) && $qNum === 8) {
+                return 'WRITING_T3';
+            }
+
+            return $currentPart;
         }
 
         if ($activeSkill === 'listening') {
@@ -2175,8 +2308,8 @@ class WordQuestionImportService
 
     private function appendExplanation(?string $existing, string $addition): ?string
     {
-        $a = trim((string) $existing);
-        $b = trim($addition);
+        $a = $this->cleanExplanationText((string) $existing);
+        $b = $this->cleanExplanationText($addition);
         if ($a === '' && $b === '') {
             return null;
         }
@@ -2188,6 +2321,108 @@ class WordQuestionImportService
         }
 
         return $a."\n\n".$b;
+    }
+
+    /**
+     * Làm sạch ký tự phân cách bảng `|` và các chữ giao diện web thừa trong phần giải thích.
+     */
+    private function cleanExplanationText(string $text): string
+    {
+        $clean = str_replace(['Giải thích chi tiết ▲', 'Giải thích chi tiết ▼', 'Giải thích chi tiết', 'Xem đáp án'], '', $text);
+        $lines = preg_split('/\R/u', $clean) ?: [];
+        $result = [];
+
+        foreach ($lines as $raw) {
+            $trimmed = trim($raw);
+            if ($trimmed === '') {
+                continue;
+            }
+
+            if (str_contains($trimmed, '|')) {
+                $segments = array_values(array_filter(
+                    array_map(static fn (string $s): string => trim($s), explode('|', $trimmed)),
+                    static fn (string $s): bool => $s !== ''
+                ));
+                foreach ($segments as $seg) {
+                    $result[] = $seg;
+                }
+            } else {
+                $result[] = $trimmed;
+            }
+        }
+
+        return implode("\n", $result);
+    }
+
+    /**
+     * Suy luận đáp án đúng A/B/C/D từ nội dung Giải thích khi file gốc không ghi dòng "Đáp án: X".
+     *
+     * @param  array<string, mixed>  $question
+     */
+    private function inferCorrectOptionFromExplanation(array $question): ?string
+    {
+        $exp = trim((string) ($question['explanation'] ?? ''));
+        $options = is_array($question['options'] ?? null) ? $question['options'] : [];
+        if ($exp === '' || empty($options)) {
+            return null;
+        }
+
+        // 1. Dấu hiệu rõ ràng trong giải thích: "Đáp án đúng: A", "Chọn đáp án C", "✅", "→ A"
+        if (preg_match('/(?:Đáp\s*án(?:\s*đúng)?|Chọn(?:\s*đáp\s*án)?|Answer)\s*[:\-]?\s*\(?([A-D])\)?(?:\b|[\.\s✅])/iu', $exp, $m)) {
+            return strtoupper($m[1]);
+        }
+        if (preg_match('/\(?([A-D])\)?[^\n]{0,80}✅/u', $exp, $m) || preg_match('/✅[^\n]{0,20}\(?([A-D])\)?/u', $exp, $m)) {
+            return strtoupper($m[1]);
+        }
+        if (preg_match('/(?:→|➡)\s*(?:Đáp\s*án(?:\s*đúng)?\s*[:\-]?\s*)?\(?([A-D])\)?\b/iu', $exp, $m)) {
+            return strtoupper($m[1]);
+        }
+
+        // 2. Khớp nguyên văn phương án sau dấu "=" (phổ biến ở Part 7: "= Show an original store receipt")
+        $expLower = mb_strtolower((string) preg_replace('/\s+/u', ' ', $exp));
+        foreach ($options as $letter => $optContent) {
+            $optNorm = mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', (string) $optContent)));
+            if (mb_strlen($optNorm) >= 4 && preg_match('/=\s*'.preg_quote($optNorm, '/').'/u', $expLower) === 1) {
+                return strtoupper((string) $letter);
+            }
+        }
+
+        // 3. Part 5/6: Khớp từ khóa trước/sau chỗ trống (------- hoặc [131] hoặc 131) với câu ví dụ đầy đủ trong giải thích
+        $stem = (string) ($question['content'] ?? '');
+        $stimulus = (string) ($question['stimulus_text'] ?? '');
+        $contextSource = $stem !== '' ? $stem : $stimulus;
+        $qNum = (int) ($question['question_number'] ?? 0);
+
+        if (preg_match('/(?:([A-Za-z0-9\-\'’]+)\s+)?(?:-{3,}(?:\s*\[?'.$qNum.'\]?)?|\[?'.$qNum.'\]?)(?:\s+([A-Za-z0-9\-\'’]+))?/u', $contextSource, $bm)) {
+            $before = trim((string) ($bm[1] ?? ''));
+            $after = trim((string) ($bm[2] ?? ''));
+            if ($before !== '' || $after !== '') {
+                foreach ($options as $letter => $optContent) {
+                    $optClean = trim((string) $optContent);
+                    if ($optClean === '') {
+                        continue;
+                    }
+                    $phrase = trim(($before !== '' ? $before.' ' : '').$optClean.($after !== '' ? ' '.$after : ''));
+                    if (mb_strlen($phrase) >= 5 && stripos($exp, $phrase) !== false) {
+                        return strtoupper((string) $letter);
+                    }
+                }
+            }
+        }
+
+        // 4. Fallback: Phương án có độ dài >= 6 ký tự xuất hiện nguyên văn trong dòng giải thích đầu tiên
+        $firstExpLine = trim(explode("\n", $exp)[0]);
+        if (preg_match('/^[A-D]\.\s/u', $firstExpLine) !== 1) {
+            $firstLower = mb_strtolower((string) preg_replace('/\s+/u', ' ', $firstExpLine));
+            foreach ($options as $letter => $optContent) {
+                $optNorm = mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', (string) $optContent)));
+                if (mb_strlen($optNorm) >= 6 && str_contains($firstLower, $optNorm)) {
+                    return strtoupper((string) $letter);
+                }
+            }
+        }
+
+        return null;
     }
 
     private function mentionsVisualOrGraphic(string $text): bool
@@ -2213,7 +2448,7 @@ class WordQuestionImportService
      * @param  list<string>  $lines
      * @return list<array<string, mixed>>
      */
-    private function parseFreeformLines(array $lines, string $importScope = 'AUTO'): array
+    public function parseFreeformLines(array $lines, string $importScope = 'AUTO'): array
     {
         $questions = [];
         $forcedPart = in_array($importScope, self::FIXED_PART_CODES, true) ? $importScope : null;
