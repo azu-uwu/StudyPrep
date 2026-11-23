@@ -521,3 +521,12 @@ ALTER TABLE topics
 MODIFY COLUMN user_id BIGINT NULL DEFAULT NULL;
 
 -- update 4, sửa role mặ định user là student
+
+-- update 5 test_form_id cho phép null để khi luyện tập không cần lấy câu hỏi trong đề
+ALTER TABLE attempts
+MODIFY COLUMN test_form_id BIGINT NULL DEFAULT NULL;
+
+-- lưu thứ tự câu hỏi để tìm xem lại lượt luyện tậo khi bốc ngẫu nhiên câu hỏi trong ngân hàng ra
+ALTER TABLE attempt_response
+ADD COLUMN sequence_no INT NULL
+AFTER question_id;

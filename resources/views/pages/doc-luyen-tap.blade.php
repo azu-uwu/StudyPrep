@@ -61,6 +61,12 @@
     </header>
 
     {{-- 2. THANH ĐIỀU HƯỚNG CÂU VÀ TIP BANNER --}}
+    @if (!empty($noticeMessage))
+        <div style="background: #EFF6FF; border-bottom: 1.5px solid #BFDBFE; color: #1D4ED8; padding: 10px 24px; font-size: 13.5px; font-weight: 600; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            <span>{{ $noticeMessage }}</span>
+        </div>
+    @endif
     <div class="sp-vp-subnav">
         <div class="sp-vp-nav-controls">
             <button type="button" class="sp-vp-nav-btn" onclick="prevQuestion()" id="prevBtn">← Câu trước</button>
@@ -148,6 +154,30 @@
         </div>
     </div>
 
+    {{-- 6. MODAL DANH SÁCH CÂU HỎI (QUESTION PALETTE) --}}
+    <div class="sp-submit-modal-backdrop" id="questionDrawerModal" onclick="if(event.target === this) toggleQuestionDrawer()">
+        <div class="sp-submit-modal" style="max-width: 480px; padding: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 class="sp-submit-modal__title" style="margin: 0; font-size: 18px;">Danh sách câu hỏi</h3>
+                <button type="button" onclick="toggleQuestionDrawer()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #64748B;">✕</button>
+            </div>
+            <div style="display: flex; gap: 16px; margin-bottom: 16px; font-size: 12px; color: #64748B; flex-wrap: wrap;">
+                <span style="display: flex; align-items: center; gap: 6px;">
+                    <span style="display: inline-block; width: 14px; height: 14px; border-radius: 4px; background: #5B4BF5;"></span> Đã làm
+                </span>
+                <span style="display: flex; align-items: center; gap: 6px;">
+                    <span style="display: inline-block; width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid #CBD5E1; background: #FFF;"></span> Chưa làm
+                </span>
+                <span style="display: flex; align-items: center; gap: 6px;">
+                    <span style="display: inline-block; width: 14px; height: 14px; border-radius: 4px; background: #FEF3C7; border: 1.5px solid #F59E0B; color: #D97706; text-align: center; line-height: 12px; font-weight: bold;">⚑</span> Đã đánh dấu
+                </span>
+            </div>
+            <div id="drawerQuestionsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 8px; max-height: 320px; overflow-y: auto; padding: 4px;">
+                {{-- Rendered by JS --}}
+            </div>
+        </div>
+    </div>
+
     {{-- Dữ liệu và logic bài thi --}}
     <script>
         const questionsData = @json($questions);
@@ -157,14 +187,43 @@
         let timerSeconds = 0;
         let isExplanationOpen = true;
 
+        // Trợ thủ mã hóa an toàn các ký tự HTML nhưng giữ nguyên định dạng câu hỏi
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         // Bắt đầu đếm thời gian làm bài
         const examTimer = setInterval(function() {
             timerSeconds++;
-            document.getElementById('timeSpentInput').value = timerSeconds;
+            const timeInput = document.getElementById('timeSpentInput');
+            if (timeInput) {
+                timeInput.value = timerSeconds;
+            }
         }, 1000);
 
         function renderCurrentQuestion() {
-            if (!questionsData || questionsData.length === 0) return;
+            if (!questionsData || questionsData.length === 0) {
+                document.getElementById('passageRange').textContent = 'Chưa có câu hỏi';
+                document.getElementById('passageTitle').style.display = 'block';
+                document.getElementById('passageTitle').textContent = 'Ngân hàng câu hỏi chưa có dữ liệu hợp lệ';
+                document.getElementById('passageContent').innerHTML = `
+                    <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: 14px; padding: 24px; font-size: 15px; color: #64748B; line-height: 1.7;">
+                        Hiện tại chưa có đủ câu hỏi hoặc nhóm bài đọc hợp lệ cho phần luyện tập này.<br>
+                        Vui lòng quay lại danh sách để chọn phần luyện tập khác hoặc thử lại sau.
+                    </div>
+                `;
+                document.getElementById('explainBody').innerHTML = '<div style="color:#64748B;font-size:14px;padding:12px 0;">Không có nội dung giải thích.</div>';
+                document.getElementById('questionsContainer').innerHTML = '<div style="padding:24px;text-align:center;color:#64748B;font-weight:600;">Không có câu hỏi để hiển thị.</div>';
+                document.getElementById('prevBtn').disabled = true;
+                document.getElementById('nextBtn').disabled = true;
+                return;
+            }
             const q = questionsData[currentIndex];
 
             // Cập nhật Cột 1: Passage / Context
@@ -181,18 +240,31 @@
                 document.getElementById('passageContent').innerHTML = `
                     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: 14px; padding: 20px; font-size: 16px; font-weight: 700; color: #1E293B; line-height: 1.7;">
                         <div style="font-size:12px;font-weight:600;color:#64748B;margin-bottom:10px;letter-spacing:0.8px;">CÂU HỎI ${q.question_number}</div>
-                        ${q.stem}
+                        ${escapeHtml(q.stem)}
                     </div>
                 `;
             }
 
-            // Cập nhật Cột 2: Giải thích
-            document.getElementById('tabExpCurrent').textContent = q.question_number;
-            document.getElementById('explainBody').innerHTML = `
-                <strong>${q.question_number}.</strong><br><br>
-                <strong>=&gt; Đáp án đúng: ${q.correct}</strong><br><br>
-                Phân tích: ${q.explanation}
-            `;
+            // Cập nhật Cột 2: Giải thích (BẢO MẬT: nếu chưa nộp bài sẽ hiển thị thông báo bảo mật)
+            const tabExp = document.getElementById('tabExpCurrent');
+            if (tabExp) {
+                tabExp.textContent = q.question_number;
+            }
+
+            if (q.correct) {
+                document.getElementById('explainBody').innerHTML = `
+                    <strong>${q.question_number}.</strong><br><br>
+                    <strong>=&gt; Đáp án đúng: ${escapeHtml(q.correct)}</strong><br><br>
+                    Phân tích: ${escapeHtml(q.explanation || 'Chưa có phân tích.')}
+                `;
+            } else {
+                document.getElementById('explainBody').innerHTML = `
+                    <div style="color: #64748B; font-size: 14px; line-height: 1.6; padding: 6px 0;">
+                        🔒 <strong>Đáp án và phân tích chi tiết được bảo mật trong lúc làm bài.</strong><br><br>
+                        Sau khi bạn bấm <strong>"Nộp bài"</strong>, hệ thống sẽ mở khóa đáp án đúng, chấm điểm và hiển thị toàn bộ lời giải chi tiết cho từng câu.
+                    </div>
+                `;
+            }
 
             // Cập nhật Cột 3: Stem + Lựa chọn đáp án
             // Nếu là Part 6/7 (có passage), hiển thị stem câu hỏi trước các đáp án
@@ -201,24 +273,30 @@
                 stemHtml = `
                     <div class="sp-vp-question-stem">
                         <span class="sp-vp-qnum-label">Câu ${q.question_number}</span>
-                        <p class="sp-vp-stem-text">${q.stem}</p>
+                        <p class="sp-vp-stem-text">${escapeHtml(q.stem)}</p>
                     </div>
                 `;
             }
 
             let questionsHtml = `<div class="sp-vp-question-block">`;
             if (!q.passage) {
-                // Part 5: chỉ hiển thị số câu
+                // Part 5: chỉ hiển thị số câu hiển thị (question_number từ 1 đến N)
                 questionsHtml += `<div class="sp-vp-qnum" style="margin-bottom:16px;">Câu ${q.question_number}</div>`;
             }
 
-            const opts = q.options;
-            for (const [letter, text] of Object.entries(opts)) {
+            const opts = q.options || {};
+            // Sắp xếp thứ tự hiển thị A -> B -> C -> D, không dựa vào thứ tự lưu của CSDL
+            const labels = (q.part_number === 5)
+                ? ['A', 'B', 'C', 'D'].filter(lbl => opts[lbl] !== undefined)
+                : Object.keys(opts).sort();
+
+            for (const letter of labels) {
+                const text = opts[letter];
                 const isSelected = userAnswers[q.id] === letter;
                 questionsHtml += `
                     <div class="sp-vp-opt-row ${isSelected ? 'is-selected' : ''}" onclick="selectAnswer(${q.id}, '${letter}')">
                         <div class="sp-vp-opt-radio">${letter}</div>
-                        <div class="sp-vp-opt-text">${text}</div>
+                        <div class="sp-vp-opt-text">${escapeHtml(text)}</div>
                     </div>
                 `;
             }
@@ -231,7 +309,9 @@
 
             // Cập nhật nút Flag
             const flagBtn = document.getElementById('flagBtn');
-            flagBtn.style.color = flaggedQuestions[q.id] ? '#F59E0B' : '#64748B';
+            if (flagBtn) {
+                flagBtn.style.color = flaggedQuestions[q.id] ? '#F59E0B' : '#64748B';
+            }
 
             // Cập nhật trạng thái nút Trước / Sau
             document.getElementById('prevBtn').disabled = (currentIndex === 0);
@@ -253,6 +333,11 @@
             hiddenInput.value = letter;
 
             renderCurrentQuestion();
+
+            // Nếu Question Palette đang mở, đồng bộ giao diện
+            if (document.getElementById('questionDrawerModal')?.classList.contains('is-open')) {
+                renderDrawerQuestions();
+            }
         }
 
         function prevQuestion() {
@@ -287,38 +372,126 @@
         }
 
         function switchExplainTab(tab) {
+            if (!questionsData || questionsData.length === 0) return;
             const q = questionsData[currentIndex];
             if (tab === 'trans') {
                 document.getElementById('explainBody').innerHTML = `
                     <strong>Dịch nghĩa tiếng Việt:</strong><br><br>
-                    ${q.translation || 'Dịch: ' + q.stem}
+                    ${q.translation ? escapeHtml(q.translation) : '<div style="color:#64748B;font-size:13.5px;line-height:1.6;"><em>Bản dịch chi tiết sẽ được mở khóa sau khi bạn bấm nộp bài.</em></div>'}
                 `;
             } else {
-                document.getElementById('explainBody').innerHTML = `
-                    <strong>${q.question_number}.</strong><br><br>
-                    <strong>=&gt; Đáp án đúng: ${q.correct}</strong><br><br>
-                    Phân tích: ${q.explanation}
-                `;
+                if (q.correct) {
+                    document.getElementById('explainBody').innerHTML = `
+                        <strong>${q.question_number}.</strong><br><br>
+                        <strong>=&gt; Đáp án đúng: ${escapeHtml(q.correct)}</strong><br><br>
+                        Phân tích: ${escapeHtml(q.explanation || 'Chưa có phân tích.')}
+                    `;
+                } else {
+                    document.getElementById('explainBody').innerHTML = `
+                        <div style="color: #64748B; font-size: 14px; line-height: 1.6; padding: 6px 0;">
+                            🔒 <strong>Đáp án và phân tích chi tiết được bảo mật trong lúc làm bài.</strong><br><br>
+                            Sau khi bạn bấm <strong>"Nộp bài"</strong>, hệ thống sẽ mở khóa đáp án đúng, chấm điểm và hiển thị toàn bộ lời giải chi tiết cho từng câu.
+                        </div>
+                    `;
+                }
             }
         }
 
         function updateProgress() {
             const answeredCount = Object.keys(userAnswers).length;
-            const total = questionsData.length;
-            const pct = Math.round((answeredCount / total) * 100);
-            document.getElementById('progressBarFill').style.width = pct + '%';
+            const total = questionsData ? questionsData.length : 0;
+            const pct = total > 0 ? Math.round((answeredCount / total) * 100) : 0;
+            const bar = document.getElementById('progressBarFill');
+            if (bar) {
+                bar.style.width = pct + '%';
+            }
         }
 
         function toggleFlagCurrentQuestion() {
+            if (!questionsData || questionsData.length === 0) return;
             const q = questionsData[currentIndex];
+            if (!q) return;
             flaggedQuestions[q.id] = !flaggedQuestions[q.id];
             renderCurrentQuestion();
+
+            // Nếu Drawer đang mở, cập nhật lại biểu tượng cờ
+            if (document.getElementById('questionDrawerModal')?.classList.contains('is-open')) {
+                renderDrawerQuestions();
+            }
+        }
+
+        // Drawer điều hướng nhanh câu hỏi
+        function toggleQuestionDrawer() {
+            const modal = document.getElementById('questionDrawerModal');
+            if (!modal) return;
+            if (modal.classList.contains('is-open')) {
+                modal.classList.remove('is-open');
+            } else {
+                renderDrawerQuestions();
+                modal.classList.add('is-open');
+            }
+        }
+
+        function renderDrawerQuestions() {
+            const grid = document.getElementById('drawerQuestionsGrid');
+            if (!grid) return;
+            if (!questionsData || questionsData.length === 0) {
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #64748B; padding: 16px;">Không có câu hỏi.</div>';
+                return;
+            }
+
+            let html = '';
+            questionsData.forEach((item, idx) => {
+                const isAnswered = !!userAnswers[item.id];
+                const isFlagged = !!flaggedQuestions[item.id];
+                const isCurrent = idx === currentIndex;
+
+                const bg = isAnswered ? '#5B4BF5' : '#FFFFFF';
+                const textColor = isAnswered ? '#FFFFFF' : '#1E293B';
+                const borderColor = isCurrent ? '#F59E0B' : (isAnswered ? '#5B4BF5' : '#CBD5E1');
+                const borderWidth = isCurrent ? '2.5px' : '1.5px';
+
+                html += `
+                    <button type="button" onclick="jumpToQuestion(${idx})" style="
+                        position: relative;
+                        height: 42px;
+                        border-radius: 10px;
+                        border: ${borderWidth} solid ${borderColor};
+                        background: ${bg};
+                        color: ${textColor};
+                        font-weight: 800;
+                        font-size: 13.5px;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        transition: all 0.15s ease;
+                    ">
+                        ${item.question_number}
+                        ${isFlagged ? '<span style="position: absolute; top: 1px; right: 3px; font-size: 10px; color: #F59E0B;">⚑</span>' : ''}
+                    </button>
+                `;
+            });
+            grid.innerHTML = html;
+        }
+
+        function jumpToQuestion(idx) {
+            if (idx >= 0 && idx < questionsData.length) {
+                currentIndex = idx;
+                renderCurrentQuestion();
+                const modal = document.getElementById('questionDrawerModal');
+                if (modal) modal.classList.remove('is-open');
+            }
         }
 
         // Xử lý nộp bài: Khớp logic kiểm tra Ảnh mẫu 1 & Ảnh mẫu 2
         function handlePreSubmit() {
+            const total = questionsData ? questionsData.length : 0;
+            if (total === 0) {
+                alert('Không có câu hỏi nào trong bài để nộp.');
+                return;
+            }
             const answeredCount = Object.keys(userAnswers).length;
-            const total = questionsData.length;
 
             if (answeredCount === 0) {
                 // Ảnh mẫu 2: Chưa làm câu nào
@@ -335,6 +508,8 @@
         function closeSubmitModals() {
             document.getElementById('emptySubmitModal').classList.remove('is-open');
             document.getElementById('incompleteSubmitModal').classList.remove('is-open');
+            const drawer = document.getElementById('questionDrawerModal');
+            if (drawer) drawer.classList.remove('is-open');
         }
 
         function submitExamDirectly() {
