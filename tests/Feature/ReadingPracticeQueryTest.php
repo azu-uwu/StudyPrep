@@ -71,12 +71,14 @@ class ReadingPracticeQueryTest extends TestCase
         string $status = 'ACTIVE',
         ?array $customOptions = null,
         ?QuestionType $questionType = null,
-        ?ExamSection $section = null
+        ?ExamSection $section = null,
+        ?string $explanation = null
     ): Question {
         $q = Question::query()->create([
             'section_id' => $section?->section_id ?? $this->part5Section->section_id,
             'question_type_id' => $questionType?->question_type_id ?? $this->mcType->question_type_id,
             'content' => $content,
+            'explanation' => $explanation ?? 'Sample explanation for '.$content,
             'difficulty' => 'MEDIUM',
             'status' => $status,
         ]);
@@ -627,5 +629,313 @@ class ReadingPracticeQueryTest extends TestCase
         $response->assertStatus(200);
         $response->assertViewHas('questions', fn ($q) => count($q) === 0);
         $response->assertViewHas('noticeMessage', fn ($msg) => $msg !== null && str_contains($msg, 'ACTIVE'));
+    }
+
+    public function test_check_answer_api_validates_correct_and_incorrect_answer(): void
+    {
+        $q = $this->createPart5Question('Question for Check Answer API', 'ACTIVE', [
+            ['label' => 'A', 'content' => 'Alpha', 'is_correct' => false],
+            ['label' => 'B', 'content' => 'Bravo Correct', 'is_correct' => true],
+            ['label' => 'C', 'content' => 'Charlie', 'is_correct' => false],
+            ['label' => 'D', 'content' => 'Delta', 'is_correct' => false],
+        ], null, null, 'Explanation for Bravo');
+
+        // Bắt đầu phiên làm bài
+        $this->withSession([
+            'reading_practice_session' => [
+                'part' => 5,
+                'target_count' => 1,
+                'question_ids' => [$q->question_id],
+            ],
+        ]);
+
+        // Chọn B -> Đúng
+        $respCorrect = $this->postJson(route('luyen-tap.doc.kiem-tra-cau-hoi'), [
+            'question_id' => $q->question_id,
+            'selected_option' => 'B',
+            'action' => 'answer',
+        ]);
+        $respCorrect->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'question_id' => $q->question_id,
+                'is_correct' => true,
+                'is_right' => true,
+                'user_answer' => 'B',
+                'correct_answer' => 'B',
+                'explanation' => 'Explanation for Bravo',
+            ]);
+
+        // Chọn A -> Sai
+        $respWrong = $this->postJson(route('luyen-tap.doc.kiem-tra-cau-hoi'), [
+            'question_id' => $q->question_id,
+            'selected_option' => 'A',
+            'action' => 'answer',
+        ]);
+        $respWrong->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'question_id' => $q->question_id,
+                'is_correct' => false,
+                'is_right' => false,
+                'user_answer' => 'A',
+                'correct_answer' => 'B',
+                'explanation' => 'Explanation for Bravo',
+            ]);
+    }
+
+    public function test_check_answer_api_supports_reveal_action_without_assigning_user_answer(): void
+    {
+        $q = $this->createPart5Question('Question for Reveal', 'ACTIVE', [
+            ['label' => 'A', 'content' => 'Alpha', 'is_correct' => false],
+            ['label' => 'B', 'content' => 'Bravo', 'is_correct' => false],
+            ['label' => 'C', 'content' => 'Charlie Correct', 'is_correct' => true],
+            ['label' => 'D', 'content' => 'Delta', 'is_correct' => false],
+        ]);
+
+        $this->withSession([
+            'reading_practice_session' => [
+                'part' => 5,
+                'target_count' => 1,
+                'question_ids' => [$q->question_id],
+            ],
+        ]);
+
+        $response = $this->postJson(route('luyen-tap.doc.kiem-tra-cau-hoi'), [
+            'question_id' => $q->question_id,
+            'action' => 'reveal',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'question_id' => $q->question_id,
+                'action' => 'reveal',
+                'correct_answer' => 'C',
+            ])
+            ->assertJsonMissing(['user_answer' => 'C']);
+    }
+
+    public function test_check_answer_api_rejects_question_not_in_current_practice_session(): void
+    {
+        $q1 = $this->createPart5Question('Question in Session', 'ACTIVE');
+        $q2 = $this->createPart5Question('Question outside Session', 'ACTIVE');
+
+        $this->withSession([
+            'reading_practice_session' => [
+                'part' => 5,
+                'target_count' => 1,
+                'question_ids' => [$q1->question_id],
+            ],
+        ]);
+
+        $response = $this->postJson(route('luyen-tap.doc.kiem-tra-cau-hoi'), [
+            'question_id' => $q2->question_id,
+            'selected_option' => 'A',
+            'action' => 'answer',
+        ]);
+
+        $response->assertStatus(403)
+            ->assertJson(['success' => false]);
+    }
+
+    public function test_check_answer_api_returns_fallback_when_explanation_is_empty(): void
+    {
+        $q = $this->createPart5Question('Question without explanation', 'ACTIVE', null, null, null, '');
+
+        $this->withSession([
+            'reading_practice_session' => [
+                'part' => 5,
+                'target_count' => 1,
+                'question_ids' => [$q->question_id],
+            ],
+        ]);
+
+        $response = $this->postJson(route('luyen-tap.doc.kiem-tra-cau-hoi'), [
+            'question_id' => $q->question_id,
+            'selected_option' => 'B',
+            'action' => 'answer',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'explanation' => 'Chưa có giải thích cho câu hỏi này.',
+            ]);
+    }
+
+    public function test_submit_grading_five_correct_answers(): void
+    {
+        $questions = [];
+        for ($i = 1; $i <= 5; $i++) {
+            $questions[] = $this->createPart5Question("Question {$i}", 'ACTIVE');
+        }
+        $ids = collect($questions)->pluck('question_id')->all();
+
+        $sessionData = [
+            'part' => 5,
+            'target_count' => 5,
+            'question_ids' => $ids,
+        ];
+
+        // Đáp án B là đáp án đúng cho tất cả
+        $answers = [];
+        foreach ($ids as $id) {
+            $answers[$id] = 'B';
+        }
+
+        $response = $this->withSession(['reading_practice_session' => $sessionData])
+            ->post(route('luyen-tap.doc.nop-bai'), [
+                'part' => 5,
+                'question_ids' => implode(',', $ids),
+                'total_count' => 5,
+                'time_spent' => 120,
+                'answers' => $answers,
+            ]);
+
+        $response->assertRedirect(route('luyen-tap.doc.ket-qua'));
+
+        $result = session('reading_practice_result');
+        $this->assertNotNull($result);
+        $this->assertSame(5, $result['total']);
+        $this->assertSame(5, $result['correct_count']);
+        $this->assertSame(0, $result['incorrect_count']);
+        $this->assertSame(0, $result['unanswered_count']);
+        $this->assertSame(100, $result['score_percent']);
+    }
+
+    public function test_submit_grading_three_correct_and_two_incorrect(): void
+    {
+        $questions = [];
+        for ($i = 1; $i <= 5; $i++) {
+            $questions[] = $this->createPart5Question("Question {$i}", 'ACTIVE');
+        }
+        $ids = collect($questions)->pluck('question_id')->all();
+
+        // 3 câu đầu chọn B (Đúng), 2 câu sau chọn A (Sai, vì đáp án đúng là B)
+        $answers = [
+            $ids[0] => 'B',
+            $ids[1] => 'B',
+            $ids[2] => 'B',
+            $ids[3] => 'A',
+            $ids[4] => 'A',
+        ];
+
+        $response = $this->withSession(['reading_practice_session' => ['part' => 5, 'question_ids' => $ids]])
+            ->post(route('luyen-tap.doc.nop-bai'), [
+                'part' => 5,
+                'question_ids' => implode(',', $ids),
+                'total_count' => 5,
+                'answers' => $answers,
+            ]);
+
+        $response->assertRedirect(route('luyen-tap.doc.ket-qua'));
+
+        $result = session('reading_practice_result');
+        $this->assertSame(5, $result['total']);
+        $this->assertSame(3, $result['correct_count']);
+        $this->assertSame(2, $result['incorrect_count']);
+        $this->assertSame(0, $result['unanswered_count']);
+        $this->assertSame(60, $result['score_percent']);
+    }
+
+    public function test_submit_grading_two_correct_one_incorrect_two_unanswered(): void
+    {
+        $questions = [];
+        for ($i = 1; $i <= 5; $i++) {
+            $questions[] = $this->createPart5Question("Question {$i}", 'ACTIVE');
+        }
+        $ids = collect($questions)->pluck('question_id')->all();
+
+        // 2 đúng, 1 sai, 2 bỏ qua
+        $answers = [
+            $ids[0] => 'B', // Đúng
+            $ids[1] => 'B', // Đúng
+            $ids[2] => 'C', // Sai
+            // $ids[3] không có -> chưa trả lời
+            // $ids[4] không có -> chưa trả lời
+        ];
+
+        $response = $this->withSession(['reading_practice_session' => ['part' => 5, 'question_ids' => $ids]])
+            ->post(route('luyen-tap.doc.nop-bai'), [
+                'part' => 5,
+                'question_ids' => implode(',', $ids),
+                'total_count' => 5,
+                'answers' => $answers,
+            ]);
+
+        $response->assertRedirect(route('luyen-tap.doc.ket-qua'));
+
+        $result = session('reading_practice_result');
+        $this->assertSame(5, $result['total']);
+        $this->assertSame(2, $result['correct_count']);
+        $this->assertSame(1, $result['incorrect_count']);
+        $this->assertSame(2, $result['unanswered_count']);
+        $this->assertSame(40, $result['score_percent']);
+        $this->assertSame(5, $result['correct_count'] + $result['incorrect_count'] + $result['unanswered_count']);
+    }
+
+    public function test_submit_grading_zero_answers_submitted(): void
+    {
+        $questions = [];
+        for ($i = 1; $i <= 5; $i++) {
+            $questions[] = $this->createPart5Question("Question {$i}", 'ACTIVE');
+        }
+        $ids = collect($questions)->pluck('question_id')->all();
+
+        $response = $this->withSession(['reading_practice_session' => ['part' => 5, 'question_ids' => $ids]])
+            ->post(route('luyen-tap.doc.nop-bai'), [
+                'part' => 5,
+                'question_ids' => implode(',', $ids),
+                'total_count' => 5,
+                'answers' => [],
+            ]);
+
+        $response->assertRedirect(route('luyen-tap.doc.ket-qua'));
+
+        $result = session('reading_practice_result');
+        $this->assertSame(5, $result['total']);
+        $this->assertSame(0, $result['correct_count']);
+        $this->assertSame(0, $result['incorrect_count']);
+        $this->assertSame(5, $result['unanswered_count']);
+        $this->assertSame(0, $result['score_percent']);
+    }
+
+    public function test_submit_preserves_exact_order_and_question_list_in_result_details(): void
+    {
+        $q1 = $this->createPart5Question('First Question Alpha', 'ACTIVE');
+        $q2 = $this->createPart5Question('Second Question Beta', 'ACTIVE');
+        $q3 = $this->createPart5Question('Third Question Gamma', 'ACTIVE');
+
+        // Đảo ngược thứ tự trong session
+        $orderedIds = [$q3->question_id, $q1->question_id, $q2->question_id];
+
+        $response = $this->withSession(['reading_practice_session' => ['part' => 5, 'question_ids' => $orderedIds]])
+            ->post(route('luyen-tap.doc.nop-bai'), [
+                'part' => 5,
+                'question_ids' => implode(',', $orderedIds),
+                'total_count' => 3,
+                'answers' => [
+                    $q3->question_id => 'B',
+                ],
+            ]);
+
+        $response->assertRedirect(route('luyen-tap.doc.ket-qua'));
+
+        $result = session('reading_practice_result');
+        $this->assertCount(3, $result['details']);
+
+        // Thứ tự chi tiết phải khớp hoàn toàn với $orderedIds
+        $this->assertSame($q3->question_id, $result['details'][0]['id']);
+        $this->assertSame(1, $result['details'][0]['question_number']);
+        $this->assertSame('Third Question Gamma', $result['details'][0]['stem']);
+
+        $this->assertSame($q1->question_id, $result['details'][1]['id']);
+        $this->assertSame(2, $result['details'][1]['question_number']);
+        $this->assertSame('First Question Alpha', $result['details'][1]['stem']);
+
+        $this->assertSame($q2->question_id, $result['details'][2]['id']);
+        $this->assertSame(3, $result['details'][2]['question_number']);
+        $this->assertSame('Second Question Beta', $result['details'][2]['stem']);
     }
 }

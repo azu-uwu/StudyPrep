@@ -623,6 +623,99 @@
     color: #1E293B;
 }
 
+/* ===== PHẢN HỒI TỨC THỜI CHO CHẾ ĐỘ LUYỆN TẬP PART 5 ===== */
+/* Khi người dùng chọn đáp án ĐÚNG: Tô xanh đáp án đã chọn, hiển thị biểu tượng đúng */
+.sp-vp-opt-row.is-correct {
+    border-color: #22C55E !important;
+    background: #F0FDF4 !important;
+}
+
+.sp-vp-opt-row.is-correct .sp-vp-opt-radio {
+    border-color: #22C55E !important;
+    background: #22C55E !important;
+    color: #FFFFFF !important;
+}
+
+.sp-vp-opt-row.is-correct .sp-vp-opt-text {
+    color: #166534 !important;
+    font-weight: 700;
+}
+
+/* Khi người dùng chọn đáp án SAI: Tô đỏ đáp án đã chọn, hiển thị biểu tượng sai */
+.sp-vp-opt-row.is-incorrect {
+    border-color: #EF4444 !important;
+    background: #FEF2F2 !important;
+}
+
+.sp-vp-opt-row.is-incorrect .sp-vp-opt-radio {
+    border-color: #EF4444 !important;
+    background: #EF4444 !important;
+    color: #FFFFFF !important;
+}
+
+.sp-vp-opt-row.is-incorrect .sp-vp-opt-text {
+    color: #991B1B !important;
+    font-weight: 700;
+}
+
+/* Đáp án đúng mục tiêu: Tô xanh khi người dùng chọn sai hoặc khi bấm nút Giải thích trước khi trả lời */
+.sp-vp-opt-row.is-correct-target {
+    border-color: #22C55E !important;
+    background: #F0FDF4 !important;
+}
+
+.sp-vp-opt-row.is-correct-target .sp-vp-opt-radio {
+    border-color: #22C55E !important;
+    background: #22C55E !important;
+    color: #FFFFFF !important;
+}
+
+.sp-vp-opt-row.is-correct-target .sp-vp-opt-text {
+    color: #166534 !important;
+    font-weight: 700;
+}
+
+/* Khóa các phương án sau khi đã trả lời hoặc đã xem giải thích */
+.sp-vp-opt-row.is-locked {
+    cursor: default !important;
+}
+
+.sp-vp-opt-row.is-locked:hover {
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+/* Badge biểu tượng trạng thái đúng/sai trên dòng phương án */
+.sp-vp-opt-status-badge {
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.sp-vp-opt-status-badge--correct {
+    background: #DCFCE7;
+    color: #15803D;
+    border: 1px solid #86EFAC;
+}
+
+.sp-vp-opt-status-badge--incorrect {
+    background: #FEE2E2;
+    color: #B91C1C;
+    border: 1px solid #FCA5A5;
+}
+
+.sp-vp-opt-status-badge--target {
+    background: #DCFCE7;
+    color: #15803D;
+    border: 1px solid #86EFAC;
+}
+
 /* ==========================================================================
    3. MODAL NỘP BÀI (ẢNH MẪU 1 & ẢNH MẪU 2)
    ========================================================================== */

@@ -6,6 +6,7 @@ use App\Models\Question;
 use App\Models\QuestionSet;
 use App\Services\ReadingQuestionBank;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -50,6 +51,16 @@ class ReadingPracticeController extends Controller
         $loaded = $this->loadReadingQuestions($part, $count, $specificIds);
         $selectedQuestions = $loaded['questions'];
         $noticeMessage = $loaded['notice'];
+
+        // Lưu danh sách ID câu hỏi của lượt luyện tập vào session để kiểm tra bảo mật & chấm điểm đúng thứ tự
+        $questionIds = collect($selectedQuestions)->pluck('id')->map(fn ($id) => (int) $id)->all();
+        session([
+            'reading_practice_session' => [
+                'part' => $part,
+                'target_count' => $count,
+                'question_ids' => $questionIds,
+            ],
+        ]);
 
         return view('pages.doc-luyen-tap', [
             'part' => $part,
@@ -539,19 +550,204 @@ class ReadingPracticeController extends Controller
     }
 
     /**
+     * Kiểm tra câu trả lời hoặc mở khóa giải thích tức thời cho chế độ Luyện tập Part 5.
+     * BẢO MẬT: Kiểm tra tính hợp lệ của câu hỏi thuộc phiên làm việc hiện tại và đối chiếu với CSDL.
+     */
+    public function checkAnswer(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'question_id' => ['required', 'integer'],
+            'selected_option' => ['nullable', 'string', 'in:A,B,C,D,a,b,c,d'],
+            'action' => ['nullable', 'string', 'in:answer,reveal'],
+        ]);
+
+        $questionId = (int) $validated['question_id'];
+        $action = $validated['action'] ?? (! empty($validated['selected_option']) ? 'answer' : 'reveal');
+
+        // Backend kiểm tra câu hỏi thuộc đúng lượt luyện tập của người dùng hiện tại
+        $sessionData = session('reading_practice_session');
+        $allowedIds = $sessionData['question_ids'] ?? [];
+
+        if (! empty($allowedIds) && ! in_array($questionId, $allowedIds, true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Câu hỏi không thuộc lượt luyện tập hiện tại.',
+            ], 403);
+        }
+
+        $question = Question::query()
+            ->where('question_id', $questionId)
+            ->with(['options' => fn ($opt) => $opt->select(['option_id', 'question_id', 'label', 'content', 'is_correct'])])
+            ->first();
+
+        if (! $question) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy câu hỏi trong hệ thống.',
+            ], 404);
+        }
+
+        $correctOpt = $question->options->firstWhere('is_correct', true);
+        $correctLabel = $correctOpt ? strtoupper(trim((string) $correctOpt->label)) : null;
+
+        $rawExplanation = trim((string) $question->explanation);
+        $explanation = $rawExplanation !== '' ? $rawExplanation : 'Chưa có giải thích cho câu hỏi này.';
+
+        // Trường hợp người học bấm nút Giải thích trước khi chọn đáp án
+        if ($action === 'reveal' || empty($validated['selected_option'])) {
+            return response()->json([
+                'success' => true,
+                'question_id' => $questionId,
+                'action' => 'reveal',
+                'correct_answer' => $correctLabel,
+                'explanation' => $explanation,
+            ]);
+        }
+
+        $selectedOption = strtoupper(trim((string) $validated['selected_option']));
+        $isCorrect = ($selectedOption === $correctLabel);
+
+        return response()->json([
+            'success' => true,
+            'question_id' => $questionId,
+            'action' => 'answer',
+            'user_answer' => $selectedOption,
+            'correct_answer' => $correctLabel,
+            'is_correct' => $isCorrect,
+            'is_right' => $isCorrect,
+            'explanation' => $explanation,
+        ]);
+    }
+
+    /**
      * Xử lý nộp bài thi luyện tập Đọc
      */
     public function submit(Request $request): RedirectResponse
     {
         $part = (int) $request->input('part', 5);
-        if (! in_array($part, [5, 6, 7])) {
+        if (! in_array($part, [5, 6, 7], true)) {
             $part = 5;
         }
 
-        $submittedAnswers = $request->input('answers', []);
-        $timeSpentSeconds = (int) $request->input('time_spent', 165);
+        $submittedAnswers = (array) $request->input('answers', []);
+        $timeSpentSeconds = (int) $request->input('time_spent', 0);
         $requestedCount = (int) $request->input('total_count', 20);
 
+        // Lấy danh sách ID câu hỏi đã phân phối trong phiên luyện tập (giữ đúng thứ tự và danh sách câu hỏi)
+        $sessionData = session('reading_practice_session');
+        $sessionIds = $sessionData['question_ids'] ?? [];
+
+        $requestIds = [];
+        if ($request->filled('question_ids')) {
+            $requestIds = array_values(array_filter(
+                array_map('intval', explode(',', (string) $request->input('question_ids'))),
+                fn ($id) => $id > 0
+            ));
+        }
+
+        $orderedIds = ! empty($sessionIds) ? $sessionIds : $requestIds;
+
+        // Chấm điểm Part 5 (hoặc khi có danh sách câu hỏi từ MySQL)
+        if ($part === 5 || ! empty($orderedIds)) {
+            $dbQuestions = Question::query()
+                ->whereIn('question_id', $orderedIds)
+                ->with(['options' => fn ($opt) => $opt->select(['option_id', 'question_id', 'label', 'content', 'is_correct'])])
+                ->get()
+                ->keyBy('question_id');
+
+            $orderedQuestions = collect($orderedIds)
+                ->map(fn ($id) => $dbQuestions->get($id))
+                ->filter()
+                ->values();
+
+            if ($orderedQuestions->isNotEmpty()) {
+                $correctCount = 0;
+                $incorrectCount = 0;
+                $unansweredCount = 0;
+                $details = [];
+
+                foreach ($orderedQuestions as $idx => $q) {
+                    $qid = (int) $q->question_id;
+                    $userPick = isset($submittedAnswers[$qid]) && trim((string) $submittedAnswers[$qid]) !== ''
+                        ? strtoupper(trim((string) $submittedAnswers[$qid]))
+                        : null;
+
+                    $correctOpt = $q->options->firstWhere('is_correct', true);
+                    $correctLabel = $correctOpt ? strtoupper(trim((string) $correctOpt->label)) : null;
+
+                    if ($userPick === null) {
+                        $status = 'unanswered';
+                        $unansweredCount++;
+                    } elseif ($userPick === $correctLabel) {
+                        $status = 'correct';
+                        $correctCount++;
+                    } else {
+                        $status = 'incorrect';
+                        $incorrectCount++;
+                    }
+
+                    $optionsMap = [];
+                    foreach (['A', 'B', 'C', 'D'] as $label) {
+                        $opt = $q->options->first(fn ($o) => strtoupper(trim((string) $o->label)) === $label);
+                        if ($opt) {
+                            $optionsMap[$label] = (string) $opt->content;
+                        }
+                    }
+
+                    $rawExp = trim((string) $q->explanation);
+                    $explanation = $rawExp !== '' ? $rawExp : 'Chưa có giải thích cho câu hỏi này.';
+
+                    $details[] = [
+                        'id' => $qid,
+                        'part' => 'Part '.$part,
+                        'part_number' => $part,
+                        'question_number' => $idx + 1,
+                        'stem' => (string) $q->content,
+                        'passage_title' => null,
+                        'passage' => null,
+                        'options' => $optionsMap,
+                        'user_answer' => $userPick,
+                        'correct_answer' => $correctLabel,
+                        'status' => $status,
+                        'explanation' => $explanation,
+                        'translation' => null,
+                    ];
+                }
+
+                $total = $orderedQuestions->count();
+                $scorePercent = $total > 0 ? (int) round(($correctCount / $total) * 100) : 0;
+
+                $minutes = floor($timeSpentSeconds / 60);
+                $seconds = $timeSpentSeconds % 60;
+                $formattedTime = sprintf('%02d:%02d', $minutes, $seconds);
+                $timeSpentText = max(1, (int) round($timeSpentSeconds / 60)).' phút';
+
+                $previousPercent = session('reading_practice_result.score_percent');
+                $previousPercentText = $previousPercent !== null ? ($previousPercent.'%') : '40%';
+
+                $resultData = [
+                    'part' => $part,
+                    'part_name' => 'Part 5 — Đọc',
+                    'total' => $total,
+                    'correct_count' => $correctCount,
+                    'incorrect_count' => $incorrectCount,
+                    'unanswered_count' => $unansweredCount,
+                    'score_percent' => $scorePercent,
+                    'time_spent_seconds' => $timeSpentSeconds,
+                    'time_spent_formatted' => $formattedTime,
+                    'time_spent_text' => $timeSpentText,
+                    'previous_percent' => $previousPercentText,
+                    'submitted_at' => now()->format('H:i • d/m/Y'),
+                    'details' => $details,
+                ];
+
+                session(['reading_practice_result' => $resultData]);
+
+                return redirect()->route('luyen-tap.doc.ket-qua');
+            }
+        }
+
+        // Fallback tương thích cho Part 6 / 7
         $bank = ReadingQuestionBank::getQuestions($part);
         $questions = array_slice($bank, 0, min($requestedCount, count($bank)));
 
@@ -601,6 +797,7 @@ class ReadingPracticeController extends Controller
 
         $resultData = [
             'part' => $part,
+            'part_name' => 'Part '.$part.' — Đọc',
             'total' => $total,
             'correct_count' => $correctCount,
             'incorrect_count' => $incorrectCount,
@@ -626,53 +823,21 @@ class ReadingPracticeController extends Controller
     {
         $result = session('reading_practice_result');
 
-        // Nếu người dùng vào thẳng không qua submit, tạo dữ liệu thực tế từ ngân hàng câu hỏi
         if (! $result) {
-            $bank = array_slice(ReadingQuestionBank::getQuestions(5), 0, 10);
-            $correctCount = 8;
-            $incorrectCount = 2;
-            $unansweredCount = 0;
-            $details = [];
-
-            foreach ($bank as $index => $q) {
-                if ($index < 8) {
-                    $status = 'correct';
-                    $userPick = $q['correct'];
-                } else {
-                    $status = 'incorrect';
-                    $wrongKeys = array_diff(array_keys($q['options']), [$q['correct']]);
-                    $userPick = reset($wrongKeys);
-                }
-
-                $details[] = [
-                    'id' => $q['id'],
-                    'part' => $q['part'],
-                    'question_number' => $q['question_number'],
-                    'stem' => $q['stem'],
-                    'passage_title' => $q['passage_title'],
-                    'passage' => $q['passage'],
-                    'options' => $q['options'],
-                    'user_answer' => $userPick,
-                    'correct_answer' => $q['correct'],
-                    'status' => $status,
-                    'explanation' => $q['explanation'],
-                    'translation' => $q['translation'],
-                ];
-            }
-
             $result = [
                 'part' => 5,
-                'total' => 10,
-                'correct_count' => $correctCount,
-                'incorrect_count' => $incorrectCount,
-                'unanswered_count' => $unansweredCount,
-                'score_percent' => 80,
-                'time_spent_seconds' => 332,
-                'time_spent_formatted' => '05:32',
-                'time_spent_text' => '5 phút',
-                'previous_percent' => '40%',
+                'part_name' => 'Part 5 — Đọc',
+                'total' => 0,
+                'correct_count' => 0,
+                'incorrect_count' => 0,
+                'unanswered_count' => 0,
+                'score_percent' => 0,
+                'time_spent_seconds' => 0,
+                'time_spent_formatted' => '00:00',
+                'time_spent_text' => '0 phút',
+                'previous_percent' => '0%',
                 'submitted_at' => now()->format('H:i • d/m/Y'),
-                'details' => $details,
+                'details' => [],
             ];
         }
 
