@@ -52,13 +52,28 @@ class ReadingPracticeController extends Controller
         $selectedQuestions = $loaded['questions'];
         $noticeMessage = $loaded['notice'];
 
-        // Lưu danh sách ID câu hỏi của lượt luyện tập vào session để kiểm tra bảo mật & chấm điểm đúng thứ tự
+        // Lưu danh sách ID câu hỏi và thông tin nhóm (nếu có) của lượt luyện tập vào session để kiểm tra bảo mật & chấm điểm đúng thứ tự
         $questionIds = collect($selectedQuestions)->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $groups = [];
+        if ($part === 6) {
+            $grouped = collect($selectedQuestions)->groupBy('question_set_id');
+            foreach ($grouped as $setId => $qs) {
+                $sId = (int) $setId;
+                $groups[$sId] = [
+                    'question_set_id' => $sId,
+                    'question_ids' => $qs->pluck('id')->map(fn ($id) => (int) $id)->values()->all(),
+                    'completed' => false,
+                    'answers' => [],
+                ];
+            }
+        }
+
         session([
             'reading_practice_session' => [
                 'part' => $part,
                 'target_count' => $count,
                 'question_ids' => $questionIds,
+                'groups' => $groups,
             ],
         ]);
 
@@ -182,41 +197,75 @@ class ReadingPracticeController extends Controller
             ];
         }
 
-        $setQuery = QuestionSet::query()
+        $candidateQuery = QuestionSet::query()
             ->whereNotNull('stimulus_text')
-            ->where('stimulus_text', '!=', '')
+            ->whereRaw("TRIM(stimulus_text) != ''")
             ->whereHas('questions', function ($q) {
                 $q->where('status', Question::STATUS_ACTIVE)
-                    ->whereHas('section', fn ($s) => $s->where('code', 'PART6'));
-            }, '=', 4);
+                    ->whereNotNull('content')
+                    ->whereRaw("TRIM(content) != ''")
+                    ->whereHas('section', fn ($s) => $s->where('code', 'PART6')->whereHas('skill', fn ($sk) => $sk->where('code', 'RC')))
+                    ->whereHas('questionType', fn ($qt) => $qt->where('response_mode', 'SINGLE_CHOICE'))
+                    ->has('options', '=', 4)
+                    ->whereHas('options', fn ($opt) => $opt->where('is_correct', true), '=', 1)
+                    ->whereHas('options', fn ($opt) => $opt->whereRaw("UPPER(TRIM(label)) = 'A'")->whereNotNull('content')->whereRaw("TRIM(content) != ''"))
+                    ->whereHas('options', fn ($opt) => $opt->whereRaw("UPPER(TRIM(label)) = 'B'")->whereNotNull('content')->whereRaw("TRIM(content) != ''"))
+                    ->whereHas('options', fn ($opt) => $opt->whereRaw("UPPER(TRIM(label)) = 'C'")->whereNotNull('content')->whereRaw("TRIM(content) != ''"))
+                    ->whereHas('options', fn ($opt) => $opt->whereRaw("UPPER(TRIM(label)) = 'D'")->whereNotNull('content')->whereRaw("TRIM(content) != ''"));
+            }, '=', 4)
+            ->whereDoesntHave('questions', function ($q) {
+                $q->whereHas('section', fn ($s) => $s->where('code', 'PART6'))
+                    ->where(function ($sub) {
+                        $sub->where('status', '!=', Question::STATUS_ACTIVE)
+                            ->orWhereNull('content')
+                            ->orWhereRaw("TRIM(content) = ''");
+                    });
+            })
+            ->with([
+                'questions' => function ($q) {
+                    $q->where('status', Question::STATUS_ACTIVE)
+                        ->whereHas('section', fn ($s) => $s->where('code', 'PART6')->whereHas('skill', fn ($sk) => $sk->where('code', 'RC')))
+                        ->with([
+                            'options' => fn ($opt) => $opt->select(['option_id', 'question_id', 'label', 'content', 'is_correct']),
+                            'section.skill',
+                            'questionType',
+                        ]);
+                },
+            ]);
 
         if (! empty($specificIds)) {
-            $setQuery->whereHas('questions', fn ($q) => $q->whereIn('question_id', $specificIds));
-        } else {
-            $setQuery->inRandomOrder()->limit($targetGroups);
+            $candidateQuery->whereHas('questions', fn ($q) => $q->whereIn('question_id', $specificIds));
         }
 
-        $sets = $setQuery->get();
+        $candidates = $candidateQuery->get();
 
-        if ($sets->isEmpty()) {
+        // Lọc qua validator để đảm bảo 100% nhóm đủ 4 câu hợp lệ
+        $validSets = $candidates->filter(function (QuestionSet $set) {
+            if (trim((string) $set->stimulus_text) === '') {
+                return false;
+            }
+            if ($set->questions->count() !== 4) {
+                return false;
+            }
+
+            return $set->questions->every(fn (Question $q) => $this->isValidPart6Question($q));
+        })->values();
+
+        if ($validSets->isEmpty()) {
             return [
                 'questions' => [],
                 'notice' => 'Chưa có đủ nhóm đoạn văn 4 câu hợp lệ cho Part 6 trong hệ thống.',
             ];
         }
 
-        $sets->load([
-            'questions' => function ($q) {
-                $q->where('status', Question::STATUS_ACTIVE)
-                    ->whereHas('section', fn ($s) => $s->where('code', 'PART6'))
-                    ->with(['options' => fn ($opt) => $opt->select(['option_id', 'question_id', 'label', 'content'])]);
-            },
-        ]);
+        $selectedSets = empty($specificIds)
+            ? $validSets->shuffle()->take($targetGroups)
+            : $validSets;
 
         $mapped = [];
         $globalNum = 1;
 
-        foreach ($sets as $set) {
+        foreach ($selectedSets as $set) {
             $sortedQuestions = $this->sortQuestionsInSet($set->questions);
             if ($sortedQuestions->count() !== 4) {
                 continue;
@@ -415,8 +464,8 @@ class ReadingPracticeController extends Controller
     ): array {
         $optionsMap = [];
         if ($q->relationLoaded('options')) {
-            if ($partNumber === 5) {
-                // Với Part 5: Sắp xếp cố định A -> B -> C -> D, không dựa vào thứ tự MySQL
+            if ($partNumber === 5 || $partNumber === 6) {
+                // Với Part 5 & 6: Sắp xếp cố định A -> B -> C -> D, không dựa vào thứ tự MySQL
                 foreach (['A', 'B', 'C', 'D'] as $label) {
                     $matchingOpt = $q->options->first(
                         fn ($opt) => strtoupper(trim((string) $opt->label)) === $label
@@ -519,6 +568,70 @@ class ReadingPracticeController extends Controller
     }
 
     /**
+     * Kiểm tra tính hợp lệ nghiêm ngặt của câu hỏi Part 6:
+     * 1. Status = ACTIVE
+     * 2. Thuộc PART6 và kỹ năng RC
+     * 3. Loại câu hỏi SINGLE_CHOICE
+     * 4. Thuộc về một question_set_id hợp lệ
+     * 5. Đúng 4 phương án trả lời với nhãn A, B, C, D
+     * 6. Đúng 1 phương án is_correct = 1
+     * 7. Nội dung câu hỏi và nội dung các phương án không được rỗng.
+     */
+    private function isValidPart6Question(Question $q): bool
+    {
+        if ($q->status !== Question::STATUS_ACTIVE) {
+            return false;
+        }
+
+        if (trim((string) $q->content) === '') {
+            return false;
+        }
+
+        if ($q->section?->code !== 'PART6') {
+            return false;
+        }
+
+        if ($q->section?->skill?->code !== 'RC') {
+            return false;
+        }
+
+        if ($q->questionType?->response_mode !== 'SINGLE_CHOICE') {
+            return false;
+        }
+
+        if (empty($q->question_set_id)) {
+            return false;
+        }
+
+        if (! $q->relationLoaded('options') || $q->options->count() !== 4) {
+            return false;
+        }
+
+        $labels = [];
+        $correctCount = 0;
+
+        foreach ($q->options as $opt) {
+            $lbl = strtoupper(trim((string) $opt->label));
+            $labels[] = $lbl;
+
+            if (trim((string) $opt->content) === '') {
+                return false;
+            }
+
+            if ((bool) $opt->is_correct) {
+                $correctCount++;
+            }
+        }
+
+        sort($labels);
+        if ($labels !== ['A', 'B', 'C', 'D']) {
+            return false;
+        }
+
+        return $correctCount === 1;
+    }
+
+    /**
      * Sắp xếp các câu hỏi trong cùng một nhóm QuestionSet.
      * Ưu tiên tìm số thứ tự chỗ trống trong nội dung câu hỏi (VD: [131], 131., Câu 131),
      * nếu không có thì sắp xếp theo question_id tăng dần.
@@ -566,6 +679,16 @@ class ReadingPracticeController extends Controller
 
         // Backend kiểm tra câu hỏi thuộc đúng lượt luyện tập của người dùng hiện tại
         $sessionData = session('reading_practice_session');
+        $sessionPart = $sessionData['part'] ?? null;
+
+        // BẢO MẬT: Tuyệt đối không cho phép gửi câu hỏi Part 6 riêng lẻ đến endpoint Part 5 để xem trước đáp án
+        if ($sessionPart === 6) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Câu hỏi Part 6 phải được kiểm tra theo nhóm đoạn văn.',
+            ], 403);
+        }
+
         $allowedIds = $sessionData['question_ids'] ?? [];
 
         if (! empty($allowedIds) && ! in_array($questionId, $allowedIds, true)) {
@@ -577,7 +700,10 @@ class ReadingPracticeController extends Controller
 
         $question = Question::query()
             ->where('question_id', $questionId)
-            ->with(['options' => fn ($opt) => $opt->select(['option_id', 'question_id', 'label', 'content', 'is_correct'])])
+            ->with([
+                'options' => fn ($opt) => $opt->select(['option_id', 'question_id', 'label', 'content', 'is_correct']),
+                'section',
+            ])
             ->first();
 
         if (! $question) {
@@ -585,6 +711,13 @@ class ReadingPracticeController extends Controller
                 'success' => false,
                 'message' => 'Không tìm thấy câu hỏi trong hệ thống.',
             ], 404);
+        }
+
+        if ($question->section?->code === 'PART6') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Câu hỏi Part 6 phải được kiểm tra theo nhóm đoạn văn.',
+            ], 403);
         }
 
         $correctOpt = $question->options->firstWhere('is_correct', true);
@@ -620,6 +753,126 @@ class ReadingPracticeController extends Controller
     }
 
     /**
+     * Kiểm tra đáp án theo nhóm đoạn văn (Dùng chung cho Part 6 và tái sử dụng cho Part 7).
+     * BẢO MẬT:
+     * - Chỉ nhận request khi có đủ câu trả lời của toàn bộ nhóm.
+     * - Đối chiếu trực tiếp với CSDL (answer_option.is_correct).
+     * - Khóa và lưu kết quả nhóm vào Session, chống gửi lặp lại hoặc chỉnh sửa sau khi chốt.
+     */
+    public function checkGroupAnswers(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'question_set_id' => ['required', 'integer'],
+            'answers' => ['required', 'array'],
+        ]);
+
+        $setId = (int) $validated['question_set_id'];
+        $sessionData = session('reading_practice_session');
+
+        if (! $sessionData || ! isset($sessionData['groups'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lượt luyện tập không tồn tại hoặc đã hết hạn.',
+            ], 403);
+        }
+
+        if (! isset($sessionData['groups'][$setId])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Nhóm đoạn văn không thuộc lượt luyện tập hiện tại.',
+            ], 403);
+        }
+
+        $groupInfo = $sessionData['groups'][$setId];
+        $expectedQids = $groupInfo['question_ids'] ?? [];
+
+        // Nếu nhóm đã hoàn thành và đã chốt trước đó, trả lại kết quả đã lưu (chống sửa đáp án / chống spam request)
+        if (! empty($groupInfo['completed']) && ! empty($groupInfo['result'])) {
+            return response()->json([
+                'success' => true,
+                'already_completed' => true,
+                'question_set_id' => $setId,
+                'correct_count' => $groupInfo['result']['correct_count'],
+                'total_questions' => count($expectedQids),
+                'results' => $groupInfo['result']['results'],
+            ]);
+        }
+
+        // Kiểm tra xem đã nhận đủ đáp án hợp lệ cho TẤT CẢ câu hỏi trong nhóm chưa
+        $userAnswers = $validated['answers'];
+        $normalizedAnswers = [];
+        foreach ($userAnswers as $qid => $val) {
+            $normalizedAnswers[(int) $qid] = strtoupper(trim((string) $val));
+        }
+
+        foreach ($expectedQids as $expectedId) {
+            if (! isset($normalizedAnswers[$expectedId]) || ! in_array($normalizedAnswers[$expectedId], ['A', 'B', 'C', 'D'], true)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn cần trả lời đầy đủ tất cả các câu hỏi trong đoạn văn trước khi xem kết quả.',
+                ], 422);
+            }
+        }
+
+        $dbQuestions = Question::query()
+            ->whereIn('question_id', $expectedQids)
+            ->with(['options' => fn ($opt) => $opt->select(['option_id', 'question_id', 'label', 'content', 'is_correct'])])
+            ->get()
+            ->keyBy('question_id');
+
+        $results = [];
+        $correctCount = 0;
+
+        foreach ($expectedQids as $qid) {
+            $q = $dbQuestions->get($qid);
+            if (! $q) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Dữ liệu câu hỏi không hợp lệ trên hệ thống.',
+                ], 404);
+            }
+
+            $correctOpt = $q->options->firstWhere('is_correct', true);
+            $correctLabel = $correctOpt ? strtoupper(trim((string) $correctOpt->label)) : null;
+
+            $userPick = $normalizedAnswers[$qid];
+            $isCorrect = ($userPick === $correctLabel);
+            if ($isCorrect) {
+                $correctCount++;
+            }
+
+            $rawExp = trim((string) $q->explanation);
+            $explanation = $rawExp !== '' ? $rawExp : 'Chưa có giải thích cho câu hỏi này.';
+
+            $results[] = [
+                'question_id' => $qid,
+                'user_answer' => $userPick,
+                'correct_answer' => $correctLabel,
+                'is_correct' => $isCorrect,
+                'is_right' => $isCorrect,
+                'explanation' => $explanation,
+            ];
+        }
+
+        // Ghi nhận trạng thái hoàn thành và đáp án đã chốt vào Session
+        $sessionData['groups'][$setId]['completed'] = true;
+        $sessionData['groups'][$setId]['answers'] = $normalizedAnswers;
+        $sessionData['groups'][$setId]['result'] = [
+            'correct_count' => $correctCount,
+            'results' => $results,
+        ];
+        session(['reading_practice_session' => $sessionData]);
+
+        return response()->json([
+            'success' => true,
+            'question_set_id' => $setId,
+            'correct_count' => $correctCount,
+            'total_questions' => count($expectedQids),
+            'results' => $results,
+        ]);
+    }
+
+    /**
      * Xử lý nộp bài thi luyện tập Đọc
      */
     public function submit(Request $request): RedirectResponse
@@ -647,11 +900,14 @@ class ReadingPracticeController extends Controller
 
         $orderedIds = ! empty($sessionIds) ? $sessionIds : $requestIds;
 
-        // Chấm điểm Part 5 (hoặc khi có danh sách câu hỏi từ MySQL)
-        if ($part === 5 || ! empty($orderedIds)) {
+        // Chấm điểm Part 5 & 6 (hoặc khi có danh sách câu hỏi từ MySQL)
+        if ($part === 5 || $part === 6 || ! empty($orderedIds)) {
             $dbQuestions = Question::query()
                 ->whereIn('question_id', $orderedIds)
-                ->with(['options' => fn ($opt) => $opt->select(['option_id', 'question_id', 'label', 'content', 'is_correct'])])
+                ->with([
+                    'options' => fn ($opt) => $opt->select(['option_id', 'question_id', 'label', 'content', 'is_correct']),
+                    'questionSet',
+                ])
                 ->get()
                 ->keyBy('question_id');
 
@@ -697,14 +953,27 @@ class ReadingPracticeController extends Controller
                     $rawExp = trim((string) $q->explanation);
                     $explanation = $rawExp !== '' ? $rawExp : 'Chưa có giải thích cho câu hỏi này.';
 
+                    $passageHtml = null;
+                    $passageTitle = null;
+                    if ($q->questionSet !== null) {
+                        $passageTitle = $q->questionSet->title ?: ('Đoạn văn Part '.$part);
+                        $passageHtml = (string) ($q->questionSet->stimulus_text ?? '');
+                        if ($q->questionSet->resolved_media_url) {
+                            $imgTag = '<div class="sp-vp-passage-media" style="margin-bottom: 16px;"><img src="'
+                                .e($q->questionSet->resolved_media_url)
+                                .'" alt="Reading material" style="max-width: 100%; height: auto; border-radius: 8px;"></div>';
+                            $passageHtml = $imgTag.$passageHtml;
+                        }
+                    }
+
                     $details[] = [
                         'id' => $qid,
                         'part' => 'Part '.$part,
                         'part_number' => $part,
                         'question_number' => $idx + 1,
                         'stem' => (string) $q->content,
-                        'passage_title' => null,
-                        'passage' => null,
+                        'passage_title' => $passageTitle,
+                        'passage' => $passageHtml,
                         'options' => $optionsMap,
                         'user_answer' => $userPick,
                         'correct_answer' => $correctLabel,
@@ -725,9 +994,15 @@ class ReadingPracticeController extends Controller
                 $previousPercent = session('reading_practice_result.score_percent');
                 $previousPercentText = $previousPercent !== null ? ($previousPercent.'%') : '40%';
 
+                $partNames = [
+                    5 => 'Part 5 — Hoàn thành câu',
+                    6 => 'Part 6 — Hoàn thành đoạn văn',
+                    7 => 'Part 7 — Đọc hiểu',
+                ];
+
                 $resultData = [
                     'part' => $part,
-                    'part_name' => 'Part 5 — Đọc',
+                    'part_name' => $partNames[$part] ?? ('Part '.$part.' — Đọc'),
                     'total' => $total,
                     'correct_count' => $correctCount,
                     'incorrect_count' => $incorrectCount,

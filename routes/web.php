@@ -49,9 +49,10 @@ Route::post('/luyen-tap/nghe/nop-bai', [ListeningPracticeController::class, 'sub
 Route::get('/luyen-tap/nghe/ket-qua', [ListeningPracticeController::class, 'result'])->name('luyen-tap.nghe.ket-qua');
 Route::get('/luyen-tap/nghe/xem-dap-an', [ListeningPracticeController::class, 'result'])->name('luyen-tap.nghe.xem-dap-an');
 
-// Luồng Luyện kỹ năng Đọc (Part 5: Hoàn thành câu & Kết quả)
+// Luồng Luyện kỹ năng Đọc (Part 5: Hoàn thành câu, Part 6: Hoàn thành đoạn văn & Kết quả)
 Route::get('/luyen-tap/doc/hoan-thanh-cau', [ReadingPracticeController::class, 'practice'])->name('luyen-tap.doc.hoan-thanh-cau');
 Route::post('/luyen-tap/doc/kiem-tra-cau-hoi', [ReadingPracticeController::class, 'checkAnswer'])->name('luyen-tap.doc.kiem-tra-cau-hoi');
+Route::post('/luyen-tap/doc/kiem-tra-nhom', [ReadingPracticeController::class, 'checkGroupAnswers'])->name('luyen-tap.doc.kiem-tra-nhom');
 Route::post('/luyen-tap/doc/nop-bai', [ReadingPracticeController::class, 'submit'])->name('luyen-tap.doc.nop-bai');
 Route::get('/luyen-tap/doc/ket-qua', [ReadingPracticeController::class, 'result'])->name('luyen-tap.doc.ket-qua');
 

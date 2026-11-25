@@ -106,11 +106,11 @@
         {{-- 2 Nút bấm hành động + Nút Tiếp tục --}}
         <div class="sp-kq-bottom-actions">
             @if($result['incorrect_count'] > 0)
-                <a href="{{ route('luyen-tap.doc.hoan-thanh-cau', ['retry_wrong' => 1]) }}" class="sp-kq-btn sp-kq-btn--purple">
+                <a href="{{ route('luyen-tap.doc.hoan-thanh-cau', ['part' => $result['part'] ?? 5, 'retry_wrong' => 1]) }}" class="sp-kq-btn sp-kq-btn--purple">
                     Luyện lại câu sai
                 </a>
             @else
-                <a href="{{ route('luyen-tap.doc.hoan-thanh-cau') }}" class="sp-kq-btn sp-kq-btn--purple">
+                <a href="{{ route('luyen-tap.doc.hoan-thanh-cau', ['part' => $result['part'] ?? 5]) }}" class="sp-kq-btn sp-kq-btn--purple">
                     Luyện tập lại
                 </a>
             @endif
@@ -175,11 +175,11 @@
             </button>
         </div>
 
-        {{-- Card Accordion Part 5: Hoàn thành câu --}}
+        {{-- Card Accordion Part: Hoàn thành câu / đoạn văn --}}
         <div class="sp-part-card">
             {{-- Header của Part --}}
             <div class="sp-part-header" onclick="togglePartAccordion('partBody')">
-                <h3 class="sp-part-title">Part 5: Hoàn thành câu</h3>
+                <h3 class="sp-part-title">{{ $result['part_name'] ?? 'Part 5: Hoàn thành câu' }}</h3>
                 <div class="sp-part-header-right">
                     <span class="sp-part-pct-pill">{{ $scorePercent }}%</span>
                     <span class="sp-part-score-text">{{ $result['correct_count'] }}/{{ $result['total'] }} Câu đúng</span>
@@ -301,11 +301,11 @@
         {{-- 2 Nút hành động ở đáy View 2 --}}
         <div class="sp-kq-bottom-actions">
             @if($result['incorrect_count'] > 0)
-                <a href="{{ route('luyen-tap.doc.hoan-thanh-cau', ['retry_wrong' => 1]) }}" class="sp-kq-btn sp-kq-btn--purple">
+                <a href="{{ route('luyen-tap.doc.hoan-thanh-cau', ['part' => $result['part'] ?? 5, 'retry_wrong' => 1]) }}" class="sp-kq-btn sp-kq-btn--purple">
                     Luyện lại câu sai
                 </a>
             @else
-                <a href="{{ route('luyen-tap.doc.hoan-thanh-cau') }}" class="sp-kq-btn sp-kq-btn--purple">
+                <a href="{{ route('luyen-tap.doc.hoan-thanh-cau', ['part' => $result['part'] ?? 5]) }}" class="sp-kq-btn sp-kq-btn--purple">
                     Luyện tập lại
                 </a>
             @endif

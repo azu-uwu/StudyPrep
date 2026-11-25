@@ -823,8 +823,17 @@
    ========================================================================== */
 @media (max-width: 1023.98px) {
     .sp-vp-main-layout,
-    .sp-vp-main-layout.with-explanation {
+    .sp-vp-main-layout.with-explanation,
+    .sp-vp-main-layout.is-group-mode,
+    .sp-vp-main-layout.is-group-mode.with-explanation {
         grid-template-columns: 1fr;
+    }
+
+    .sp-vp-main-layout.is-group-mode .sp-vp-panel,
+    .sp-vp-main-layout.is-group-mode .sp-vp-explain-panel,
+    .sp-vp-main-layout.is-group-mode .sp-vp-answers-panel {
+        max-height: none;
+        overflow-y: visible;
     }
 
     .sp-setup-count-grid {
@@ -874,4 +883,180 @@
     color: #1E293B;
     line-height: 1.65;
     margin: 0;
+}
+
+/* ==========================================================================
+   PART 6: LUYỆN TẬP THEO NHÓM ĐOẠN VĂN (BE-007.4)
+   ========================================================================== */
+.sp-vp-main-layout.is-group-mode {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 20px;
+    align-items: start;
+}
+
+.sp-vp-main-layout.is-group-mode.with-explanation {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.sp-vp-main-layout.is-group-mode .sp-vp-panel,
+.sp-vp-main-layout.is-group-mode .sp-vp-explain-panel,
+.sp-vp-main-layout.is-group-mode .sp-vp-answers-panel {
+    max-height: calc(100vh - 135px);
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+.sp-group-answers-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1.5px solid #EEF1F7;
+}
+
+.sp-group-progress-badge {
+    font-size: 12px;
+    font-weight: 800;
+    color: #5B4BF5;
+    background: #EDE9FE;
+    padding: 4px 12px;
+    border-radius: 999px;
+    letter-spacing: 0.3px;
+}
+
+.sp-group-progress-badge.is-completed {
+    color: #166534;
+    background: #DCFCE7;
+}
+
+.sp-group-q-card {
+    background: #FFFFFF;
+    border: 1.5px solid #EEF1F7;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 20px;
+    transition: border-color 0.15s ease;
+}
+
+.sp-group-q-card:focus-within,
+.sp-group-q-card:hover {
+    border-color: #CBD5E1;
+}
+
+.sp-group-q-card-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.sp-group-q-num-pill {
+    font-size: 13.5px;
+    font-weight: 800;
+    color: #1E293B;
+    background: #F1F5F9;
+    padding: 4px 10px;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.sp-group-q-stem {
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+    line-height: 1.6;
+}
+
+/* Vùng giải thích tổng hợp cho cả nhóm Part 6 (màu xanh theo phong cách hệ thống) */
+.sp-group-explain-box {
+    background: #38BDF8;
+    color: #FFFFFF;
+    border-radius: 18px;
+    padding: 20px;
+    margin-top: 24px;
+    box-shadow: 0 8px 24px rgba(56, 189, 248, 0.25);
+    animation: spFadeIn 0.25s ease-out;
+}
+
+.sp-group-explain-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+    flex-shrink: 0;
+}
+
+.sp-group-explain-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sp-group-explain-close {
+    background: transparent;
+    border: none;
+    color: #FFFFFF;
+    font-size: 18px;
+    cursor: pointer;
+    opacity: 0.85;
+    padding: 2px 8px;
+    border-radius: 6px;
+    transition: opacity 0.15s;
+}
+
+.sp-group-explain-close:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.sp-group-explain-item {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+}
+
+.sp-group-explain-item:last-child {
+    margin-bottom: 0;
+}
+
+.sp-group-explain-item-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.sp-group-explain-opt-badge {
+    font-size: 12px;
+    font-weight: 800;
+    padding: 2px 10px;
+    border-radius: 999px;
+}
+
+.sp-group-explain-opt-badge.is-correct {
+    background: #22C55E;
+    color: #FFFFFF;
+}
+
+.sp-group-explain-opt-badge.is-wrong {
+    background: #EF4444;
+    color: #FFFFFF;
+}
+
+.sp-group-explain-item-text {
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: #F8FAFC;
 }
