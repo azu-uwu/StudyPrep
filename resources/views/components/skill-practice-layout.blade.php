@@ -105,6 +105,21 @@
                 <div class="sp-setup-inpage__tag" id="setupPartTag">PART 5 · ĐỌC</div>
                 <h2 class="sp-setup-inpage__title" id="setupPartTitle">Hoàn thành câu</h2>
 
+                {{-- Thẻ thông tin câu sai (chế độ ôn lại câu sai - Ảnh 1) --}}
+                <div class="sp-setup-review-banner" id="setupReviewBanner" style="display: none;">
+                    <div class="sp-setup-review-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                        </svg>
+                    </div>
+                    <div class="sp-setup-review-content">
+                        <div class="sp-setup-review-title">
+                            <span id="setupReviewWrongCount">22</span> câu cần ôn lại
+                        </div>
+                        <div class="sp-setup-review-desc">Ôn lại các câu từng sai để tăng tỉ lệ đúng nhé.</div>
+                    </div>
+                </div>
+
                 {{-- Thông báo lỗi kiểm tra số câu --}}
                 <div id="setupPageErrorAlert" class="sp-setup-inpage__error-alert" style="{{ session('practice_error') ? '' : 'display: none;' }}">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
@@ -116,7 +131,7 @@
                 </div>
 
                 {{-- Tiêu đề phần chọn số câu --}}
-                <div class="sp-setup-inpage__section-label">Chọn số câu luyện tập</div>
+                <div class="sp-setup-inpage__section-label" id="setupSectionLabel">Chọn số câu luyện tập</div>
 
                 {{-- 4 Count cards (5, 10, 20, Tùy chọn) --}}
                 <div class="sp-setup-inpage__count-grid" id="setupCountGrid">
@@ -131,9 +146,14 @@
                     </select>
                 </div>
 
-                {{-- Nút Bắt đầu --}}
+                {{-- Nút Bắt đầu chế độ luyện tập thông thường (Tái sử dụng component x-button variant="primary") --}}
                 <x-button variant="primary" size="large" class="sp-setup-inpage__start-btn" id="setupStartBtn" style="width: 100%;" onclick="startInpagePractice()" data-require-auth>
                     <span>BẮT ĐẦU 20 CÂU &rarr;</span>
+                </x-button>
+
+                {{-- Nút Bắt đầu chế độ ôn lại câu sai (Tái sử dụng component x-button variant="success") --}}
+                <x-button variant="success" size="large" class="sp-setup-inpage__start-btn" id="setupReviewBtn" style="width: 100%; display: none;" onclick="startInpagePractice()" data-require-auth>
+                    <span>ÔN LẠI 5 CÂU &rarr;</span>
                 </x-button>
 
                 {{-- Link phụ xem lại kết quả --}}
@@ -417,6 +437,28 @@
     }
 
     /**
+     * Cập nhật component nút bắt đầu (Tự động chuyển đổi giữa x-button variant="primary" và variant="success")
+     */
+    function updateStartButton(isReviewMode, count) {
+        var startBtn = document.getElementById('setupStartBtn');
+        var reviewBtn = document.getElementById('setupReviewBtn');
+
+        if (isReviewMode) {
+            if (startBtn) startBtn.style.display = 'none';
+            if (reviewBtn) {
+                reviewBtn.style.display = 'inline-flex';
+                reviewBtn.innerHTML = '<span>ÔN LẠI ' + count + ' CÂU &rarr;</span>';
+            }
+        } else {
+            if (reviewBtn) reviewBtn.style.display = 'none';
+            if (startBtn) {
+                startBtn.style.display = 'inline-flex';
+                startBtn.innerHTML = '<span>BẮT ĐẦU ' + count + ' CÂU &rarr;</span>';
+            }
+        }
+    }
+
+    /**
      * Mở In-Page Setup View (Không dùng modal overlay cho trang setup)
      */
     function openInpageSetup(partNum) {
@@ -427,13 +469,49 @@
         activeConfigKey = key;
         var cfg = PRACTICE_PART_CONFIGS[activeConfigKey];
 
-        // Kiểm tra xem URL có param count không (VD: khi redirect từ backend do lỗi số câu)
+        // Kiểm tra xem có đang ở chế độ ôn lại câu sai (mode=review từ trang Cải thiện) không
         var urlParams = new URLSearchParams(window.location.search);
+        var isReviewMode = (urlParams.get('mode') === 'review');
+        var wrongCount = parseInt(urlParams.get('wrong'), 10);
+        if (isNaN(wrongCount) || wrongCount <= 0) {
+            wrongCount = 22; // Giá trị mẫu mặc định nếu không truyền
+        }
+
+        var setupView = document.getElementById('spSetupView');
+        var reviewBanner = document.getElementById('setupReviewBanner');
+        var wrongCountText = document.getElementById('setupReviewWrongCount');
+        var sectionLabel = document.getElementById('setupSectionLabel');
+        var startBtn = document.getElementById('setupStartBtn');
+
+        if (isReviewMode) {
+            if (setupView) setupView.classList.add('is-review-mode');
+            if (reviewBanner) {
+                reviewBanner.style.display = 'flex';
+                if (wrongCountText) wrongCountText.textContent = wrongCount;
+            }
+            if (sectionLabel) sectionLabel.textContent = 'Chọn số câu ôn lại';
+        } else {
+            if (setupView) setupView.classList.remove('is-review-mode');
+            if (reviewBanner) reviewBanner.style.display = 'none';
+            if (sectionLabel) sectionLabel.textContent = 'Chọn số câu luyện tập';
+        }
+
+        // Kiểm tra xem URL có param count không (VD: khi redirect từ backend do lỗi số câu)
         var urlCount = urlParams.get('count');
         if (urlCount && !isNaN(urlCount) && parseInt(urlCount, 10) > 0) {
             selectedPracticeCount = parseInt(urlCount, 10);
         } else {
             selectedPracticeCount = cfg.defaultCount;
+        }
+
+        // Nếu ở chế độ ôn lại và số câu mặc định vượt quá số câu sai hiện có -> chọn mức hợp lệ
+        if (isReviewMode && selectedPracticeCount > wrongCount) {
+            var validPresets = cfg.counts.filter(function(c) { return c.n <= wrongCount; });
+            if (validPresets.length > 0) {
+                selectedPracticeCount = validPresets[validPresets.length - 1].n;
+            } else {
+                selectedPracticeCount = wrongCount;
+            }
         }
 
         // Cập nhật Icon & Màu nền
@@ -453,10 +531,16 @@
         var hasMatchedPreset = false;
 
         cfg.counts.forEach(function(item) {
-            var isActive = (item.n === selectedPracticeCount);
+            var isDisabled = isReviewMode && (item.n > wrongCount);
+            var isActive = (item.n === selectedPracticeCount) && !isDisabled;
             if (isActive) hasMatchedPreset = true;
+
+            var cardAttrs = isDisabled 
+                ? 'class="sp-setup-inpage__count-card is-disabled" title="Số câu ôn lại không được vượt quá số câu sai hiện có (' + wrongCount + ' câu)"'
+                : 'class="sp-setup-inpage__count-card ' + (isActive ? 'is-active' : '') + '" onclick="selectInpageCount(' + item.n + ', this)"';
+
             grid.innerHTML += `
-                <div class="sp-setup-inpage__count-card ${isActive ? 'is-active' : ''}" onclick="selectInpageCount(${item.n}, this)">
+                <div ${cardAttrs}>
                     <div class="sp-setup-inpage__card-num">${item.n}</div>
                     <div class="sp-setup-inpage__card-label">${item.label}</div>
                     <div class="sp-setup-inpage__card-sub">${item.time}</div>
@@ -483,6 +567,7 @@
         sel.innerHTML = '';
         var selectFound = false;
         cfg.selectOptions.forEach(function(n) {
+            if (isReviewMode && n > wrongCount) return; // Không hiển thị mức quá số câu sai
             var opt = document.createElement('option');
             opt.value = n;
             opt.textContent = n + ' câu';
@@ -502,11 +587,19 @@
         }
 
         // Cập nhật nút bắt đầu
-        document.getElementById('setupStartBtn').innerHTML = '<span>BẮT ĐẦU ' + selectedPracticeCount + ' CÂU &rarr;</span>';
+        updateStartButton(isReviewMode, selectedPracticeCount);
 
         // Cập nhật sub-link kết quả
         var subLink = document.getElementById('setupSubLink');
-        if (subLink) subLink.href = cfg.resultUrl;
+        if (subLink) {
+            if (isReviewMode) {
+                subLink.href = "{{ url('/cai-thien') }}";
+                subLink.innerHTML = '&larr; Quay lại danh sách câu sai trang Cải thiện';
+            } else {
+                subLink.href = cfg.resultUrl;
+                subLink.innerHTML = 'Hoặc xem lại kết quả bài luyện gần nhất &rarr;';
+            }
+        }
 
         // Chuyển view trực tiếp trong DOM
         document.getElementById('spPartsListView').style.display = 'none';
@@ -526,6 +619,13 @@
      */
     function closeInpageSetup() {
         clearPageError();
+
+        var urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('mode') === 'review') {
+            window.location.href = "{{ url('/cai-thien') }}";
+            return;
+        }
+
         document.getElementById('spSetupView').style.display = 'none';
         document.getElementById('spPartsListView').style.display = 'block';
 
@@ -568,8 +668,9 @@
             }
         }
 
-        var btn = document.getElementById('setupStartBtn');
-        if (btn) btn.innerHTML = '<span>BẮT ĐẦU ' + count + ' CÂU &rarr;</span>';
+        var urlParams = new URLSearchParams(window.location.search);
+        var isReviewMode = (urlParams.get('mode') === 'review');
+        updateStartButton(isReviewMode, count);
     }
 
     /**
@@ -581,6 +682,10 @@
         var input = document.getElementById('customPracticeCountInput');
         var errEl = document.getElementById('customCountErrorMsg');
 
+        var urlParams = new URLSearchParams(window.location.search);
+        var isReviewMode = (urlParams.get('mode') === 'review');
+        var wrongCount = parseInt(urlParams.get('wrong'), 10) || 22;
+
         if (errEl) {
             errEl.style.display = 'none';
             errEl.textContent = '';
@@ -588,6 +693,11 @@
 
         if (input) {
             input.value = selectedPracticeCount;
+            if (isReviewMode) {
+                input.max = wrongCount;
+            } else {
+                input.removeAttribute('max');
+            }
         }
 
         if (modal) {
@@ -625,6 +735,20 @@
         var n = parseInt(raw, 10);
         var cfg = PRACTICE_PART_CONFIGS[activeConfigKey];
         var part = cfg ? cfg.partNum : 5;
+
+        var urlParams = new URLSearchParams(window.location.search);
+        var isReviewMode = (urlParams.get('mode') === 'review');
+        var wrongCount = parseInt(urlParams.get('wrong'), 10) || 22;
+
+        // Ràng buộc chế độ ôn lại: không vượt quá số câu sai hiện có
+        if (isReviewMode && n > wrongCount) {
+            if (errEl) {
+                errEl.textContent = 'Số câu ôn lại không được vượt quá số câu sai hiện có (' + wrongCount + ' câu).';
+                errEl.style.display = 'block';
+            }
+            if (input) input.focus();
+            return;
+        }
 
         // 2. Kiểm tra giới hạn số câu theo từng Part
         if (part === 5 && n < 1) {
@@ -685,8 +809,7 @@
         }
 
         // Cập nhật nút bắt đầu
-        var btn = document.getElementById('setupStartBtn');
-        if (btn) btn.innerHTML = '<span>BẮT ĐẦU ' + n + ' CÂU &rarr;</span>';
+        updateStartButton(isReviewMode, n);
 
         // Đóng modal
         if (modal) {
@@ -717,8 +840,9 @@
             if (customCard) customCard.classList.add('is-active');
         }
 
-        var btn = document.getElementById('setupStartBtn');
-        if (btn) btn.innerHTML = '<span>BẮT ĐẦU ' + val + ' CÂU &rarr;</span>';
+        var urlParams = new URLSearchParams(window.location.search);
+        var isReviewMode = (urlParams.get('mode') === 'review');
+        updateStartButton(isReviewMode, val);
     }
 
     /**
@@ -727,6 +851,18 @@
     function startInpagePractice() {
         var cfg = PRACTICE_PART_CONFIGS[activeConfigKey];
         if (!cfg) return;
+
+        var urlParams = new URLSearchParams(window.location.search);
+        var isReviewMode = (urlParams.get('mode') === 'review');
+
+        // CHẾ ĐỘ ÔN LẠI CÂU SAI: Mô phỏng Frontend & Chuẩn bị vị trí cho Backend BE-018
+        if (isReviewMode) {
+            alert(
+                '🎯 Đã thiết lập bài ôn lại ' + selectedPracticeCount + ' câu sai cho ' + cfg.title + '!\n\n' +
+                'ℹ️ Nghiệp vụ sau này: Hệ thống chỉ lấy câu hỏi trong danh sách câu sai đã lưu của bạn để tạo phiên làm bài ôn tập, không lấy thêm câu hỏi ngẫu nhiên từ ngân hàng chung (kết nối Backend BE-018).'
+            );
+            return;
+        }
 
         var part = cfg.partNum;
         var count = selectedPracticeCount;

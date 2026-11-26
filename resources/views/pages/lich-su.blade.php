@@ -1,16 +1,12 @@
-<x-layouts.app active="lich-su" title="StudyPrep - Lịch sử làm bài">
+<x-layouts.app active="lich-su" title="StudyPrep - Lịch sử">
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/pages/lich-su.css') }}">
 @endpush
 
-{{-- 1. Thanh breadcrumb điều hướng & Công cụ phía trên --}}
-<div class="ls-top-toolbar">
-    <nav class="ls-breadcrumb" aria-label="Breadcrumb">
-        <a href="{{ url('/phan-tich') }}">Tiến độ</a>
-        <span class="ls-breadcrumb-sep">›</span>
-        <span class="ls-breadcrumb-current">Lịch sử làm bài</span>
-    </nav>
+{{-- ===== TIÊU ĐỀ TRANG & THANH CÔNG CỤ (Đồng bộ chuẩn hệ thống StudyPrep) ===== --}}
+<div class="ls-header-toolbar">
+    <h1 class="ls-page-title">Lịch sử</h1>
 
     <div class="ls-top-actions">
         {{-- Ô tìm kiếm --}}
@@ -37,29 +33,18 @@
         </button>
 
         {{-- Nút xuất báo cáo --}}
-        <button type="button" class="ls-export-btn" onclick="exportReport()">
-            <svg viewBox="0 0 24 24">
+        <x-button variant="primary" size="small" type="button" onclick="exportReport()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="17 8 12 3 7 8"></polyline>
                 <line x1="12" y1="3" x2="12" y2="15"></line>
             </svg>
             <span>Xuất báo cáo</span>
-        </button>
+        </x-button>
     </div>
 </div>
 
-{{-- 2. Tiêu đề trang với icon đồng hồ tròn màu xanh --}}
-<div class="ls-title-row">
-    <div class="ls-title-icon-badge">
-        <svg viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="10"></circle>
-            <polyline points="12 6 12 12 16 14"></polyline>
-        </svg>
-    </div>
-    <h1 class="ls-page-title">Lịch sử</h1>
-</div>
-
-{{-- 3. Bốn thẻ số liệu tổng hợp (Khớp 100% ảnh thiết kế) --}}
+{{-- ===== 4 THẺ SỐ LIỆU TỔNG HỢP ===== --}}
 <div class="ls-stats-grid">
     {{-- Thẻ 1: Hoạt động ghi nhận --}}
     <div class="ls-stat-card">
@@ -90,7 +75,7 @@
                 <span class="ls-stat-badge">↑ +5.2%</span>
             </div>
         </div>
-        <div class="ls-stat-icon-wrap ls-stat-icon-wrap--purple">
+        <div class="ls-stat-icon-wrap ls-stat-icon-wrap--primary">
             <svg viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 14 14"></polyline>
@@ -123,13 +108,13 @@
                 <span class="ls-stat-unit">câu</span>
             </div>
         </div>
-        <button type="button" class="ls-review-now-btn" onclick="reviewWeakPoints()">
+        <x-button variant="danger" size="small" type="button" onclick="reviewWeakPoints()">
             Ôn ngay
-        </button>
+        </x-button>
     </div>
 </div>
 
-{{-- 4. Thanh lọc theo loại bài & Sắp xếp --}}
+{{-- ===== THANH LỌC THEO LOẠI BÀI & SẮP XẾP ===== --}}
 <div class="ls-filter-sort-row">
     <div class="ls-filter-pills" role="tablist">
         <button type="button" class="ls-pill-item is-active" data-filter="all" onclick="filterActivity('all', this)">
@@ -168,7 +153,7 @@
 {{-- Dòng mô tả số lượng --}}
 <p class="ls-count-subtitle" id="lsCountSubtitle">Hiển thị 8 trong 8 hoạt động</p>
 
-{{-- 5. Danh sách các bài đã làm gom nhóm theo mốc thời gian (Timeline) --}}
+{{-- ===== DANH SÁCH BÀI ĐÃ LÀM (TIMELINE) ===== --}}
 <div id="lsActivitiesContainer">
 
     {{-- Nhóm 1: HÔM NAY --}}
@@ -211,8 +196,8 @@
                     <span class="ls-rate-value">0%</span>
                 </div>
                 <div class="ls-action-buttons">
-                    <button type="button" class="ls-btn-text" onclick="viewResultDetail('part5')">Xem Kết Quả</button>
-                    <button type="button" class="ls-btn-outline" onclick="window.location.href='{{ url('/luyen-tap/doc-cau') }}'">Ôn lại</button>
+                    <x-button variant="neutral" size="small" type="button" onclick="viewResultDetail('part5')">Xem kết quả</x-button>
+                    <x-button variant="primary" size="small" href="{{ url('/luyen-tap/doc-cau') }}">Ôn lại</x-button>
                 </div>
             </div>
         </div>
@@ -258,8 +243,8 @@
                     <span class="ls-rate-value">46%</span>
                 </div>
                 <div class="ls-action-buttons">
-                    <button type="button" class="ls-btn-text" onclick="viewResultDetail('part4')">Xem Kết Quả</button>
-                    <button type="button" class="ls-btn-outline" onclick="window.location.href='{{ url('/luyen-tap/noi') }}'">Ôn lại</button>
+                    <x-button variant="neutral" size="small" type="button" onclick="viewResultDetail('part4')">Xem kết quả</x-button>
+                    <x-button variant="primary" size="small" href="{{ url('/luyen-tap/noi') }}">Ôn lại</x-button>
                 </div>
             </div>
         </div>
@@ -304,8 +289,8 @@
                     <span class="ls-rate-value">73%</span>
                 </div>
                 <div class="ls-action-buttons">
-                    <button type="button" class="ls-btn-text" onclick="viewResultDetail('part3')">Xem Kết Quả</button>
-                    <button type="button" class="ls-btn-outline" onclick="window.location.href='{{ url('/luyen-tap/doc?skill=nghe') }}'">Ôn lại</button>
+                    <x-button variant="neutral" size="small" type="button" onclick="viewResultDetail('part3')">Xem kết quả</x-button>
+                    <x-button variant="primary" size="small" href="{{ url('/luyen-tap/doc?skill=nghe') }}">Ôn lại</x-button>
                 </div>
             </div>
         </div>
@@ -351,8 +336,8 @@
                     <span class="ls-rate-value ls-rate-value--green">85%</span>
                 </div>
                 <div class="ls-action-buttons">
-                    <button type="button" class="ls-btn-text" onclick="viewVocabularyList()">Xem danh sách</button>
-                    <button type="button" class="ls-btn-outline" onclick="window.location.href='{{ url('/tu-vung') }}'">Luyện thẻ nhớ</button>
+                    <x-button variant="neutral" size="small" type="button" onclick="viewVocabularyList()">Xem danh sách</x-button>
+                    <x-button variant="primary" size="small" href="{{ url('/tu-vung') }}">Luyện thẻ nhớ</x-button>
                 </div>
             </div>
         </div>
@@ -403,8 +388,8 @@
                     </div>
                 </div>
                 <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                    <button type="button" class="ls-btn-outline" onclick="closeResultModal()">Đóng</button>
-                    <button type="button" class="ls-review-now-btn" style="background: #0076FE;" onclick="window.location.href='{{ url('/luyen-tap/doc-cau') }}'">Luyện lại câu này</button>
+                    <button type="button" class="sp-btn sp-btn--neutral sp-btn--small" onclick="closeResultModal()">Đóng</button>
+                    <button type="button" class="sp-btn sp-btn--primary sp-btn--small" onclick="window.location.href='{{ url('/luyen-tap/doc-cau') }}'">Luyện lại câu này</button>
                 </div>
             `
         },
@@ -415,7 +400,7 @@
                 <div style="background: #F8FAFC; border: 1.5px solid #EEF1F7; border-radius: 14px; padding: 18px; margin-bottom: 16px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                         <span style="font-size: 14px; font-weight: 800; color: #1E293B;">Đánh giá theo chủ đề bài nói</span>
-                        <span style="font-size: 13px; font-weight: 700; color: #6366F1;">Audio: Thông báo công ty & Tin tức</span>
+                        <span style="font-size: 13px; font-weight: 700; color: var(--sp-primary, #0076FE);">Audio: Thông báo công ty & Tin tức</span>
                     </div>
                     <ul style="margin: 0; padding-left: 20px; font-size: 13.5px; color: #475569; line-height: 1.8;">
                         <li>Câu hỏi mục đích bài nói (Main idea): 3/3 câu đúng (100%)</li>
@@ -424,8 +409,8 @@
                     </ul>
                 </div>
                 <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                    <button type="button" class="ls-btn-outline" onclick="closeResultModal()">Đóng</button>
-                    <button type="button" class="ls-review-now-btn" style="background: #0076FE;" onclick="window.location.href='{{ url('/luyen-tap/noi') }}'">Nghe lại bài nói</button>
+                    <button type="button" class="sp-btn sp-btn--neutral sp-btn--small" onclick="closeResultModal()">Đóng</button>
+                    <button type="button" class="sp-btn sp-btn--primary sp-btn--small" onclick="window.location.href='{{ url('/luyen-tap/noi') }}'">Nghe lại bài nói</button>
                 </div>
             `
         },
@@ -441,8 +426,8 @@
                     <div style="font-size: 13px; color: #15803D; font-weight: 700;">• 4 câu sai tập trung ở đoạn nối liên quan đến thời gian và lịch trình chuyến bay.</div>
                 </div>
                 <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                    <button type="button" class="ls-btn-outline" onclick="closeResultModal()">Đóng</button>
-                    <button type="button" class="ls-review-now-btn" style="background: #0076FE;" onclick="window.location.href='{{ url('/luyen-tap/doc?skill=nghe') }}'">Luyện tập tiếp</button>
+                    <button type="button" class="sp-btn sp-btn--neutral sp-btn--small" onclick="closeResultModal()">Đóng</button>
+                    <button type="button" class="sp-btn sp-btn--primary sp-btn--small" onclick="window.location.href='{{ url('/luyen-tap/doc?skill=nghe') }}'">Luyện tập tiếp</button>
                 </div>
             `
         }
@@ -479,8 +464,8 @@
                 </div>
             </div>
             <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                <button type="button" class="ls-btn-outline" onclick="closeResultModal()">Đóng</button>
-                <button type="button" class="ls-review-now-btn" style="background: #0284C7;" onclick="window.location.href='{{ url('/tu-vung') }}'">Luyện ngay 12 từ còn lại</button>
+                <button type="button" class="sp-btn sp-btn--neutral sp-btn--small" onclick="closeResultModal()">Đóng</button>
+                <button type="button" class="sp-btn sp-btn--primary sp-btn--small" onclick="window.location.href='{{ url('/tu-vung') }}'">Luyện ngay 12 từ còn lại</button>
             </div>
         `;
         document.getElementById('lsModalBackdrop').classList.add('is-open');

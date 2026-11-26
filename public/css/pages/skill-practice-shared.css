@@ -648,6 +648,75 @@
     margin: 18px 0 24px;
 }
 
+/* ===== CHẾ ĐỘ ÔN LẠI CÂU SAI (MODE=REVIEW - KHỚP ẢNH 1) ===== */
+.sp-setup-review-banner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #FFF7ED;
+    border: 1.5px solid #FED7AA;
+    border-radius: 16px;
+    padding: 14px 18px;
+    margin: 18px 0 24px;
+    text-align: left;
+}
+
+.sp-setup-review-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: #FFEDD5;
+    color: #F97316;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sp-setup-review-title {
+    font-size: 15.5px;
+    font-weight: 800;
+    color: #111C2D;
+    line-height: 1.3;
+    margin-bottom: 2px;
+}
+
+.sp-setup-review-desc {
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748B;
+    line-height: 1.4;
+}
+
+/* Thẻ chọn số câu khi active trong chế độ ÔN LẠI (Theme màu cam - Ảnh 1) */
+.sp-setup-inpage.is-review-mode .sp-setup-inpage__count-card.is-active {
+    border-color: #F97316 !important;
+    border-width: 2px !important;
+    background: #FFF7ED !important;
+    box-shadow: 0 0 0 1px #F97316 !important;
+}
+
+.sp-setup-inpage.is-review-mode .sp-setup-inpage__count-card.is-active .sp-setup-inpage__card-num {
+    color: #F97316 !important;
+}
+
+.sp-setup-inpage.is-review-mode .sp-setup-inpage__count-card.is-active .sp-setup-inpage__card-label {
+    color: #EA580C !important;
+}
+
+.sp-setup-inpage.is-review-mode .sp-setup-inpage__count-card.is-active .sp-setup-inpage__card-icon {
+    color: #F97316 !important;
+}
+
+/* Thẻ bị vô hiệu hóa khi số câu preset vượt quá số câu sai hiện có */
+.sp-setup-inpage__count-card.is-disabled {
+    opacity: 0.35 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+    filter: grayscale(0.8) !important;
+    border-style: dashed !important;
+}
+
 .sp-setup-inpage__dropdown-label {
     font-size: 14px;
     font-weight: 700;
