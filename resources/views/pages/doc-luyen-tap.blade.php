@@ -23,12 +23,12 @@
             <a href="{{ url('/luyen-tap/doc') }}" class="sp-vp-logo" title="StudyPrep">
                 <img class="sp-sidebar__logo sp-vp-logo-img" src="{{ asset('images/logo.svg') }}" alt="StudyPrep">
             </a>
-            <a href="{{ url('/luyen-tap/doc') }}" class="sp-vp-close-btn" title="Thoát bài luyện tập" onclick="return confirmExit(event)">
+            <button type="button" class="sp-vp-close-btn" title="Thoát bài luyện tập" onclick="openExitConfirmModal()">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
                     <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
-            </a>
+            </button>
         </div>
 
         {{-- Thanh tiến độ làm bài --}}
@@ -63,9 +63,17 @@
 
     {{-- 2. THANH ĐIỀU HƯỚNG CÂU VÀ TIP BANNER --}}
     @if (!empty($noticeMessage))
-        <div style="background: #EFF6FF; border-bottom: 1.5px solid #BFDBFE; color: #1D4ED8; padding: 10px 24px; font-size: 13.5px; font-weight: 600; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-            <span>{{ $noticeMessage }}</span>
+        <div class="sp-adjustment-notice-banner" id="adjustmentNoticeBanner">
+            <div class="sp-adjustment-notice-content">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                <span>{{ $noticeMessage }}</span>
+            </div>
+            <button type="button" class="sp-adjustment-notice-close" onclick="dismissAdjustmentNotice()" title="Đóng thông báo" aria-label="Đóng thông báo">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
         </div>
     @endif
     <div class="sp-vp-subnav">
@@ -156,29 +164,38 @@
     {{-- LỚP OVERLAY CHO BOTTOM SHEET TRÊN MOBILE --}}
     <div class="sp-explain-backdrop" id="explainBackdrop" onclick="toggleExplanation()"></div>
 
-    {{-- 4. MODAL NỘP BÀI: CẢNH BÁO CHƯA LÀM CÂU NÀO (ẢNH MẪU 2) --}}
-    <div class="sp-submit-modal-backdrop" id="emptySubmitModal">
-        <div class="sp-submit-modal">
-            <h3 class="sp-submit-modal__title">Nộp bài</h3>
-            <p class="sp-submit-modal__msg">Bạn chưa làm câu nào. Bạn có muốn làm ít nhất 1 câu hay nộp bài ngay?</p>
-            <div class="sp-submit-modal__actions">
-                <button type="button" class="sp-btn-revisit" onclick="closeSubmitModals()">Làm tiếp</button>
-                <button type="button" class="sp-btn-confirm-submit" onclick="submitExamDirectly()">Vẫn nộp bài</button>
-            </div>
-        </div>
-    </div>
+    {{-- 4. MODAL XÁC NHẬN THOÁT BÀI LUYỆN TẬP (ẢNH 4) --}}
+    <x-modal id="exitConfirmModal" title="Bạn thật sự muốn dừng lại?" maxWidth="460px">
+        <p style="margin: 0; font-size: 15px; color: #334155; line-height: 1.6;">
+            Nhấn "Lưu & Thoát" để giữ bài và làm tiếp sau. Nhấn "Thoát" sẽ xoá bài đang làm.
+        </p>
+        <x-slot:actions>
+            <x-button variant="primary" type="button" disabled title="Chức năng Lưu & Thoát sẽ được kích hoạt tại BE-007.8" style="opacity: 0.6; cursor: not-allowed;">
+                Lưu & Thoát
+            </x-button>
+            <x-button variant="danger" type="button" onclick="window.location.href='{{ url('/luyen-tap/doc') }}'">
+                Thoát
+            </x-button>
+            <x-button variant="neutral" type="button" data-sp-modal-close>
+                Tiếp tục
+            </x-button>
+        </x-slot:actions>
+    </x-modal>
 
-    {{-- 5. MODAL NỘP BÀI: CÒN CÂU CHƯA TRẢ LỜI (ẢNH MẪU 1) --}}
-    <div class="sp-submit-modal-backdrop" id="incompleteSubmitModal">
-        <div class="sp-submit-modal">
-            <h3 class="sp-submit-modal__title">Nộp bài</h3>
-            <p class="sp-submit-modal__msg" id="incompleteSubmitMsg">Bạn có câu hỏi chưa trả lời, bạn có muốn xem lại trước khi nộp không?</p>
-            <div class="sp-submit-modal__actions">
-                <button type="button" class="sp-btn-revisit" onclick="closeSubmitModals()">Xem lại</button>
-                <button type="button" class="sp-btn-confirm-submit" onclick="submitExamDirectly()">Nộp bài</button>
-            </div>
-        </div>
-    </div>
+    {{-- 5. MODAL XÁC NHẬN NỘP BÀI (ẢNH 5) --}}
+    <x-modal id="submitConfirmModal" title="Nộp bài" maxWidth="440px">
+        <p id="submitConfirmModalMsg" style="margin: 0; font-size: 15px; color: #334155; line-height: 1.6;">
+            Bạn đang ở câu hỏi cuối cùng, bạn có muốn nộp bài và xem lại kết quả không?
+        </p>
+        <x-slot:actions>
+            <x-button variant="neutral" type="button" data-sp-modal-close>
+                Hủy
+            </x-button>
+            <x-button variant="primary" type="button" id="submitConfirmSubmitBtn" onclick="submitExamDirectly()">
+                Nộp bài
+            </x-button>
+        </x-slot:actions>
+    </x-modal>
 
     {{-- 6. MODAL DANH SÁCH CÂU HỎI (QUESTION PALETTE) --}}
     <div class="sp-submit-modal-backdrop" id="questionDrawerModal" onclick="if(event.target === this) toggleQuestionDrawer()">
@@ -241,6 +258,18 @@
         let flaggedQuestions = {};
         let timerSeconds = 0;
         let isCheckingAnswer = false;
+
+        // Đóng thanh thông báo điều chỉnh số câu nhẹ nhàng (chỉ tác động UI, không đổi câu hỏi/bài thi)
+        function dismissAdjustmentNotice() {
+            const banner = document.getElementById('adjustmentNoticeBanner');
+            if (banner) {
+                banner.style.opacity = '0';
+                banner.style.transition = 'opacity 0.2s ease, max-height 0.2s ease, padding 0.2s ease';
+                setTimeout(() => {
+                    banner.style.display = 'none';
+                }, 200);
+            }
+        }
 
         // Trợ thủ mã hóa an toàn các ký tự HTML nhưng giữ nguyên định dạng câu hỏi
         function escapeHtml(str) {
@@ -322,6 +351,7 @@
             grp.questions.forEach(q => {
                 const qRes = gState?.results ? gState.results.find(r => r.question_id === q.id) : null;
                 const isGroupCompleted = !!gState?.completed;
+                const isGroupRevealed = !!gState?.revealed && !isGroupCompleted;
                 const userPick = userAnswers[q.id];
 
                 questionsHtml += `
@@ -342,7 +372,6 @@
                     let badgeHtml = '';
 
                     if (isGroupCompleted && qRes) {
-                        rowClass += ' is-locked';
                         if (letter === qRes.correct_answer && letter === userPick) {
                             rowClass += ' is-correct is-selected';
                             badgeHtml = '<span class="sp-vp-opt-status-badge sp-vp-opt-status-badge--correct">✓ Đúng</span>';
@@ -353,6 +382,13 @@
                             rowClass += ' is-correct-target';
                             badgeHtml = '<span class="sp-vp-opt-status-badge sp-vp-opt-status-badge--correct">✓ Đáp án đúng</span>';
                         }
+                    } else if (isGroupRevealed && qRes) {
+                        if (letter === qRes.correct_answer) {
+                            rowClass += ' is-correct-target';
+                            badgeHtml = '<span class="sp-vp-opt-status-badge sp-vp-opt-status-badge--correct">✓ Đáp án đúng</span>';
+                        } else if (letter === userPick) {
+                            rowClass += ' is-selected';
+                        }
                     } else {
                         // Nhóm đang làm: Chỉ đánh dấu phương án đã chọn bằng màu tím chuẩn hệ thống (.is-selected)
                         if (letter === userPick) {
@@ -360,7 +396,7 @@
                         }
                     }
 
-                    const clickAction = isGroupCompleted ? '' : `onclick="selectGroupAnswer(${grp.setId}, ${q.id}, '${letter}')"`;
+                    const clickAction = `onclick="selectGroupAnswer(${grp.setId}, ${q.id}, '${letter}')"`;
 
                     questionsHtml += `
                         <div class="${rowClass}" ${clickAction}>
@@ -383,27 +419,40 @@
             const groupExplainHeader = document.getElementById('groupExplainHeader');
             const groupExplainBody = document.getElementById('groupExplainBody');
 
-            if (gState?.completed && gState.explainOpen !== false) {
+            if ((gState?.completed || gState?.revealed) && gState.explainOpen !== false) {
                 if (groupExplainHeader) groupExplainHeader.style.display = 'flex';
                 if (groupExplainBody) groupExplainBody.style.display = 'block';
 
-                document.getElementById('groupExplainTitle').innerHTML = `
-                    <span>💡 Kết quả đoạn văn: Đúng <strong>${gState.correctCount}/${gState.totalQuestions}</strong> câu</span>
-                `;
+                if (gState.completed) {
+                    document.getElementById('groupExplainTitle').innerHTML = `
+                        <span>💡 Kết quả đoạn văn: Đúng <strong>${gState.correctCount}/${gState.totalQuestions}</strong> câu</span>
+                    `;
+                } else {
+                    document.getElementById('groupExplainTitle').innerHTML = `
+                        <span>💡 Hướng dẫn & Giải thích đoạn văn (${gState.totalQuestions} câu)</span>
+                    `;
+                }
 
                 let expBodyHtml = '';
                 grp.questions.forEach(q => {
-                    const qRes = gState.results.find(r => r.question_id === q.id);
+                    const qRes = gState.results ? gState.results.find(r => r.question_id === q.id) : null;
                     if (!qRes) return;
 
                     const isRight = !!qRes.is_right;
+                    let badgeStatus = '';
+                    if (gState.completed) {
+                        badgeStatus = isRight
+                            ? `<span class="sp-group-explain-opt-badge is-correct">✓ Đúng (Đáp án ${qRes.correct_answer})</span>`
+                            : `<span class="sp-group-explain-opt-badge is-wrong">✗ Bạn chọn: ${qRes.user_answer} — Đáp án đúng: ${qRes.correct_answer}</span>`;
+                    } else {
+                        badgeStatus = `<span class="sp-group-explain-opt-badge is-correct">Đáp án đúng: ${qRes.correct_answer}</span>`;
+                    }
+
                     expBodyHtml += `
                         <div class="sp-group-explain-item">
                             <div class="sp-group-explain-item-head">
                                 <span>Câu ${q.question_number}</span>
-                                <span class="sp-group-explain-opt-badge ${isRight ? 'is-correct' : 'is-wrong'}">
-                                    ${isRight ? `✓ Đúng (Đáp án ${qRes.correct_answer})` : `✗ Bạn chọn: ${qRes.user_answer} — Đáp án đúng: ${qRes.correct_answer}`}
-                                </span>
+                                ${badgeStatus}
                             </div>
                             <div class="sp-group-explain-item-text">
                                 <strong>Giải thích:</strong> ${escapeHtml(qRes.explanation || 'Chưa có giải thích cho câu hỏi này.')}
@@ -423,17 +472,15 @@
             document.getElementById('prevBtn').textContent = '← Đoạn trước';
             document.getElementById('nextBtn').textContent = 'Đoạn tiếp theo →';
             document.getElementById('prevBtn').disabled = (currentGroupIndex === 0);
-            document.getElementById('nextBtn').disabled = (currentGroupIndex === groups.length - 1);
+            document.getElementById('nextBtn').disabled = false;
 
             updateProgress();
         }
 
         async function selectGroupAnswer(setId, qid, letter) {
             if (isCheckingAnswer) return;
-            const gState = groupStates[setId];
-            if (gState?.completed) return; // Đã chốt nhóm
 
-            // Ghi nhận lựa chọn của người dùng (cho phép đổi đáp án tự do trước khi chốt)
+            // Ghi nhận lựa chọn của người dùng (cho phép chọn và đổi đáp án bất kỳ lúc nào)
             userAnswers[qid] = letter;
 
             // Đồng bộ input hidden vào form nộp bài
@@ -457,7 +504,7 @@
                 renderDrawerQuestions();
             }
 
-            // Trạng thái 3: Ngay khi chọn đáp án cho câu cuối cùng (đủ 4/4) -> Tự động gửi lên Backend
+            // Khi đã chọn đủ tất cả các câu trong nhóm, tự động kiểm tra đáp án
             if (answeredInGroup === totalInGroup) {
                 await submitGroupAnswers(grp);
             }
@@ -655,15 +702,12 @@
                 ? ['A', 'B', 'C', 'D'].filter(lbl => opts[lbl] !== undefined)
                 : Object.keys(opts).sort();
 
-            const isLocked = !!(qState && (qState.answered || qState.revealed));
-
             for (const letter of labels) {
                 const text = opts[letter];
                 let rowClass = 'sp-vp-opt-row';
                 let badgeHtml = '';
 
                 if (qState?.answered) {
-                    rowClass += ' is-locked';
                     if (letter === qState.userPick && qState.isCorrect) {
                         rowClass += ' is-correct is-selected';
                         badgeHtml = '<span class="sp-vp-opt-status-badge sp-vp-opt-status-badge--correct">✓ Đúng</span>';
@@ -675,14 +719,18 @@
                         badgeHtml = '<span class="sp-vp-opt-status-badge sp-vp-opt-status-badge--correct">✓ Đáp án đúng</span>';
                     }
                 } else if (qState?.revealed) {
-                    rowClass += ' is-locked';
                     if (letter === qState.correctPick) {
                         rowClass += ' is-correct-target';
                         badgeHtml = '<span class="sp-vp-opt-status-badge sp-vp-opt-status-badge--correct">✓ Đáp án đúng</span>';
+                    } else if (letter === userAnswers[q.id]) {
+                        rowClass += ' is-selected';
                     }
+                } else if (letter === userAnswers[q.id]) {
+                    rowClass += ' is-selected';
                 }
 
-                const clickAction = isLocked ? '' : `onclick="selectAnswer(${q.id}, '${letter}')"`;
+                // Luôn cho phép người học chọn hoặc đổi đáp án trong chế độ luyện tập
+                const clickAction = `onclick="selectAnswer(${q.id}, '${letter}')"`;
 
                 questionsHtml += `
                     <div class="${rowClass}" ${clickAction}>
@@ -706,7 +754,7 @@
             document.getElementById('prevBtn').textContent = '← Câu trước';
             document.getElementById('nextBtn').textContent = 'Câu sau →';
             document.getElementById('prevBtn').disabled = (currentIndex === 0);
-            document.getElementById('nextBtn').disabled = (currentIndex === questionsData.length - 1);
+            document.getElementById('nextBtn').disabled = false;
         }
 
         let savedBodyScrollY = 0;
@@ -715,7 +763,7 @@
             if (isGroupMode) {
                 const grp = groups[currentGroupIndex];
                 const gState = grp ? groupStates[grp.setId] : null;
-                return !!(gState?.completed && gState.explainOpen !== false);
+                return !!((gState?.completed || gState?.revealed) && gState.explainOpen !== false);
             } else {
                 const q = questionsData ? questionsData[currentIndex] : null;
                 const qState = q ? questionStates[q.id] : null;
@@ -796,11 +844,6 @@
 
         async function selectAnswer(qid, letter) {
             if (isCheckingAnswer) return;
-            const qState = questionStates[qid];
-
-            if (qState && (qState.answered || qState.revealed)) {
-                return;
-            }
 
             isCheckingAnswer = true;
             try {
@@ -867,11 +910,53 @@
                 const grp = groups[currentGroupIndex];
                 const gState = groupStates[grp.setId];
 
-                if (gState && gState.completed) {
+                if (gState && (gState.completed || gState.revealed)) {
                     gState.explainOpen = !gState.explainOpen;
                     renderCurrentGroup(gState.explainOpen);
-                } else {
-                    alert('Hãy trả lời hết các câu hỏi trong đoạn văn để xem giải thích.');
+                    return;
+                }
+
+                if (isCheckingAnswer) return;
+                isCheckingAnswer = true;
+                try {
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                        || document.querySelector('input[name="_token"]')?.value;
+
+                    const response = await fetch('{{ route("luyen-tap.doc.kiem-tra-nhom") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            question_set_id: grp.setId,
+                            action: 'reveal'
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (data && data.success) {
+                        groupStates[grp.setId] = {
+                            completed: false,
+                            revealed: true,
+                            totalQuestions: data.total_questions,
+                            results: data.results,
+                            explainOpen: true
+                        };
+
+                        renderCurrentGroup(true);
+
+                        if (document.getElementById('questionDrawerModal')?.classList.contains('is-open')) {
+                            renderDrawerQuestions();
+                        }
+                    } else {
+                        alert(data?.message || 'Không thể tải giải thích cho đoạn văn này.');
+                    }
+                } catch (err) {
+                    console.error('Lỗi khi tải giải thích nhóm:', err);
+                } finally {
+                    isCheckingAnswer = false;
                 }
                 return;
             }
@@ -966,6 +1051,8 @@
                     currentGroupIndex++;
                     renderCurrentGroup();
                     scrollToContentTopIfMobile();
+                } else {
+                    handlePreSubmit();
                 }
                 return;
             }
@@ -973,6 +1060,8 @@
                 currentIndex++;
                 renderCurrentQuestion();
                 scrollToContentTopIfMobile();
+            } else {
+                handlePreSubmit();
             }
         }
 
@@ -1135,49 +1224,57 @@
             }
         }
 
-        // Xử lý nộp bài: Khớp logic kiểm tra Ảnh mẫu 1 & Ảnh mẫu 2
+        function openExitConfirmModal() {
+            const modal = document.getElementById('exitConfirmModal');
+            if (modal) {
+                modal.hidden = false;
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        // Xử lý nộp bài: Khớp logic kiểm tra Ảnh 5
         function handlePreSubmit() {
             const total = questionsData ? questionsData.length : 0;
             if (total === 0) {
                 alert('Không có câu hỏi nào trong bài để nộp.');
                 return;
             }
-            const answeredCount = Object.keys(userAnswers).length;
+            const answeredCount = Object.keys(userAnswers).filter(k => !!userAnswers[k]).length;
+            const msgEl = document.getElementById('submitConfirmModalMsg');
 
-            if (answeredCount === 0) {
-                document.getElementById('emptySubmitModal').classList.add('is-open');
-            } else if (answeredCount < total) {
+            if (answeredCount < total) {
                 const unansCount = total - answeredCount;
-                const msgEl = document.getElementById('incompleteSubmitMsg');
                 if (msgEl) {
-                    msgEl.innerHTML = `Bạn còn <strong>${unansCount}</strong> câu chưa trả lời. Bạn có muốn xem lại trước khi nộp không?`;
+                    msgEl.textContent = `Bạn còn ${unansCount} câu chưa trả lời. Bạn có muốn nộp bài và xem kết quả không?`;
                 }
-                document.getElementById('incompleteSubmitModal').classList.add('is-open');
             } else {
-                submitExamDirectly();
+                if (msgEl) {
+                    msgEl.textContent = isGroupMode
+                        ? 'Bạn đang ở đoạn văn cuối cùng, bạn có muốn nộp bài và xem lại kết quả không?'
+                        : 'Bạn đang ở câu hỏi cuối cùng, bạn có muốn nộp bài và xem lại kết quả không?';
+                }
+            }
+
+            const modal = document.getElementById('submitConfirmModal');
+            if (modal) {
+                modal.hidden = false;
+                document.body.style.overflow = 'hidden';
             }
         }
 
-        function closeSubmitModals() {
-            document.getElementById('emptySubmitModal').classList.remove('is-open');
-            document.getElementById('incompleteSubmitModal').classList.remove('is-open');
-            const drawer = document.getElementById('questionDrawerModal');
-            if (drawer) drawer.classList.remove('is-open');
-        }
-
+        let isSubmittingExam = false;
         function submitExamDirectly() {
+            if (isSubmittingExam) return;
+            isSubmittingExam = true;
+
+            const submitBtn = document.getElementById('submitConfirmSubmitBtn');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span>Đang nộp...</span>';
+            }
+
             clearInterval(examTimer);
             document.getElementById('practiceExamForm').submit();
-        }
-
-        function confirmExit(event) {
-            if (Object.keys(userAnswers).length > 0) {
-                if (!confirm('Bạn có chắc muốn thoát bài luyện tập? Kết quả đang làm sẽ không được lưu.')) {
-                    event.preventDefault();
-                    return false;
-                }
-            }
-            return true;
         }
 
         // Khởi tạo hiển thị bài làm ban đầu

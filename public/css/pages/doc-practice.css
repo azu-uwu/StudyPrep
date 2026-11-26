@@ -235,14 +235,88 @@
 /* ==========================================================================
    2. VOCAPREP PRACTICE INTERFACE (ẢNH MẪU 4)
    ========================================================================== */
+.sp-vp-page,
+.sp-vp-page button,
+.sp-vp-page input,
+.sp-vp-page select,
+.sp-vp-page textarea,
+.sp-vp-passage-title,
+.sp-vp-passage-text,
+.sp-vp-explain-body,
+.sp-group-explain-body,
+.sp-vp-option,
+.sp-vp-option-content,
+.sp-vp-stem-text,
+.sp-submit-modal {
+    font-family: 'Nunito', var(--sp-font-family, sans-serif);
+}
+
 .sp-vp-page {
     min-height: 100vh;
     min-height: 100dvh;
     background: #F8FAFC;
     display: flex;
     flex-direction: column;
-    font-family: var(--sp-font-family, 'Nunito', 'Instrument Sans', sans-serif);
     color: #111C2D;
+}
+
+/* Thanh thông báo điều chỉnh số câu (Khớp Ảnh 4) */
+.sp-adjustment-notice-banner {
+    background: #EFF6FF;
+    border-bottom: 1.5px solid #BFDBFE;
+    color: #1D4ED8;
+    padding: 10px 24px;
+    font-size: 13.5px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    position: relative;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.sp-adjustment-notice-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+    line-height: 1.45;
+}
+
+.sp-adjustment-notice-close {
+    background: transparent;
+    border: none;
+    color: #1D4ED8;
+    cursor: pointer;
+    padding: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    flex-shrink: 0;
+    transition: background-color 0.15s ease, opacity 0.15s ease;
+    opacity: 0.8;
+}
+
+.sp-adjustment-notice-close:hover {
+    background-color: #DBEAFE;
+    opacity: 1;
+}
+
+@media (max-width: 640px) {
+    .sp-adjustment-notice-banner {
+        padding: 8px 12px;
+        font-size: 12.5px;
+        align-items: flex-start;
+    }
+
+    .sp-adjustment-notice-content {
+        justify-content: flex-start;
+    }
 }
 
 /* Header thanh trên cùng */
@@ -381,39 +455,70 @@
 }
 
 .sp-vp-nav-btn {
-    padding: 6px 14px;
-    border-radius: 8px;
-    border: 1px solid #E2E8F0;
+    padding: 7px 16px;
+    border-radius: 12px;
+    border: 1px solid #CBD5E1;
     background: #FFFFFF;
-    color: #475569;
-    font-size: 13px;
+    color: #334155;
+    font-size: 13.5px;
     font-weight: 700;
+    font-family: 'Nunito', sans-serif;
     cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     transition: all 0.15s ease;
+    user-select: none;
 }
 
-.sp-vp-nav-btn:hover {
+.sp-vp-nav-btn:hover:not(:disabled) {
     background: #F8FAFC;
+    border-color: #94A3B8;
     color: #0F172A;
 }
 
+.sp-vp-nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #F1F5F9;
+    border-color: #E2E8F0;
+    color: #94A3B8;
+    box-shadow: none;
+}
+
 .sp-vp-explain-btn {
-    padding: 6px 16px;
-    border-radius: 8px;
-    border: 1.5px solid #5B4BF5;
-    background: #5B4BF5;
-    color: #FFFFFF;
-    font-size: 13px;
+    padding: 7px 18px;
+    border-radius: 12px;
+    border: 1px solid #CBD5E1;
+    background: #FFFFFF;
+    color: #374151;
+    font-size: 13.5px;
     font-weight: 800;
+    font-family: 'Nunito', sans-serif;
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     transition: all 0.15s ease;
+    user-select: none;
+}
+
+.sp-vp-explain-btn:hover {
+    background: #F8FAFC;
+    border-color: #94A3B8;
+    color: #1E293B;
 }
 
 .sp-vp-explain-btn.is-active {
+    background: #5B4BF5;
+    border-color: #5B4BF5;
+    color: #FFFFFF;
+    box-shadow: 0 2px 8px rgba(91, 75, 245, 0.3);
+}
+
+.sp-vp-explain-btn.is-active:hover {
     background: #4A3AD4;
+    border-color: #4A3AD4;
+    color: #FFFFFF;
 }
 
 .sp-vp-tip-banner {

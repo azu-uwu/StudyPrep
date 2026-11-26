@@ -528,11 +528,10 @@ class ReadingPracticeQueryTest extends TestCase
         $resp20->assertStatus(200);
         $resp20->assertViewHas('questions', fn ($q) => count($q) === 20);
 
-        // Case 5: Request 3 questions (< 4) -> should not form a group
+        // Case 5: Request 3 questions (< 4) -> redirected to setup view with error message, not empty practice page
         $responseSmall = $this->get(route('luyen-tap.doc.hoan-thanh-cau', ['part' => 6, 'count' => 3]));
-        $responseSmall->assertStatus(200);
-        $responseSmall->assertViewHas('questions', fn ($q) => count($q) === 0);
-        $responseSmall->assertViewHas('noticeMessage', fn ($msg) => str_contains((string) $msg, 'ít nhất 4 câu') || str_contains((string) $msg, 'tối thiểu từ 4 câu'));
+        $responseSmall->assertRedirect(url('/luyen-tap/doc?part=6&count=3'));
+        $responseSmall->assertSessionHas('practice_error', 'Part 6 yêu cầu tối thiểu 4 câu (1 đoạn văn). Vui lòng chọn lại số lượng câu.');
     }
 
     public function test_part7_selects_optimal_subset_not_exceeding_target(): void
@@ -624,11 +623,10 @@ class ReadingPracticeQueryTest extends TestCase
 
     public function test_handles_empty_active_questions_without_mock_fallback_or_500(): void
     {
-        // Empty database for Part 5
+        // Empty database for Part 5 -> redirects back to setup view with error message, not empty practice page
         $response = $this->get(route('luyen-tap.doc.hoan-thanh-cau', ['part' => 5, 'count' => 10]));
-        $response->assertStatus(200);
-        $response->assertViewHas('questions', fn ($q) => count($q) === 0);
-        $response->assertViewHas('noticeMessage', fn ($msg) => $msg !== null && str_contains($msg, 'ACTIVE'));
+        $response->assertRedirect(url('/luyen-tap/doc?part=5&count=10'));
+        $response->assertSessionHas('practice_error');
     }
 
     public function test_check_answer_api_validates_correct_and_incorrect_answer(): void
@@ -1844,5 +1842,63 @@ class ReadingPracticeQueryTest extends TestCase
 
             return $loadedIds === $qidsA;
         });
+    }
+
+    public function test_part5_with_zero_count_redirects_to_setup_with_error(): void
+    {
+        $response = $this->get(route('luyen-tap.doc.hoan-thanh-cau', ['part' => 5, 'count' => 0]));
+        $response->assertRedirect(url('/luyen-tap/doc?part=5&count=0'));
+        $response->assertSessionHas('practice_error', 'Part 5 yêu cầu tối thiểu 1 câu hỏi. Vui lòng chọn lại số lượng câu.');
+    }
+
+    public function test_part6_with_invalid_count_redirects_to_setup_with_error(): void
+    {
+        $response = $this->get(route('luyen-tap.doc.hoan-thanh-cau', ['part' => 6, 'count' => 3]));
+        $response->assertRedirect(url('/luyen-tap/doc?part=6&count=3'));
+        $response->assertSessionHas('practice_error', 'Part 6 yêu cầu tối thiểu 4 câu (1 đoạn văn). Vui lòng chọn lại số lượng câu.');
+    }
+
+    public function test_part7_with_one_count_redirects_to_setup_with_error(): void
+    {
+        $response = $this->get(route('luyen-tap.doc.hoan-thanh-cau', ['part' => 7, 'count' => 1]));
+        $response->assertRedirect(url('/luyen-tap/doc?part=7&count=1'));
+        $response->assertSessionHas('practice_error', 'Part 7 yêu cầu tối thiểu 2 câu để tạo một nhóm bài đọc. Vui lòng chọn lại số lượng câu.');
+    }
+
+    public function test_part6_group_check_api_supports_reveal_action_before_answering(): void
+    {
+        $set = $this->createQuestionSet('PART6', 4, 'Part 6 Reveal Group');
+        $qids = $set->questions()->pluck('question_id')->all();
+
+        $sessionData = [
+            'part' => 6,
+            'target_count' => 4,
+            'question_ids' => $qids,
+            'groups' => [
+                $set->question_set_id => [
+                    'question_ids' => $qids,
+                    'completed' => false,
+                ],
+            ],
+        ];
+
+        $response = $this->withSession(['reading_practice_session' => $sessionData])
+            ->postJson(route('luyen-tap.doc.kiem-tra-nhom'), [
+                'question_set_id' => $set->question_set_id,
+                'action' => 'reveal',
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'action' => 'reveal',
+                'question_set_id' => $set->question_set_id,
+                'total_questions' => 4,
+            ]);
+
+        $data = $response->json();
+        $this->assertCount(4, $data['results']);
+        $this->assertSame('A', $data['results'][0]['correct_answer']);
+        $this->assertNull($data['results'][0]['user_answer']);
     }
 }
