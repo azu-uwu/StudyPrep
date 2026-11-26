@@ -164,7 +164,7 @@
     <div class="sp-submit-modal-backdrop" id="incompleteSubmitModal">
         <div class="sp-submit-modal">
             <h3 class="sp-submit-modal__title">Nộp bài</h3>
-            <p class="sp-submit-modal__msg">Bạn có câu hỏi chưa trả lời, bạn có muốn xem lại trước khi nộp không?</p>
+            <p class="sp-submit-modal__msg" id="incompleteSubmitMsg">Bạn có câu hỏi chưa trả lời, bạn có muốn xem lại trước khi nộp không?</p>
             <div class="sp-submit-modal__actions">
                 <button type="button" class="sp-btn-revisit" onclick="closeSubmitModals()">Xem lại</button>
                 <button type="button" class="sp-btn-confirm-submit" onclick="submitExamDirectly()">Nộp bài</button>
@@ -217,7 +217,7 @@
                     lastSetId = sId;
                     currentGrp = {
                         setId: sId,
-                        passageTitle: q.passage_title || 'Đoạn văn Part 6',
+                        passageTitle: q.passage_title || ('Bài đọc Part ' + currentPart),
                         passage: q.passage || '',
                         rangeText: q.question_range || '',
                         questions: []
@@ -320,7 +320,7 @@
                     <div class="sp-group-q-card" id="group_q_${q.id}">
                         <div class="sp-group-q-card-head">
                             <span class="sp-group-q-num-pill">Câu ${q.question_number}</span>
-                            ${q.stem ? `<span class="sp-group-q-stem">${escapeHtml(q.stem)}</span>` : ''}
+                            ${q.stem ? `<span class="sp-group-q-stem">${escapeHtml(q.stem).replace(/\n/g, '<br>')}</span>` : ''}
                         </div>
                         <div class="sp-group-q-options">
                 `;
@@ -1080,6 +1080,11 @@
             if (answeredCount === 0) {
                 document.getElementById('emptySubmitModal').classList.add('is-open');
             } else if (answeredCount < total) {
+                const unansCount = total - answeredCount;
+                const msgEl = document.getElementById('incompleteSubmitMsg');
+                if (msgEl) {
+                    msgEl.innerHTML = `Bạn còn <strong>${unansCount}</strong> câu chưa trả lời. Bạn có muốn xem lại trước khi nộp không?`;
+                }
                 document.getElementById('incompleteSubmitModal').classList.add('is-open');
             } else {
                 submitExamDirectly();

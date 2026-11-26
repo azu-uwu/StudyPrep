@@ -1375,4 +1375,474 @@ class ReadingPracticeQueryTest extends TestCase
                 'total_questions' => 3,
             ]);
     }
+
+    public function test_part7_queries_active_questions_without_revealing_answers(): void
+    {
+        $this->createQuestionSet('PART7', 3, 'Part 7 Set A');
+        $this->createQuestionSet('PART7', 4, 'Part 7 Set B');
+
+        $response = $this->get(route('luyen-tap.doc.hoan-thanh-cau', ['part' => 7, 'count' => 7]));
+        $response->assertStatus(200);
+
+        $response->assertViewHas('questions', function (array $questions): bool {
+            if (count($questions) !== 7) {
+                return false;
+            }
+
+            // Số thứ tự đánh liên tục 1 đến 7
+            foreach ($questions as $idx => $q) {
+                if ($q['question_number'] !== $idx + 1) {
+                    return false;
+                }
+                if ($q['correct'] !== null || $q['explanation'] !== null) {
+                    return false;
+                }
+                if ($q['part_number'] !== 7) {
+                    return false;
+                }
+                if (empty($q['stem'])) {
+                    return false;
+                }
+                if (empty($q['passage'])) {
+                    return false;
+                }
+                if (count($q['options']) !== 4) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+
+        // Kiểm tra session đã lưu groups cho Part 7
+        $sessionData = session('reading_practice_session');
+        $this->assertNotNull($sessionData);
+        $this->assertSame(7, $sessionData['part']);
+        $this->assertCount(2, $sessionData['groups']);
+    }
+
+    public function test_part7_supports_groups_of_2_3_4_5_questions(): void
+    {
+        $this->createQuestionSet('PART7', 2, 'Set 2 Questions');
+        $this->createQuestionSet('PART7', 3, 'Set 3 Questions');
+        $this->createQuestionSet('PART7', 4, 'Set 4 Questions');
+        $this->createQuestionSet('PART7', 5, 'Set 5 Questions');
+
+        // Request 14 questions -> 5 + 4 + 3 + 2 = 14 (tất cả 4 nhóm hợp lệ)
+        $response = $this->get(route('luyen-tap.doc.hoan-thanh-cau', ['part' => 7, 'count' => 14]));
+        $response->assertStatus(200);
+
+        $response->assertViewHas('questions', function (array $questions): bool {
+            return count($questions) === 14;
+        });
+    }
+
+    public function test_part7_excludes_sets_with_fewer_than_two_or_more_than_five_questions(): void
+    {
+        // Nhóm 1 câu (không hợp lệ cho Part 7)
+        $this->createQuestionSet('PART7', 1, 'Set 1 Question');
+        // Nhóm 6 câu (không hợp lệ cho Part 7)
+        $this->createQuestionSet('PART7', 6, 'Set 6 Questions');
+        // Nhóm 3 câu (hợp lệ)
+        $this->createQuestionSet('PART7', 3, 'Valid Set 3');
+
+        $response = $this->get(route('luyen-tap.doc.hoan-thanh-cau', ['part' => 7, 'count' => 10]));
+        $response->assertStatus(200);
+
+        $response->assertViewHas('questions', function (array $questions): bool {
+            // Chỉ lấy nhóm 3 câu, bỏ qua nhóm 1 câu và nhóm 6 câu
+            return count($questions) === 3;
+        });
+    }
+
+    public function test_part7_excludes_entire_set_if_any_question_is_invalid_or_draft(): void
+    {
+        // Nhóm có 4 câu nhưng 1 câu bị DRAFT -> Loại bỏ toàn bộ nhóm
+        $invalidSet = QuestionSet::query()->create([
+            'title' => 'Set With One Draft Question',
+            'stimulus_text' => '<p>Passage content</p>',
+        ]);
+
+        for ($i = 1; $i <= 3; $i++) {
+            $q = Question::query()->create([
+                'section_id' => $this->part7Section->section_id,
+                'question_type_id' => $this->mcType->question_type_id,
+                'question_set_id' => $invalidSet->question_set_id,
+                'content' => "Question {$i}",
+                'difficulty' => 'MEDIUM',
+                'status' => Question::STATUS_ACTIVE,
+            ]);
+            foreach (['A', 'B', 'C', 'D'] as $lbl) {
+                AnswerOption::query()->create([
+                    'question_id' => $q->question_id,
+                    'label' => $lbl,
+                    'content' => "Option {$lbl}",
+                    'is_correct' => $lbl === 'A',
+                ]);
+            }
+        }
+
+        // Câu thứ 4 là DRAFT
+        $draftQ = Question::query()->create([
+            'section_id' => $this->part7Section->section_id,
+            'question_type_id' => $this->mcType->question_type_id,
+            'question_set_id' => $invalidSet->question_set_id,
+            'content' => 'Draft Question',
+            'difficulty' => 'MEDIUM',
+            'status' => 'DRAFT',
+        ]);
+        foreach (['A', 'B', 'C', 'D'] as $lbl) {
+            AnswerOption::query()->create([
+                'question_id' => $draftQ->question_id,
+                'label' => $lbl,
+                'content' => "Option {$lbl}",
+                'is_correct' => $lbl === 'A',
+            ]);
+        }
+
+        // Nhóm hợp lệ 3 câu
+        $this->createQuestionSet('PART7', 3, 'Valid Set');
+
+        $response = $this->get(route('luyen-tap.doc.hoan-thanh-cau', ['part' => 7, 'count' => 10]));
+        $response->assertStatus(200);
+
+        $response->assertViewHas('questions', function (array $questions): bool {
+            return count($questions) === 3;
+        });
+    }
+
+    public function test_part7_excludes_sets_with_empty_stimulus_text_and_no_media(): void
+    {
+        $emptyTextSet = QuestionSet::query()->create([
+            'title' => 'Empty Passage Set',
+            'stimulus_text' => '   ',
+            'media_url' => null,
+        ]);
+
+        for ($i = 1; $i <= 3; $i++) {
+            $q = Question::query()->create([
+                'section_id' => $this->part7Section->section_id,
+                'question_type_id' => $this->mcType->question_type_id,
+                'question_set_id' => $emptyTextSet->question_set_id,
+                'content' => "Question {$i}",
+                'difficulty' => 'MEDIUM',
+                'status' => Question::STATUS_ACTIVE,
+            ]);
+            foreach (['A', 'B', 'C', 'D'] as $lbl) {
+                AnswerOption::query()->create([
+                    'question_id' => $q->question_id,
+                    'label' => $lbl,
+                    'content' => "Option {$lbl}",
+                    'is_correct' => $lbl === 'A',
+                ]);
+            }
+        }
+
+        // Nhóm có hình ảnh nhưng stimulus_text trống -> Vẫn hợp lệ
+        $mediaSet = QuestionSet::query()->create([
+            'title' => 'Image Only Set',
+            'stimulus_text' => '',
+            'media_url' => 'images/passages/part7_sample.png',
+            'media_type' => 'IMAGE',
+        ]);
+
+        for ($i = 1; $i <= 2; $i++) {
+            $q = Question::query()->create([
+                'section_id' => $this->part7Section->section_id,
+                'question_type_id' => $this->mcType->question_type_id,
+                'question_set_id' => $mediaSet->question_set_id,
+                'content' => "Media Question {$i}",
+                'difficulty' => 'MEDIUM',
+                'status' => Question::STATUS_ACTIVE,
+            ]);
+            foreach (['A', 'B', 'C', 'D'] as $lbl) {
+                AnswerOption::query()->create([
+                    'question_id' => $q->question_id,
+                    'label' => $lbl,
+                    'content' => "Option {$lbl}",
+                    'is_correct' => $lbl === 'A',
+                ]);
+            }
+        }
+
+        $response = $this->get(route('luyen-tap.doc.hoan-thanh-cau', ['part' => 7, 'count' => 10]));
+        $response->assertStatus(200);
+
+        $response->assertViewHas('questions', function (array $questions): bool {
+            // Chỉ lấy mediaSet (2 câu), bỏ emptyTextSet
+            return count($questions) === 2;
+        });
+    }
+
+    public function test_part7_individual_question_check_blocked_on_part5_endpoint(): void
+    {
+        $set = $this->createQuestionSet('PART7', 3, 'Part 7 Set');
+        $q = $set->questions()->first();
+
+        // TH1: Phiên làm việc là Part 7 -> Chặn
+        $this->withSession([
+            'reading_practice_session' => [
+                'part' => 7,
+                'question_ids' => [$q->question_id],
+                'groups' => [],
+            ],
+        ]);
+
+        $response = $this->postJson(route('luyen-tap.doc.kiem-tra-cau-hoi'), [
+            'question_id' => $q->question_id,
+            'selected_option' => 'A',
+        ]);
+        $response->assertStatus(403);
+
+        // TH2: Câu hỏi thuộc PART7 kể cả khi session không có part -> Chặn
+        $this->withSession([
+            'reading_practice_session' => [
+                'part' => 5,
+                'question_ids' => [$q->question_id],
+                'groups' => [],
+            ],
+        ]);
+
+        $response2 = $this->postJson(route('luyen-tap.doc.kiem-tra-cau-hoi'), [
+            'question_id' => $q->question_id,
+            'selected_option' => 'A',
+        ]);
+        $response2->assertStatus(403);
+    }
+
+    public function test_part7_group_check_api_rejects_when_not_all_questions_answered(): void
+    {
+        $set = $this->createQuestionSet('PART7', 4, 'Part 7 4-Question Set');
+        $qids = $set->questions()->pluck('question_id')->all();
+
+        $this->withSession([
+            'reading_practice_session' => [
+                'part' => 7,
+                'target_count' => 4,
+                'question_ids' => $qids,
+                'groups' => [
+                    $set->question_set_id => [
+                        'question_set_id' => $set->question_set_id,
+                        'question_ids' => $qids,
+                        'completed' => false,
+                        'answers' => [],
+                    ],
+                ],
+            ],
+        ]);
+
+        // Chỉ gửi 3 / 4 đáp án -> Phải bị từ chối với 422
+        $response = $this->postJson(route('luyen-tap.doc.kiem-tra-nhom'), [
+            'question_set_id' => $set->question_set_id,
+            'answers' => [
+                $qids[0] => 'A',
+                $qids[1] => 'B',
+                $qids[2] => 'C',
+            ],
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+            ]);
+    }
+
+    public function test_part7_group_check_api_grades_full_group_and_locks_in_session(): void
+    {
+        $set = $this->createQuestionSet('PART7', 5, 'Part 7 5-Question Passage');
+        $questions = $set->questions()->get();
+        $qids = $questions->pluck('question_id')->all();
+
+        $this->withSession([
+            'reading_practice_session' => [
+                'part' => 7,
+                'target_count' => 5,
+                'question_ids' => $qids,
+                'groups' => [
+                    $set->question_set_id => [
+                        'question_set_id' => $set->question_set_id,
+                        'question_ids' => $qids,
+                        'completed' => false,
+                        'answers' => [],
+                    ],
+                ],
+            ],
+        ]);
+
+        // Gửi đủ 5 câu: 3 câu đúng (A) và 2 câu sai (B)
+        $response = $this->postJson(route('luyen-tap.doc.kiem-tra-nhom'), [
+            'question_set_id' => $set->question_set_id,
+            'answers' => [
+                $qids[0] => 'A',
+                $qids[1] => 'A',
+                $qids[2] => 'A',
+                $qids[3] => 'B',
+                $qids[4] => 'B',
+            ],
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'question_set_id' => $set->question_set_id,
+                'correct_count' => 3,
+                'total_questions' => 5,
+            ]);
+
+        // Gửi lại lần 2 -> Trả về cached result
+        $repeatResponse = $this->postJson(route('luyen-tap.doc.kiem-tra-nhom'), [
+            'question_set_id' => $set->question_set_id,
+            'answers' => [
+                $qids[0] => 'B', // cố ý đổi đáp án
+                $qids[1] => 'B',
+                $qids[2] => 'B',
+                $qids[3] => 'B',
+                $qids[4] => 'B',
+            ],
+        ]);
+
+        $repeatResponse->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'already_completed' => true,
+                'correct_count' => 3, // vẫn giữ kết quả cũ
+                'total_questions' => 5,
+            ]);
+    }
+
+    public function test_part7_submit_protects_locked_session_answers_against_input_tampering(): void
+    {
+        $set = $this->createQuestionSet('PART7', 3, 'Part 7 Tampering Test');
+        $qids = $set->questions()->pluck('question_id')->all();
+
+        // Nhóm đã hoàn thành trong session với đáp án đúng 'A'
+        $sessionData = [
+            'part' => 7,
+            'target_count' => 3,
+            'question_ids' => $qids,
+            'groups' => [
+                $set->question_set_id => [
+                    'question_set_id' => $set->question_set_id,
+                    'question_ids' => $qids,
+                    'completed' => true,
+                    'answers' => [
+                        $qids[0] => 'A',
+                        $qids[1] => 'A',
+                        $qids[2] => 'A',
+                    ],
+                ],
+            ],
+        ];
+
+        // Kẻ gian sửa hidden input thành 'B' (sai)
+        $tamperedAnswers = [
+            $qids[0] => 'B',
+            $qids[1] => 'B',
+            $qids[2] => 'B',
+        ];
+
+        $response = $this->withSession(['reading_practice_session' => $sessionData])
+            ->post(route('luyen-tap.doc.nop-bai'), [
+                'part' => 7,
+                'question_ids' => implode(',', $qids),
+                'total_count' => 3,
+                'time_spent' => 90,
+                'answers' => $tamperedAnswers,
+            ]);
+
+        $response->assertRedirect(route('luyen-tap.doc.ket-qua'));
+
+        $result = session('reading_practice_result');
+        $this->assertNotNull($result);
+        $this->assertSame(7, $result['part']);
+        $this->assertSame('Part 7 — Đọc hiểu văn bản', $result['part_name']);
+        // Phải được tính là 3 câu đúng (lấy từ Session đã chốt), không bị ghi đè bởi 'B'
+        $this->assertSame(3, $result['correct_count']);
+        $this->assertSame(0, $result['incorrect_count']);
+        $this->assertSame(100, $result['score_percent']);
+    }
+
+    public function test_part7_submit_grades_partially_completed_groups_correctly(): void
+    {
+        $set = $this->createQuestionSet('PART7', 4, 'Part 7 Partial Group');
+        $qids = $set->questions()->pluck('question_id')->all();
+
+        $sessionData = [
+            'part' => 7,
+            'target_count' => 4,
+            'question_ids' => $qids,
+            'groups' => [
+                $set->question_set_id => [
+                    'question_set_id' => $set->question_set_id,
+                    'question_ids' => $qids,
+                    'completed' => false,
+                    'answers' => [],
+                ],
+            ],
+        ];
+
+        // Người dùng chỉ trả lời 2/4 câu: 1 câu đúng (A), 1 câu sai (B), 2 câu chưa làm
+        $answers = [
+            $qids[0] => 'A',
+            $qids[1] => 'B',
+        ];
+
+        $response = $this->withSession(['reading_practice_session' => $sessionData])
+            ->post(route('luyen-tap.doc.nop-bai'), [
+                'part' => 7,
+                'question_ids' => implode(',', $qids),
+                'total_count' => 4,
+                'time_spent' => 120,
+                'answers' => $answers,
+            ]);
+
+        $response->assertRedirect(route('luyen-tap.doc.ket-qua'));
+
+        $result = session('reading_practice_result');
+        $this->assertNotNull($result);
+        $this->assertSame(7, $result['part']);
+        $this->assertSame(4, $result['total']);
+        $this->assertSame(1, $result['correct_count']);
+        $this->assertSame(1, $result['incorrect_count']);
+        $this->assertSame(2, $result['unanswered_count']);
+        $this->assertSame(25, $result['score_percent']); // 1 / 4 = 25%
+    }
+
+    public function test_part7_retry_wrong_keeps_entire_group_intact(): void
+    {
+        $setA = $this->createQuestionSet('PART7', 3, 'Set A with Wrong Question');
+        $setB = $this->createQuestionSet('PART7', 2, 'Set B All Correct');
+
+        $qidsA = $setA->questions()->pluck('question_id')->all();
+        $qidsB = $setB->questions()->pluck('question_id')->all();
+
+        // Giả lập kết quả làm bài trước đó: câu 1 của Set A bị sai
+        $lastResult = [
+            'part' => 7,
+            'details' => [
+                ['id' => $qidsA[0], 'status' => 'incorrect'],
+                ['id' => $qidsA[1], 'status' => 'correct'],
+                ['id' => $qidsA[2], 'status' => 'correct'],
+                ['id' => $qidsB[0], 'status' => 'correct'],
+                ['id' => $qidsB[1], 'status' => 'correct'],
+            ],
+        ];
+
+        $response = $this->withSession(['reading_practice_result' => $lastResult])
+            ->get(route('luyen-tap.doc.hoan-thanh-cau', ['part' => 7, 'retry_wrong' => 1]));
+
+        $response->assertStatus(200);
+
+        $response->assertViewHas('questions', function (array $questions) use ($qidsA): bool {
+            // Khi luyện lại câu sai, phải lấy NGUYÊN NHÓM chứa câu sai (3 câu của Set A), không tách lẻ 1 câu
+            if (count($questions) !== 3) {
+                return false;
+            }
+            $loadedIds = array_column($questions, 'id');
+            sort($loadedIds);
+            sort($qidsA);
+
+            return $loadedIds === $qidsA;
+        });
+    }
 }
