@@ -21,7 +21,7 @@
         <div class="sp-kq-super-title">KẾT QUẢ BÀI LUYỆN</div>
         <h1 class="sp-kq-main-title">{{ $result['part_name'] ?? 'Part 5 — Đọc' }}</h1>
         <div class="sp-kq-meta-info">
-            {{ $result['total'] }} câu · {{ $result['time_spent_text'] ?? '1 phút' }}
+            {{ $result['total'] }} câu
         </div>
     </div>
 
@@ -103,7 +103,7 @@
         {{-- 2 Nút bấm hành động + Nút Tiếp tục --}}
         <div class="sp-kq-bottom-actions">
             @if($result['incorrect_count'] > 0)
-                <a href="{{ route('luyen-tap.doc.hoan-thanh-cau', ['part' => $result['part'] ?? 5, 'retry_wrong' => 1]) }}" class="sp-kq-btn sp-kq-btn--purple">
+                <a href="{{ route('luyen-tap.doc.hoan-thanh-cau', array_filter(['part' => $result['part'] ?? 5, 'retry_wrong' => 1, 'attempt_id' => $result['attempt_id'] ?? null])) }}" class="sp-kq-btn sp-kq-btn--purple">
                     Luyện lại câu sai
                 </a>
             @else
@@ -298,7 +298,7 @@
         {{-- 2 Nút hành động ở đáy View 2 --}}
         <div class="sp-kq-bottom-actions">
             @if($result['incorrect_count'] > 0)
-                <a href="{{ route('luyen-tap.doc.hoan-thanh-cau', ['part' => $result['part'] ?? 5, 'retry_wrong' => 1]) }}" class="sp-kq-btn sp-kq-btn--purple">
+                <a href="{{ route('luyen-tap.doc.hoan-thanh-cau', array_filter(['part' => $result['part'] ?? 5, 'retry_wrong' => 1, 'attempt_id' => $result['attempt_id'] ?? null])) }}" class="sp-kq-btn sp-kq-btn--purple">
                     Luyện lại câu sai
                 </a>
             @else

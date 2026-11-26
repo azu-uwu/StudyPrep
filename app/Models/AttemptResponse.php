@@ -16,6 +16,7 @@ class AttemptResponse extends Model
     protected $fillable = [
         'attempt_id',
         'question_id',
+        'sequence_no',
         'text_response',
         'media_url',
         'score',

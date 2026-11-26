@@ -25,22 +25,7 @@ Route::get('/', function () {
 
 // Các màn hình chính trong Sidebar (HỌC & TIẾN ĐỘ)
 Route::view('/luyen-tap', 'pages.luyen-tap')->name('luyen-tap');
-Route::get('/luyen-tap/doc', function () {
-    if (request('skill') === 'nghe') {
-        return redirect('/luyen-tap/nghe');
-    }
-    if (request('skill') === 'noi') {
-        return redirect('/luyen-tap/noi');
-    }
-    if (request('skill') === 'viet') {
-        return redirect('/luyen-tap/viet');
-    }
-    if (request('exit')) {
-        session()->forget('reading_practice_session');
-    }
-
-    return view('pages.luyen-tap-doc');
-})->name('luyen-tap.doc');
+Route::get('/luyen-tap/doc', [ReadingPracticeController::class, 'index'])->name('luyen-tap.doc');
 
 // Luồng Luyện kỹ năng Nghe (Listening)
 Route::view('/luyen-tap/nghe', 'pages.luyen-tap-nghe')->name('luyen-tap.nghe');
@@ -54,6 +39,8 @@ Route::get('/luyen-tap/nghe/xem-dap-an', [ListeningPracticeController::class, 'r
 
 // Luồng Luyện kỹ năng Đọc (Part 5: Hoàn thành câu, Part 6: Hoàn thành đoạn văn & Kết quả)
 Route::get('/luyen-tap/doc/hoan-thanh-cau', [ReadingPracticeController::class, 'practice'])->name('luyen-tap.doc.hoan-thanh-cau');
+Route::get('/luyen-tap/doc/tiep-tuc', [ReadingPracticeController::class, 'resume'])->name('luyen-tap.doc.tiep-tuc');
+Route::post('/luyen-tap/doc/luu-va-thoat', [ReadingPracticeController::class, 'saveAndExit'])->name('luyen-tap.doc.luu-va-thoat');
 Route::post('/luyen-tap/doc/kiem-tra-cau-hoi', [ReadingPracticeController::class, 'checkAnswer'])->name('luyen-tap.doc.kiem-tra-cau-hoi');
 Route::post('/luyen-tap/doc/kiem-tra-nhom', [ReadingPracticeController::class, 'checkGroupAnswers'])->name('luyen-tap.doc.kiem-tra-nhom');
 Route::post('/luyen-tap/doc/nop-bai', [ReadingPracticeController::class, 'submit'])->name('luyen-tap.doc.nop-bai');

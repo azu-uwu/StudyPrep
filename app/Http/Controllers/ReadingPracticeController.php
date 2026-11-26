@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Question;
 use App\Models\QuestionSet;
+use App\Models\TestAttempt;
+use App\Services\PracticeAttemptService;
 use App\Services\ReadingQuestionBank;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
@@ -15,6 +17,136 @@ use Illuminate\View\View;
 
 class ReadingPracticeController extends Controller
 {
+    public function __construct(
+        public PracticeAttemptService $practiceAttemptService
+    ) {}
+
+    /**
+     * Màn hình danh sách luyện tập kỹ năng Đọc (Part 5, 6, 7).
+     * Xác định độc lập trạng thái Bắt đầu / Tiếp tục theo từng Part từ MySQL.
+     */
+    public function index(Request $request): View|RedirectResponse
+    {
+        if ($request->query('skill') === 'nghe') {
+            return redirect('/luyen-tap/nghe');
+        }
+        if ($request->query('skill') === 'noi') {
+            return redirect('/luyen-tap/noi');
+        }
+        if ($request->query('skill') === 'viet') {
+            return redirect('/luyen-tap/viet');
+        }
+        if ($request->query('exit')) {
+            session()->forget('reading_practice_session');
+        }
+
+        $inProgressAttempts = [
+            5 => null,
+            6 => null,
+            7 => null,
+        ];
+
+        if (auth()->check()) {
+            $inProgressAttempts = $this->practiceAttemptService->getInProgressAttemptsByPart((int) auth()->id());
+        }
+
+        return view('pages.luyen-tap-doc', [
+            'inProgressAttempts' => $inProgressAttempts,
+        ]);
+    }
+
+    /**
+     * Khôi phục lượt luyện tập đã lưu trong CSDL (Tiếp tục).
+     */
+    public function resume(Request $request): RedirectResponse
+    {
+        if (! auth()->check()) {
+            return redirect()->route('login')
+                ->with('error', 'Vui lòng đăng nhập để tiếp tục bài luyện tập.');
+        }
+
+        $userId = (int) auth()->id();
+        $attemptId = $request->query('attempt_id');
+        $part = (int) $request->query('part', 5);
+
+        try {
+            if ($attemptId !== null && (int) $attemptId > 0) {
+                $resumed = $this->practiceAttemptService->resumeAttempt((int) $attemptId, $userId);
+            } else {
+                $sectionCode = match ($part) {
+                    6 => 'PART6',
+                    7 => 'PART7',
+                    default => 'PART5',
+                };
+                $attempt = $this->practiceAttemptService->findInProgressAttempt($userId, 'RC', $sectionCode);
+                if (! $attempt) {
+                    return redirect()->route('luyen-tap.doc')
+                        ->with('practice_error', 'Không tìm thấy bài làm dở cho Part '.$part.'.');
+                }
+                $resumed = $this->practiceAttemptService->resumeAttempt($attempt->attempt_id, $userId);
+            }
+
+            session(['reading_practice_session' => $resumed['sessionData']]);
+
+            return redirect()->route('luyen-tap.doc.hoan-thanh-cau', [
+                'part' => $resumed['part'],
+            ]);
+        } catch (\Throwable $e) {
+            return redirect()->route('luyen-tap.doc')
+                ->with('practice_error', 'Không thể khôi phục bài làm: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Lưu bài làm dở và thoát về trang danh sách (Lưu & Thoát).
+     */
+    public function saveAndExit(Request $request): JsonResponse
+    {
+        if (! auth()->check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn cần đăng nhập để lưu bài luyện tập.',
+                'redirect' => route('login'),
+            ], 401);
+        }
+
+        $sessionData = session('reading_practice_session');
+        if (empty($sessionData) || empty($sessionData['question_ids'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy phiên luyện tập đang hoạt động để lưu.',
+            ], 422);
+        }
+
+        $incomingAnswers = (array) $request->input('answers', []);
+
+        try {
+            $attempt = $this->practiceAttemptService->saveAttempt(
+                $sessionData,
+                $incomingAnswers,
+                (int) auth()->id()
+            );
+
+            $sessionData['attempt_id'] = $attempt->attempt_id;
+            session(['reading_practice_session' => $sessionData]);
+
+            // Dọn dẹp trạng thái luyện tập tạm thời sau khi đã lưu thành công vào MySQL
+            session()->forget('reading_practice_session');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã lưu bài luyện tập thành công.',
+                'attempt_id' => $attempt->attempt_id,
+                'redirect' => route('luyen-tap.doc'),
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi lưu bài luyện tập: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
     /**
      * Màn hình làm bài luyện tập theo từng Part (Part 5, Part 6, Part 7) từ MySQL.
      */
@@ -89,17 +221,24 @@ class ReadingPracticeController extends Controller
         $specificIds = null;
         // Xử lý làm lại các câu bị sai
         if ($isRetryWrong) {
-            $lastResult = session('reading_practice_result');
-            if ($lastResult && ! empty($lastResult['details'])) {
-                $wrongIds = collect($lastResult['details'])
-                    ->where('status', 'incorrect')
-                    ->pluck('id')
-                    ->map(fn ($id) => (int) $id)
-                    ->values()
-                    ->all();
+            $attemptIdForRetry = $request->query('attempt_id');
+            if ($attemptIdForRetry && auth()->check()) {
+                $specificIds = $this->practiceAttemptService->getRetryQuestionIds((int) $attemptIdForRetry, (int) auth()->id());
+            }
 
-                if (! empty($wrongIds)) {
-                    $specificIds = $wrongIds;
+            if (empty($specificIds)) {
+                $lastResult = session('reading_practice_result');
+                if ($lastResult && ! empty($lastResult['details'])) {
+                    $wrongIds = collect($lastResult['details'])
+                        ->where('status', 'incorrect')
+                        ->pluck('id')
+                        ->map(fn ($id) => (int) $id)
+                        ->values()
+                        ->all();
+
+                    if (! empty($wrongIds)) {
+                        $specificIds = $wrongIds;
+                    }
                 }
             }
 
@@ -1367,7 +1506,6 @@ class ReadingPracticeController extends Controller
         }
 
         $submittedAnswers = (array) $request->input('answers', []);
-        $timeSpentSeconds = (int) $request->input('time_spent', 0);
         $requestedCount = (int) $request->input('total_count', 20);
 
         // Lấy danh sách ID câu hỏi đã phân phối trong phiên luyện tập (giữ đúng thứ tự và danh sách câu hỏi)
@@ -1384,7 +1522,36 @@ class ReadingPracticeController extends Controller
 
         $orderedIds = ! empty($sessionIds) ? $sessionIds : $requestIds;
 
-        // Chấm điểm Part 5, 6, 7 (hoặc khi có danh sách câu hỏi từ MySQL)
+        // Nếu người dùng đã đăng nhập, lưu và chấm điểm thông qua PracticeAttemptService (BE-014)
+        if (auth()->check() && ! empty($orderedIds)) {
+            $sessionData = session('reading_practice_session') ?? [
+                'part' => $part,
+                'question_ids' => $orderedIds,
+                'answers' => $submittedAnswers,
+                'target_count' => count($orderedIds),
+                'actual_count' => count($orderedIds),
+            ];
+
+            try {
+                $submitRes = $this->practiceAttemptService->submitAttempt(
+                    $sessionData,
+                    $submittedAnswers,
+                    (int) auth()->id()
+                );
+                $attempt = $submitRes['attempt'];
+                $resultData = $submitRes['result'];
+
+                session(['reading_practice_result' => $resultData]);
+                session()->forget('reading_practice_session');
+
+                return redirect()->route('luyen-tap.doc.ket-qua', ['attempt_id' => $attempt->attempt_id]);
+            } catch (\Throwable $e) {
+                return redirect()->back()
+                    ->with('practice_error', 'Lỗi khi nộp bài: '.$e->getMessage());
+            }
+        }
+
+        // Chấm điểm Part 5, 6, 7 (hoặc khi có danh sách câu hỏi từ MySQL) cho khách vãng lai
         if ($part === 5 || $part === 6 || $part === 7 || ! empty($orderedIds)) {
             $dbQuestions = Question::query()
                 ->whereIn('question_id', $orderedIds)
@@ -1481,11 +1648,6 @@ class ReadingPracticeController extends Controller
                 $total = $orderedQuestions->count();
                 $scorePercent = $total > 0 ? (int) round(($correctCount / $total) * 100) : 0;
 
-                $minutes = floor($timeSpentSeconds / 60);
-                $seconds = $timeSpentSeconds % 60;
-                $formattedTime = sprintf('%02d:%02d', $minutes, $seconds);
-                $timeSpentText = max(1, (int) round($timeSpentSeconds / 60)).' phút';
-
                 $previousPercent = session('reading_practice_result.score_percent');
                 $previousPercentText = $previousPercent !== null ? ($previousPercent.'%') : '40%';
 
@@ -1503,9 +1665,6 @@ class ReadingPracticeController extends Controller
                     'incorrect_count' => $incorrectCount,
                     'unanswered_count' => $unansweredCount,
                     'score_percent' => $scorePercent,
-                    'time_spent_seconds' => $timeSpentSeconds,
-                    'time_spent_formatted' => $formattedTime,
-                    'time_spent_text' => $timeSpentText,
                     'previous_percent' => $previousPercentText,
                     'submitted_at' => now()->format('H:i • d/m/Y'),
                     'details' => $details,
@@ -1561,11 +1720,6 @@ class ReadingPracticeController extends Controller
         $total = count($questions);
         $scorePercent = $total > 0 ? (int) round(($correctCount / $total) * 100) : 0;
 
-        $minutes = floor($timeSpentSeconds / 60);
-        $seconds = $timeSpentSeconds % 60;
-        $formattedTime = sprintf('%02d:%02d', $minutes, $seconds);
-        $timeSpentText = max(1, (int) round($timeSpentSeconds / 60)).' phút';
-
         $resultData = [
             'part' => $part,
             'part_name' => 'Part '.$part.' — Đọc',
@@ -1574,9 +1728,6 @@ class ReadingPracticeController extends Controller
             'incorrect_count' => $incorrectCount,
             'unanswered_count' => $unansweredCount,
             'score_percent' => $scorePercent,
-            'time_spent_seconds' => $timeSpentSeconds,
-            'time_spent_formatted' => $formattedTime,
-            'time_spent_text' => $timeSpentText,
             'previous_percent' => '40%',
             'submitted_at' => now()->format('H:i • d/m/Y'),
             'details' => $details,
@@ -1591,9 +1742,44 @@ class ReadingPracticeController extends Controller
     /**
      * Màn hình kết quả luyện tập Đọc
      */
-    public function result(Request $request): View
+    public function result(Request $request): View|RedirectResponse
     {
-        $result = session('reading_practice_result');
+        $attemptId = $request->query('attempt_id');
+        $result = null;
+
+        if ($attemptId !== null && (int) $attemptId > 0) {
+            $attemptIdInt = (int) $attemptId;
+            $userId = auth()->id();
+            if (! $userId) {
+                return redirect()->route('login')
+                    ->with('error', 'Vui lòng đăng nhập để xem kết quả bài luyện tập.');
+            }
+
+            $attempt = TestAttempt::query()
+                ->where('attempt_id', $attemptIdInt)
+                ->first();
+
+            if (! $attempt) {
+                return redirect()->route('luyen-tap.doc')
+                    ->with('practice_error', 'Không tìm thấy lượt luyện tập yêu cầu.');
+            }
+
+            if ((int) $attempt->user_id !== (int) $userId) {
+                return redirect()->route('luyen-tap.doc')
+                    ->with('practice_error', 'Bạn không có quyền truy cập kết quả bài luyện tập của người khác.');
+            }
+
+            if ($attempt->status !== TestAttempt::STATUS_COMPLETED) {
+                return redirect()->route('luyen-tap.doc')
+                    ->with('practice_error', 'Lượt luyện tập này chưa hoàn thành.');
+            }
+
+            $result = $this->practiceAttemptService->getAttemptResult($attemptIdInt, (int) $userId);
+        }
+
+        if (! $result) {
+            $result = session('reading_practice_result');
+        }
 
         if (! $result) {
             $result = [
@@ -1604,9 +1790,6 @@ class ReadingPracticeController extends Controller
                 'incorrect_count' => 0,
                 'unanswered_count' => 0,
                 'score_percent' => 0,
-                'time_spent_seconds' => 0,
-                'time_spent_formatted' => '00:00',
-                'time_spent_text' => '0 phút',
                 'previous_percent' => '0%',
                 'submitted_at' => now()->format('H:i • d/m/Y'),
                 'details' => [],

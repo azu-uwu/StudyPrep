@@ -96,7 +96,6 @@
         <input type="hidden" name="part" value="{{ $part ?? 5 }}">
         <input type="hidden" name="question_ids" value="{{ implode(',', array_column($questions, 'id')) }}">
         <input type="hidden" name="total_count" value="{{ count($questions) }}">
-        <input type="hidden" name="time_spent" id="timeSpentInput" value="0">
 
         {{-- BỐ CỤC 3 CỘT (KHỚP ẢNH MẪU 4) --}}
         <main class="sp-vp-main-layout" id="mainLayout">
@@ -165,13 +164,20 @@
     <div class="sp-explain-backdrop" id="explainBackdrop" onclick="toggleExplanation()"></div>
 
     {{-- 4. MODAL XÁC NHẬN THOÁT BÀI LUYỆN TẬP (ẢNH 4) --}}
+    @php
+        $isResumedAttempt = ! empty(session('reading_practice_session.attempt_id'));
+    @endphp
     <x-modal id="exitConfirmModal" title="Bạn thật sự muốn dừng lại?" maxWidth="460px">
-        <p style="margin: 0; font-size: 15px; color: #334155; line-height: 1.6;">
-            Nhấn "Lưu & Thoát" để giữ bài và làm tiếp sau. Nhấn "Thoát" sẽ xoá bài đang làm.
+        <p id="exitConfirmModalDesc" style="margin: 0; font-size: 15px; color: #334155; line-height: 1.6;">
+            @if($isResumedAttempt)
+                Nhấn "Lưu & Thoát" để giữ tiến độ mới nhất. Nhấn "Thoát" sẽ hủy các thay đổi chưa lưu kể từ lần lưu gần nhất.
+            @else
+                Nhấn "Lưu & Thoát" để giữ bài và làm tiếp sau. Nhấn "Thoát" sẽ không lưu bài đang làm.
+            @endif
         </p>
         <x-slot:actions>
-            <x-button variant="primary" type="button" disabled title="Chức năng Lưu & Thoát sẽ được kích hoạt tại BE-007.8" style="opacity: 0.6; cursor: not-allowed;">
-                Lưu & Thoát
+            <x-button variant="primary" type="button" id="saveAndExitBtn" onclick="handleSaveAndExit()">
+                <span id="saveAndExitBtnText">Lưu & Thoát</span>
             </x-button>
             <x-button variant="danger" type="button" onclick="window.location.href='{{ url('/luyen-tap/doc?exit=1') }}'">
                 Thoát
@@ -295,7 +301,6 @@
 
         let requestVersions = {}; // Race condition tracking: requestVersions[qid] = int
         let pendingPromises = []; // Theo dõi các AJAX request đang xử lý để đồng bộ trước khi submit
-        let timerSeconds = 0;
         let isCheckingAnswer = false;
 
         function syncHiddenAnswerInput(qid, letter) {
@@ -348,15 +353,6 @@
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#039;');
         }
-
-        // Bắt đầu đếm thời gian làm bài
-        const examTimer = setInterval(function() {
-            timerSeconds++;
-            const timeInput = document.getElementById('timeSpentInput');
-            if (timeInput) {
-                timeInput.value = timerSeconds;
-            }
-        }, 1000);
 
         // =========================================================================
         // 1. CHẾ ĐỘ LUYỆN TẬP PART 6 (THEO NHÓM ĐOẠN VĂN - BE-007.4)
@@ -1342,6 +1338,59 @@
             }
         }
 
+        let isSavingAndExiting = false;
+        async function handleSaveAndExit() {
+            if (isSavingAndExiting) return;
+            isSavingAndExiting = true;
+
+            const saveBtn = document.getElementById('saveAndExitBtn');
+            const saveBtnText = document.getElementById('saveAndExitBtnText');
+            if (saveBtn) {
+                saveBtn.disabled = true;
+            }
+            if (saveBtnText) {
+                saveBtnText.textContent = 'Đang lưu...';
+            }
+
+            // Đảm bảo mọi request cập nhật Session dở dang đã hoàn tất
+            if (pendingPromises && pendingPromises.length > 0) {
+                try {
+                    await Promise.allSettled(pendingPromises);
+                } catch (e) {}
+            }
+
+            try {
+                const response = await fetch('{{ route('luyen-tap.doc.luu-va-thoat') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        part: currentPart,
+                        answers: userAnswers
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    window.location.href = data.redirect || '{{ route('luyen-tap.doc') }}';
+                } else {
+                    alert(data.message || 'Không thể lưu bài luyện tập. Vui lòng thử lại.');
+                    if (saveBtn) saveBtn.disabled = false;
+                    if (saveBtnText) saveBtnText.textContent = 'Lưu & Thoát';
+                    isSavingAndExiting = false;
+                }
+            } catch (err) {
+                alert('Lỗi kết nối khi lưu bài. Vui lòng thử lại.');
+                if (saveBtn) saveBtn.disabled = false;
+                if (saveBtnText) saveBtnText.textContent = 'Lưu & Thoát';
+                isSavingAndExiting = false;
+            }
+        }
+
         // Xử lý nộp bài: Khớp logic kiểm tra Ảnh 5
         function handlePreSubmit() {
             const total = questionsData ? questionsData.length : 0;
@@ -1390,7 +1439,6 @@
                 } catch (e) {}
             }
 
-            clearInterval(examTimer);
             document.getElementById('practiceExamForm').submit();
         }
 
