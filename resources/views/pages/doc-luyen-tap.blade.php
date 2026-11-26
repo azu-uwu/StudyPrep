@@ -105,6 +105,11 @@
 
             {{-- CỘT 2: GIẢI THÍCH CHI TIẾT (MÀU XANH DA TRỜI THEO ẢNH MẪU 4) --}}
             <section class="sp-vp-explain-panel" id="explainCol" style="display: none;">
+                {{-- Thanh kéo Bottom Sheet trên Mobile --}}
+                <div class="sp-bottom-sheet-handle-bar" onclick="toggleExplanation()" aria-hidden="true">
+                    <div class="sp-bottom-sheet-handle"></div>
+                </div>
+
                 {{-- Dành cho Part 5 --}}
                 <div class="sp-vp-explain-tabs" id="explainTabs">
                     <button type="button" class="sp-vp-explain-tab" onclick="switchExplainTab('trans')">Dịch</button>
@@ -147,6 +152,9 @@
 
         </main>
     </form>
+
+    {{-- LỚP OVERLAY CHO BOTTOM SHEET TRÊN MOBILE --}}
+    <div class="sp-explain-backdrop" id="explainBackdrop" onclick="toggleExplanation()"></div>
 
     {{-- 4. MODAL NỘP BÀI: CẢNH BÁO CHƯA LÀM CÂU NÀO (ẢNH MẪU 2) --}}
     <div class="sp-submit-modal-backdrop" id="emptySubmitModal">
@@ -257,7 +265,7 @@
         // =========================================================================
         // 1. CHẾ ĐỘ LUYỆN TẬP PART 6 (THEO NHÓM ĐOẠN VĂN - BE-007.4)
         // =========================================================================
-        function renderCurrentGroup() {
+        function renderCurrentGroup(autoScroll = false) {
             if (!groups || groups.length === 0) {
                 document.getElementById('passageRange').textContent = 'Chưa có câu hỏi';
                 document.getElementById('passageTitle').style.display = 'block';
@@ -372,17 +380,12 @@
             document.getElementById('questionsContainer').innerHTML = questionsHtml;
 
             // Cột giữa: Vùng giải thích tổng hợp cho cả nhóm (BE-007.4)
-            const explainCol = document.getElementById('explainCol');
             const groupExplainHeader = document.getElementById('groupExplainHeader');
             const groupExplainBody = document.getElementById('groupExplainBody');
-            const explainToggleBtn = document.getElementById('explainToggleBtn');
 
             if (gState?.completed && gState.explainOpen !== false) {
-                if (explainCol) explainCol.style.display = 'flex';
                 if (groupExplainHeader) groupExplainHeader.style.display = 'flex';
                 if (groupExplainBody) groupExplainBody.style.display = 'block';
-                if (mainLayout) mainLayout.classList.add('with-explanation');
-                if (explainToggleBtn) explainToggleBtn.classList.add('is-active');
 
                 document.getElementById('groupExplainTitle').innerHTML = `
                     <span>💡 Kết quả đoạn văn: Đúng <strong>${gState.correctCount}/${gState.totalQuestions}</strong> câu</span>
@@ -409,12 +412,11 @@
                     `;
                 });
                 groupExplainBody.innerHTML = expBodyHtml;
+                syncExplanationUI(true, autoScroll);
             } else {
-                if (explainCol) explainCol.style.display = 'none';
                 if (groupExplainHeader) groupExplainHeader.style.display = 'none';
                 if (groupExplainBody) groupExplainBody.style.display = 'none';
-                if (mainLayout) mainLayout.classList.remove('with-explanation');
-                if (explainToggleBtn) explainToggleBtn.classList.remove('is-active');
+                syncExplanationUI(false, false);
             }
 
             // Nút điều hướng đoạn trước / sau
@@ -508,7 +510,7 @@
                         };
                     });
 
-                    renderCurrentGroup();
+                    renderCurrentGroup(true);
 
                     if (document.getElementById('questionDrawerModal')?.classList.contains('is-open')) {
                         renderDrawerQuestions();
@@ -529,7 +531,7 @@
         // =========================================================================
         // 2. CHẾ ĐỘ LUYỆN TẬP PART 5 (TỪNG CÂU ĐỘC LẬP - BE-007.3 GIỮ NGUYÊN)
         // =========================================================================
-        function renderCurrentQuestion() {
+        function renderCurrentQuestion(autoScroll = false) {
             if (!questionsData || questionsData.length === 0) {
                 document.getElementById('passageRange').textContent = 'Chưa có câu hỏi';
                 document.getElementById('passageTitle').style.display = 'block';
@@ -621,9 +623,9 @@
                     `;
                 }
 
-                setExplanationVisible(qState.explainOpen !== false);
+                syncExplanationUI(qState.explainOpen !== false, autoScroll);
             } else {
-                setExplanationVisible(false);
+                syncExplanationUI(false, false);
                 document.getElementById('explainBody').innerHTML = `
                     <div style="color: #64748B; font-size: 14px; line-height: 1.6; padding: 6px 0;">
                         🔒 <strong>Chưa mở giải thích.</strong><br><br>
@@ -644,7 +646,7 @@
             }
 
             let questionsHtml = `<div class="sp-vp-question-block">`;
-            if (!q.passage) {
+            if (q.passage) {
                 questionsHtml += `<div class="sp-vp-qnum" style="margin-bottom:16px;">Câu ${q.question_number}</div>`;
             }
 
@@ -707,20 +709,89 @@
             document.getElementById('nextBtn').disabled = (currentIndex === questionsData.length - 1);
         }
 
-        function setExplanationVisible(visible) {
+        let savedBodyScrollY = 0;
+
+        function isCurrentExplanationOpen() {
+            if (isGroupMode) {
+                const grp = groups[currentGroupIndex];
+                const gState = grp ? groupStates[grp.setId] : null;
+                return !!(gState?.completed && gState.explainOpen !== false);
+            } else {
+                const q = questionsData ? questionsData[currentIndex] : null;
+                const qState = q ? questionStates[q.id] : null;
+                return !!(qState && (qState.answered || qState.revealed) && qState.explainOpen !== false);
+            }
+        }
+
+        function syncExplanationUI(isOpen, autoScroll = false) {
             const explainCol = document.getElementById('explainCol');
             const mainLayout = document.getElementById('mainLayout');
             const toggleBtn = document.getElementById('explainToggleBtn');
+            const backdrop = document.getElementById('explainBackdrop');
+            const isMobile = (window.innerWidth < 768);
+            const isTablet = (window.innerWidth >= 768 && window.innerWidth < 1200);
 
-            if (visible) {
-                if (explainCol) explainCol.style.display = 'flex';
-                if (mainLayout) mainLayout.classList.add('with-explanation');
+            if (isOpen) {
                 if (toggleBtn) toggleBtn.classList.add('is-active');
+                if (mainLayout) mainLayout.classList.add('with-explanation');
+
+                if (isMobile) {
+                    if (explainCol) {
+                        explainCol.style.display = 'flex';
+                        void explainCol.offsetHeight;
+                        explainCol.classList.add('is-bottom-sheet-open');
+                    }
+                    if (backdrop) {
+                        backdrop.classList.add('is-open');
+                    }
+                    if (!document.body.classList.contains('sp-bottom-sheet-open')) {
+                        savedBodyScrollY = window.pageYOffset || document.documentElement.scrollTop;
+                        document.body.classList.add('sp-bottom-sheet-open');
+                    }
+                } else {
+                    // Desktop & Tablet
+                    if (document.body.classList.contains('sp-bottom-sheet-open')) {
+                        document.body.classList.remove('sp-bottom-sheet-open');
+                        window.scrollTo(0, savedBodyScrollY);
+                    }
+                    if (backdrop) backdrop.classList.remove('is-open');
+                    if (explainCol) {
+                        explainCol.classList.remove('is-bottom-sheet-open');
+                        explainCol.style.display = 'flex';
+                    }
+                    if (isTablet && autoScroll && explainCol) {
+                        setTimeout(() => {
+                            explainCol.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }, 100);
+                    }
+                }
             } else {
-                if (explainCol) explainCol.style.display = 'none';
-                if (mainLayout) mainLayout.classList.remove('with-explanation');
                 if (toggleBtn) toggleBtn.classList.remove('is-active');
+                if (mainLayout) mainLayout.classList.remove('with-explanation');
+
+                if (backdrop) backdrop.classList.remove('is-open');
+                if (document.body.classList.contains('sp-bottom-sheet-open')) {
+                    document.body.classList.remove('sp-bottom-sheet-open');
+                    window.scrollTo(0, savedBodyScrollY);
+                }
+
+                if (explainCol) {
+                    explainCol.classList.remove('is-bottom-sheet-open');
+                    if (isMobile) {
+                        setTimeout(() => {
+                            if (!isCurrentExplanationOpen()) {
+                                explainCol.style.display = 'none';
+                            }
+                        }, 280);
+                    } else {
+                        explainCol.style.display = 'none';
+                    }
+                }
             }
+        }
+
+        function setExplanationVisible(visible, autoScroll = false) {
+            syncExplanationUI(visible, autoScroll);
         }
 
         async function selectAnswer(qid, letter) {
@@ -774,7 +845,7 @@
                     }
                     hiddenInput.value = letter;
 
-                    renderCurrentQuestion();
+                    renderCurrentQuestion(true);
 
                     if (document.getElementById('questionDrawerModal')?.classList.contains('is-open')) {
                         renderDrawerQuestions();
@@ -798,25 +869,7 @@
 
                 if (gState && gState.completed) {
                     gState.explainOpen = !gState.explainOpen;
-                    const explainCol = document.getElementById('explainCol');
-                    const mainLayout = document.getElementById('mainLayout');
-                    const groupExplainHeader = document.getElementById('groupExplainHeader');
-                    const groupExplainBody = document.getElementById('groupExplainBody');
-                    const explainToggleBtn = document.getElementById('explainToggleBtn');
-
-                    if (gState.explainOpen) {
-                        if (explainCol) explainCol.style.display = 'flex';
-                        if (groupExplainHeader) groupExplainHeader.style.display = 'flex';
-                        if (groupExplainBody) groupExplainBody.style.display = 'block';
-                        if (mainLayout) mainLayout.classList.add('with-explanation');
-                        if (explainToggleBtn) explainToggleBtn.classList.add('is-active');
-                    } else {
-                        if (explainCol) explainCol.style.display = 'none';
-                        if (groupExplainHeader) groupExplainHeader.style.display = 'none';
-                        if (groupExplainBody) groupExplainBody.style.display = 'none';
-                        if (mainLayout) mainLayout.classList.remove('with-explanation');
-                        if (explainToggleBtn) explainToggleBtn.classList.remove('is-active');
-                    }
+                    renderCurrentGroup(gState.explainOpen);
                 } else {
                     alert('Hãy trả lời hết các câu hỏi trong đoạn văn để xem giải thích.');
                 }
@@ -828,7 +881,7 @@
 
             if (qState && (qState.answered || qState.revealed)) {
                 qState.explainOpen = !qState.explainOpen;
-                setExplanationVisible(qState.explainOpen);
+                syncExplanationUI(qState.explainOpen, true);
                 return;
             }
 
@@ -869,7 +922,7 @@
                         hiddenInput.remove();
                     }
 
-                    renderCurrentQuestion();
+                    renderCurrentQuestion(true);
 
                     if (document.getElementById('questionDrawerModal')?.classList.contains('is-open')) {
                         renderDrawerQuestions();
@@ -882,17 +935,28 @@
             }
         }
 
+        function scrollToContentTopIfMobile() {
+            if (window.innerWidth < 768) {
+                const mainLayout = document.getElementById('mainLayout');
+                if (mainLayout) {
+                    mainLayout.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        }
+
         function prevQuestion() {
             if (isGroupMode) {
                 if (currentGroupIndex > 0) {
                     currentGroupIndex--;
                     renderCurrentGroup();
+                    scrollToContentTopIfMobile();
                 }
                 return;
             }
             if (currentIndex > 0) {
                 currentIndex--;
                 renderCurrentQuestion();
+                scrollToContentTopIfMobile();
             }
         }
 
@@ -901,12 +965,14 @@
                 if (currentGroupIndex < groups.length - 1) {
                     currentGroupIndex++;
                     renderCurrentGroup();
+                    scrollToContentTopIfMobile();
                 }
                 return;
             }
             if (currentIndex < questionsData.length - 1) {
                 currentIndex++;
                 renderCurrentQuestion();
+                scrollToContentTopIfMobile();
             }
         }
 
@@ -1063,6 +1129,7 @@
             if (idx >= 0 && idx < questionsData.length) {
                 currentIndex = idx;
                 renderCurrentQuestion();
+                scrollToContentTopIfMobile();
                 const modal = document.getElementById('questionDrawerModal');
                 if (modal) modal.classList.remove('is-open');
             }
@@ -1119,6 +1186,12 @@
         } else {
             renderCurrentQuestion();
         }
+
+        // Đồng bộ giao diện Responsive khi thay đổi kích thước cửa sổ mà không tải lại bài làm
+        window.addEventListener('resize', function() {
+            const isOpen = isCurrentExplanationOpen();
+            syncExplanationUI(isOpen, false);
+        });
     </script>
 </body>
 </html>
