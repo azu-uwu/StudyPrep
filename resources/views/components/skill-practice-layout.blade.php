@@ -746,7 +746,7 @@
             return;
         }
 
-        var url = cfg.startUrl + '?part=' + cfg.partNum + '&count=' + count;
+        var url = cfg.startUrl + '?part=' + cfg.partNum + '&count=' + count + (cfg.skill === 'doc' ? '&new=1' : '');
         window.location.href = url;
     }
 

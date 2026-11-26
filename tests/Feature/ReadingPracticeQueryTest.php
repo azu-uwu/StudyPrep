@@ -8,6 +8,7 @@ use App\Models\Question;
 use App\Models\QuestionSet;
 use App\Models\QuestionType;
 use App\Models\Skill;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreatesStudyPrepSchema;
 use Tests\TestCase;
@@ -1251,8 +1252,26 @@ class ReadingPracticeQueryTest extends TestCase
         $this->assertFalse($data['results'][2]['is_correct']);
         $this->assertFalse($data['results'][3]['is_correct']);
 
-        // Gọi lại lần 2 với đáp án khác nhằm cố tình sửa điểm: Hệ thống khóa và trả lại kết quả đã chốt ban đầu
-        $responseRetry = $this->postJson(route('luyen-tap.doc.kiem-tra-nhom'), [
+        // Gọi lại lần 2 với cùng tập đáp án -> Hệ thống trả lại kết quả đã cache (already_completed)
+        $responseSame = $this->postJson(route('luyen-tap.doc.kiem-tra-nhom'), [
+            'question_set_id' => $set->question_set_id,
+            'answers' => [
+                $qids[0] => 'A',
+                $qids[1] => 'A',
+                $qids[2] => 'B',
+                $qids[3] => 'C',
+            ],
+        ]);
+
+        $responseSame->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'already_completed' => true,
+                'correct_count' => 2,
+            ]);
+
+        // Gọi lại lần 3 với đáp án đã thay đổi: Theo nghiệp vụ BE-007.7 cho phép đổi đáp án và tính lại điểm
+        $responseNew = $this->postJson(route('luyen-tap.doc.kiem-tra-nhom'), [
             'question_set_id' => $set->question_set_id,
             'answers' => [
                 $qids[0] => 'A',
@@ -1262,11 +1281,10 @@ class ReadingPracticeQueryTest extends TestCase
             ],
         ]);
 
-        $responseRetry->assertStatus(200)
+        $responseNew->assertStatus(200)
             ->assertJson([
                 'success' => true,
-                'already_completed' => true,
-                'correct_count' => 2, // Vẫn là 2 câu, không bị sửa thành 4
+                'correct_count' => 4,
             ]);
     }
 
@@ -1687,11 +1705,31 @@ class ReadingPracticeQueryTest extends TestCase
                 'total_questions' => 5,
             ]);
 
-        // Gửi lại lần 2 -> Trả về cached result
-        $repeatResponse = $this->postJson(route('luyen-tap.doc.kiem-tra-nhom'), [
+        // Gửi lại lần 2 với cùng đáp án -> Trả về cached result
+        $repeatSameResponse = $this->postJson(route('luyen-tap.doc.kiem-tra-nhom'), [
             'question_set_id' => $set->question_set_id,
             'answers' => [
-                $qids[0] => 'B', // cố ý đổi đáp án
+                $qids[0] => 'A',
+                $qids[1] => 'A',
+                $qids[2] => 'A',
+                $qids[3] => 'B',
+                $qids[4] => 'B',
+            ],
+        ]);
+
+        $repeatSameResponse->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'already_completed' => true,
+                'correct_count' => 3,
+                'total_questions' => 5,
+            ]);
+
+        // Gửi lại lần 3 khi người dùng thay đổi đáp án -> Tính lại điểm theo lựa chọn mới (BE-007.7)
+        $repeatNewResponse = $this->postJson(route('luyen-tap.doc.kiem-tra-nhom'), [
+            'question_set_id' => $set->question_set_id,
+            'answers' => [
+                $qids[0] => 'B',
                 $qids[1] => 'B',
                 $qids[2] => 'B',
                 $qids[3] => 'B',
@@ -1699,11 +1737,10 @@ class ReadingPracticeQueryTest extends TestCase
             ],
         ]);
 
-        $repeatResponse->assertStatus(200)
+        $repeatNewResponse->assertStatus(200)
             ->assertJson([
                 'success' => true,
-                'already_completed' => true,
-                'correct_count' => 3, // vẫn giữ kết quả cũ
+                'correct_count' => 0,
                 'total_questions' => 5,
             ]);
     }
@@ -1900,5 +1937,440 @@ class ReadingPracticeQueryTest extends TestCase
         $this->assertCount(4, $data['results']);
         $this->assertSame('A', $data['results'][0]['correct_answer']);
         $this->assertNull($data['results'][0]['user_answer']);
+    }
+
+    public function test_invalid_part_redirects_to_setup_with_error(): void
+    {
+        // 1. Part ngoài phạm vi 5, 6, 7
+        $response = $this->get(route('luyen-tap.doc.hoan-thanh-cau', ['part' => 8, 'count' => 10]));
+        $response->assertRedirect(url('/luyen-tap/doc'));
+        $response->assertSessionHas('practice_error', 'Phần luyện tập không hợp lệ. Vui lòng chọn Part 5, Part 6 hoặc Part 7.');
+
+        // 2. Part là chuỗi chữ
+        $responseStr = $this->get(route('luyen-tap.doc.hoan-thanh-cau', ['part' => 'abc', 'count' => 10]));
+        $responseStr->assertRedirect(url('/luyen-tap/doc'));
+        $responseStr->assertSessionHas('practice_error', 'Phần luyện tập không hợp lệ. Vui lòng chọn Part 5, Part 6 hoặc Part 7.');
+
+        // 3. Thiếu param part
+        $responseMissing = $this->get(route('luyen-tap.doc.hoan-thanh-cau'));
+        $responseMissing->assertRedirect(url('/luyen-tap/doc'));
+        $responseMissing->assertSessionHas('practice_error', 'Phần luyện tập không hợp lệ. Vui lòng chọn Part 5, Part 6 hoặc Part 7.');
+    }
+
+    public function test_invalid_count_format_or_exceeding_limit_redirects_with_error(): void
+    {
+        // 1. Số thập phân
+        $respDecimal = $this->get(route('luyen-tap.doc.hoan-thanh-cau', ['part' => 5, 'count' => '3.5']));
+        $respDecimal->assertRedirect(url('/luyen-tap/doc?part=5&count=3.5'));
+        $respDecimal->assertSessionHas('practice_error', 'Số lượng câu hỏi không hợp lệ. Vui lòng nhập một số nguyên dương.');
+
+        // 2. Số âm
+        $respNegative = $this->get(route('luyen-tap.doc.hoan-thanh-cau', ['part' => 5, 'count' => '-5']));
+        $respNegative->assertRedirect(url('/luyen-tap/doc?part=5&count=-5'));
+        $respNegative->assertSessionHas('practice_error', 'Số lượng câu hỏi không hợp lệ. Vui lòng nhập một số nguyên dương.');
+
+        // 3. Chuỗi chữ
+        $respText = $this->get(route('luyen-tap.doc.hoan-thanh-cau', ['part' => 5, 'count' => 'abc']));
+        $respText->assertRedirect(url('/luyen-tap/doc?part=5&count=abc'));
+        $respText->assertSessionHas('practice_error', 'Số lượng câu hỏi không hợp lệ. Vui lòng nhập một số nguyên dương.');
+
+        // 4. Vượt quá giới hạn 100 câu của hệ thống
+        $respOver = $this->get(route('luyen-tap.doc.hoan-thanh-cau', ['part' => 5, 'count' => 101]));
+        $respOver->assertRedirect(url('/luyen-tap/doc?part=5&count=101'));
+        $respOver->assertSessionHas('practice_error', 'Số lượng câu hỏi không được vượt quá giới hạn 100 câu của hệ thống.');
+    }
+
+    public function test_session_contains_standardized_data_ready_for_practice_attempt_service(): void
+    {
+        for ($i = 1; $i <= 5; $i++) {
+            $this->createPart5Question("Part 5 Active Question {$i}", 'ACTIVE');
+        }
+
+        $response = $this->get(route('luyen-tap.doc.hoan-thanh-cau', ['part' => 5, 'count' => 5]));
+        $response->assertStatus(200);
+
+        $sessionData = session('reading_practice_session');
+        $this->assertNotNull($sessionData);
+        $this->assertSame(5, $sessionData['part']);
+        $this->assertSame(5, $sessionData['target_count']);
+        $this->assertSame(5, $sessionData['actual_count']);
+        $this->assertNotEmpty($sessionData['started_at']);
+        $this->assertCount(5, $sessionData['question_ids']);
+        $this->assertCount(5, $sessionData['sequence_map']);
+
+        // Kiểm tra sequence_no tăng tuần tự từ 1 đến actual_count
+        $seqValues = array_values($sessionData['sequence_map']);
+        $this->assertSame([1, 2, 3, 4, 5], $seqValues);
+    }
+
+    public function test_part6_notice_when_bank_has_fewer_than_requested_groups(): void
+    {
+        // Tạo 4 nhóm Part 6 (tổng 16 câu)
+        for ($i = 1; $i <= 4; $i++) {
+            $this->createQuestionSet('PART6', 4, "Part 6 Set {$i}");
+        }
+
+        // Yêu cầu 20 câu (5 nhóm) nhưng ngân hàng chỉ có 16 câu (4 nhóm)
+        $response = $this->get(route('luyen-tap.doc.hoan-thanh-cau', ['part' => 6, 'count' => 20]));
+        $response->assertStatus(200);
+        $response->assertViewHas('questions', fn ($q) => count($q) === 16);
+        $response->assertViewHas('noticeMessage', function (?string $msg): bool {
+            return $msg === 'Bạn đã chọn 20 câu. Ngân hàng hiện chỉ có 16 câu Part 6 hợp lệ (gồm 4 đoạn văn).';
+        });
+    }
+
+    public function test_part7_notice_distinguishes_bank_insufficiency_vs_group_structure(): void
+    {
+        // 1. Trường hợp ngân hàng thiếu dữ liệu (tổng ngân hàng có 5 câu, yêu cầu 10 câu)
+        $this->createQuestionSet('PART7', 3, 'Part 7 Short Bank Set 1');
+        $this->createQuestionSet('PART7', 2, 'Part 7 Short Bank Set 2');
+
+        $responseInsufficient = $this->get(route('luyen-tap.doc.hoan-thanh-cau', ['part' => 7, 'count' => 10]));
+        $responseInsufficient->assertStatus(200);
+        $responseInsufficient->assertViewHas('questions', fn ($q) => count($q) === 5);
+        $responseInsufficient->assertViewHas('noticeMessage', function (?string $msg): bool {
+            return str_contains($msg ?? '', 'Ngân hàng hiện chỉ có 5 câu Part 7 hợp lệ');
+        });
+    }
+
+    public function test_be0077_page_reload_restores_identical_session_questions_and_states(): void
+    {
+        for ($i = 1; $i <= 5; $i++) {
+            $this->createPart5Question("Part 5 Reload Question {$i}", 'ACTIVE');
+        }
+
+        $initResp = $this->get(route('luyen-tap.doc.hoan-thanh-cau', ['part' => 5, 'count' => 5]));
+        $initResp->assertStatus(200);
+
+        $sessionData = session('reading_practice_session');
+        $this->assertNotNull($sessionData);
+        $originalQids = $sessionData['question_ids'];
+        $firstQid = $originalQids[0];
+
+        // Trả lời câu đầu tiên và gắn cờ
+        $this->postJson(route('luyen-tap.doc.kiem-tra-cau-hoi'), [
+            'question_id' => $firstQid,
+            'selected_option' => 'A',
+            'action' => 'answer',
+        ]);
+
+        $sessionData = session('reading_practice_session');
+        $sessionData['flagged_questions'] = [$firstQid];
+        session(['reading_practice_session' => $sessionData]);
+
+        // F5 / Tải lại trang với cùng part=5 và count=5 (không kèm &new=1)
+        $reloadResp = $this->get(route('luyen-tap.doc.hoan-thanh-cau', ['part' => 5, 'count' => 5]));
+        $reloadResp->assertStatus(200);
+        $reloadResp->assertViewHas('questions', function ($questions) use ($originalQids) {
+            $currentIds = collect($questions)->pluck('id')->all();
+
+            return $currentIds === $originalQids;
+        });
+        $reloadResp->assertViewHas('savedAnswers', function ($answers) use ($firstQid) {
+            return ($answers[$firstQid] ?? null) === 'A';
+        });
+        $reloadResp->assertViewHas('savedFlags', function ($flags) use ($firstQid) {
+            return in_array($firstQid, $flags, true);
+        });
+    }
+
+    public function test_be0077_part5_changing_answers_updates_session_and_recalculates_is_correct(): void
+    {
+        $q = $this->createPart5Question('Part 5 Changing Answer Question', 'ACTIVE');
+        $qid = $q->question_id;
+
+        $sessionData = [
+            'part' => 5,
+            'target_count' => 1,
+            'actual_count' => 1,
+            'question_ids' => [$qid],
+            'answers' => [],
+            'question_states' => [],
+        ];
+        session(['reading_practice_session' => $sessionData]);
+
+        // Chọn đáp án B (đáp án đúng)
+        $resp1 = $this->postJson(route('luyen-tap.doc.kiem-tra-cau-hoi'), [
+            'question_id' => $qid,
+            'selected_option' => 'B',
+            'action' => 'answer',
+        ]);
+        $resp1->assertStatus(200)->assertJson(['is_correct' => true, 'user_answer' => 'B']);
+
+        $sessAfter1 = session('reading_practice_session');
+        $this->assertSame('B', $sessAfter1['answers'][$qid]);
+        $this->assertTrue($sessAfter1['question_states'][$qid]['isCorrect']);
+        $this->assertTrue($sessAfter1['question_states'][$qid]['answered']);
+
+        // Đổi sang đáp án C (đáp án sai)
+        $resp2 = $this->postJson(route('luyen-tap.doc.kiem-tra-cau-hoi'), [
+            'question_id' => $qid,
+            'selected_option' => 'C',
+            'action' => 'answer',
+        ]);
+        $resp2->assertStatus(200)->assertJson(['is_correct' => false, 'user_answer' => 'C']);
+
+        $sessAfter2 = session('reading_practice_session');
+        $this->assertSame('C', $sessAfter2['answers'][$qid]);
+        $this->assertFalse($sessAfter2['question_states'][$qid]['isCorrect']);
+        $this->assertTrue($sessAfter2['question_states'][$qid]['answered']);
+    }
+
+    public function test_be0077_part5_reveal_action_does_not_mark_question_as_answered(): void
+    {
+        $q = $this->createPart5Question('Part 5 Reveal Explanation Question', 'ACTIVE');
+        $qid = $q->question_id;
+
+        $sessionData = [
+            'part' => 5,
+            'target_count' => 1,
+            'actual_count' => 1,
+            'question_ids' => [$qid],
+            'answers' => [],
+            'question_states' => [],
+        ];
+        session(['reading_practice_session' => $sessionData]);
+
+        // Nhấn xem giải thích trước khi chọn đáp án
+        $resp = $this->postJson(route('luyen-tap.doc.kiem-tra-cau-hoi'), [
+            'question_id' => $qid,
+            'selected_option' => null,
+            'action' => 'reveal',
+        ]);
+
+        $resp->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'action' => 'reveal',
+                'correct_answer' => 'B',
+            ]);
+
+        $sess = session('reading_practice_session');
+        $this->assertArrayNotHasKey($qid, $sess['answers']);
+        $this->assertTrue($sess['question_states'][$qid]['revealed']);
+        $this->assertFalse($sess['question_states'][$qid]['answered']);
+        $this->assertNull($sess['question_states'][$qid]['userPick']);
+    }
+
+    public function test_be0077_part6_part7_save_progress_saves_partial_answers_without_grading(): void
+    {
+        $set = $this->createQuestionSet('PART6', 4, 'Part 6 Save Progress');
+        $qids = $set->questions()->pluck('question_id')->all();
+
+        $sessionData = [
+            'part' => 6,
+            'target_count' => 4,
+            'actual_count' => 4,
+            'question_ids' => $qids,
+            'answers' => [],
+            'groups' => [
+                $set->question_set_id => [
+                    'question_set_id' => $set->question_set_id,
+                    'question_ids' => $qids,
+                    'completed' => false,
+                    'answers' => [],
+                ],
+            ],
+        ];
+        session(['reading_practice_session' => $sessionData]);
+
+        // Người dùng mới chọn 2/4 câu
+        $resp = $this->postJson(route('luyen-tap.doc.kiem-tra-nhom'), [
+            'question_set_id' => $set->question_set_id,
+            'action' => 'save_progress',
+            'answers' => [
+                $qids[0] => 'A',
+                $qids[1] => 'C',
+            ],
+        ]);
+
+        $resp->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'saved' => true,
+                'question_set_id' => $set->question_set_id,
+                'answers' => [
+                    $qids[0] => 'A',
+                    $qids[1] => 'C',
+                ],
+            ]);
+
+        $sess = session('reading_practice_session');
+        $this->assertSame('A', $sess['answers'][$qids[0]]);
+        $this->assertSame('C', $sess['answers'][$qids[1]]);
+        $this->assertArrayNotHasKey($qids[2], $sess['answers']);
+        $this->assertFalse($sess['groups'][$set->question_set_id]['completed']);
+    }
+
+    public function test_be0077_exit_clears_practice_session(): void
+    {
+        session([
+            'reading_practice_session' => [
+                'part' => 5,
+                'target_count' => 10,
+                'question_ids' => [1, 2, 3],
+            ],
+        ]);
+
+        $resp = $this->get('/luyen-tap/doc?exit=1');
+        $resp->assertStatus(200);
+        $this->assertNull(session('reading_practice_session'));
+    }
+
+    public function test_be0077_backend_request_versioning_prevents_stale_answer_overwrite(): void
+    {
+        $q = $this->createPart5Question('Part 5 Backend Versioning Test', 'ACTIVE');
+        $qid = $q->question_id;
+
+        $sessionData = [
+            'part' => 5,
+            'target_count' => 1,
+            'actual_count' => 1,
+            'question_ids' => [$qid],
+            'answers' => [],
+            'question_states' => [],
+            'question_versions' => [],
+        ];
+        session(['reading_practice_session' => $sessionData]);
+
+        // Request 1: Version 2 (đáp án B, đến đích trước)
+        $respNew = $this->postJson(route('luyen-tap.doc.kiem-tra-cau-hoi'), [
+            'question_id' => $qid,
+            'selected_option' => 'B',
+            'action' => 'answer',
+            'version' => 2,
+        ]);
+        $respNew->assertStatus(200)->assertJson(['is_correct' => true, 'user_answer' => 'B']);
+
+        $sess = session('reading_practice_session');
+        $this->assertSame('B', $sess['answers'][$qid]);
+        $this->assertSame(2, $sess['question_versions'][$qid]);
+
+        // Request 2: Version 1 (đáp án C, do độ trễ mạng đến sau)
+        $respOld = $this->postJson(route('luyen-tap.doc.kiem-tra-cau-hoi'), [
+            'question_id' => $qid,
+            'selected_option' => 'C',
+            'action' => 'answer',
+            'version' => 1,
+        ]);
+        $respOld->assertStatus(200)->assertJson(['stale' => true]);
+
+        // Đáp án trong Session không bị ghi đè bởi request cũ
+        $sessAfter = session('reading_practice_session');
+        $this->assertSame('B', $sessAfter['answers'][$qid]);
+        $this->assertSame(2, $sessAfter['question_versions'][$qid]);
+    }
+
+    public function test_be0077_backend_save_progress_versioning_prevents_stale_group_overwrite(): void
+    {
+        $set = $this->createQuestionSet('PART6', 4, 'Part 6 Versioning Test');
+        $qids = $set->questions()->pluck('question_id')->all();
+
+        $sessionData = [
+            'part' => 6,
+            'target_count' => 4,
+            'actual_count' => 4,
+            'question_ids' => $qids,
+            'answers' => [],
+            'groups' => [
+                $set->question_set_id => [
+                    'question_set_id' => $set->question_set_id,
+                    'question_ids' => $qids,
+                    'completed' => false,
+                    'answers' => [],
+                ],
+            ],
+            'question_versions' => [],
+        ];
+        session(['reading_practice_session' => $sessionData]);
+
+        // Version 2 cho câu qids[0] là 'A'
+        $respNew = $this->postJson(route('luyen-tap.doc.kiem-tra-nhom'), [
+            'question_set_id' => $set->question_set_id,
+            'action' => 'save_progress',
+            'question_id' => $qids[0],
+            'version' => 2,
+            'answers' => [$qids[0] => 'A'],
+        ]);
+        $respNew->assertStatus(200)->assertJson(['saved' => true]);
+
+        // Request cũ Version 1 cho câu qids[0] là 'B' đến sau
+        $respOld = $this->postJson(route('luyen-tap.doc.kiem-tra-nhom'), [
+            'question_set_id' => $set->question_set_id,
+            'action' => 'save_progress',
+            'question_id' => $qids[0],
+            'version' => 1,
+            'answers' => [$qids[0] => 'B'],
+        ]);
+        $respOld->assertStatus(200)->assertJson(['stale' => true, 'saved' => false]);
+
+        $sess = session('reading_practice_session');
+        $this->assertSame('A', $sess['answers'][$qids[0]]);
+    }
+
+    public function test_be0077_expired_session_returns_403_in_check_answer(): void
+    {
+        $q = $this->createPart5Question('Part 5 Expired Session Test', 'ACTIVE');
+
+        // Không có session
+        session()->forget('reading_practice_session');
+
+        $resp = $this->postJson(route('luyen-tap.doc.kiem-tra-cau-hoi'), [
+            'question_id' => $q->question_id,
+            'selected_option' => 'A',
+            'action' => 'answer',
+        ]);
+
+        $resp->assertStatus(403)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Lượt luyện tập không tồn tại hoặc đã hết hạn.',
+            ]);
+    }
+
+    public function test_be0077_user_mismatch_returns_403(): void
+    {
+        $user1 = User::query()->create([
+            'user_name' => 'student1',
+            'full_name' => 'Student One',
+            'email' => 'student1@studyprep.test',
+            'password_hash' => bcrypt('secret'),
+            'role' => 'student',
+        ]);
+
+        $user2 = User::query()->create([
+            'user_name' => 'student2',
+            'full_name' => 'Student Two',
+            'email' => 'student2@studyprep.test',
+            'password_hash' => bcrypt('secret'),
+            'role' => 'student',
+        ]);
+
+        $q = $this->createPart5Question('Part 5 User Mismatch Test', 'ACTIVE');
+
+        // Phiên thuộc về user 1
+        $sessionData = [
+            'user_id' => $user1->user_id,
+            'part' => 5,
+            'target_count' => 1,
+            'actual_count' => 1,
+            'question_ids' => [$q->question_id],
+            'answers' => [],
+            'question_states' => [],
+        ];
+        session(['reading_practice_session' => $sessionData]);
+
+        // Đăng nhập tài khoản user 2 gửi request
+        $resp = $this->actingAs($user2)->postJson(route('luyen-tap.doc.kiem-tra-cau-hoi'), [
+            'question_id' => $q->question_id,
+            'selected_option' => 'A',
+            'action' => 'answer',
+        ]);
+
+        $resp->assertStatus(403)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Lượt luyện tập không thuộc về tài khoản hiện tại.',
+            ]);
     }
 }

@@ -20,33 +20,75 @@ class ReadingPracticeController extends Controller
      */
     public function practice(Request $request): View|RedirectResponse
     {
-        $part = (int) $request->query('part', 5);
-        if (! in_array($part, [5, 6, 7], true)) {
-            $part = 5;
+        $rawPart = $request->query('part');
+        if ($rawPart === null || ! in_array((string) $rawPart, ['5', '6', '7'], true)) {
+            return redirect()->to(url('/luyen-tap/doc'))
+                ->with('practice_error', 'Phần luyện tập không hợp lệ. Vui lòng chọn Part 5, Part 6 hoặc Part 7.');
         }
+        $part = (int) $rawPart;
+
+        $existingSession = session('reading_practice_session');
+        $isNewRequest = (bool) $request->query('new');
+        $isRetryWrong = (bool) $request->query('retry_wrong');
 
         $rawCount = $request->query('count');
-        $count = $rawCount !== null ? (int) $rawCount : 20;
+        $hasCountQuery = ($rawCount !== null && trim((string) $rawCount) !== '');
+        $requestedCount = ($hasCountQuery && preg_match('/^\d+$/', trim((string) $rawCount)))
+            ? (int) trim((string) $rawCount)
+            : null;
 
-        // 1. Kiểm tra số lượng câu tối thiểu của từng Part
-        if ($part === 5 && $count < 1) {
-            return redirect()->to(url('/luyen-tap/doc?part=5&count='.$count))
-                ->with('practice_error', 'Part 5 yêu cầu tối thiểu 1 câu hỏi. Vui lòng chọn lại số lượng câu.');
+        // Khôi phục lượt luyện tập hiện tại khi tải lại trang (reload)
+        // Chỉ reload khi cùng Part và không có count khác với phiên đang làm dở
+        $countMatches = true;
+        if ($requestedCount !== null && ! empty($existingSession)) {
+            $sessTarget = $existingSession['target_count'] ?? count($existingSession['question_ids'] ?? []);
+            $sessActual = count($existingSession['question_ids'] ?? []);
+            $countMatches = ($requestedCount === (int) $sessTarget || $requestedCount === $sessActual);
         }
 
-        if ($part === 6 && $count < 4) {
-            return redirect()->to(url('/luyen-tap/doc?part=6&count='.$count))
-                ->with('practice_error', 'Part 6 yêu cầu tối thiểu 4 câu (1 đoạn văn). Vui lòng chọn lại số lượng câu.');
-        }
+        $sessionUserId = $existingSession['user_id'] ?? null;
+        $userMatches = (auth()->check() ? ($sessionUserId === auth()->id()) : true);
 
-        if ($part === 7 && $count < 2) {
-            return redirect()->to(url('/luyen-tap/doc?part=7&count='.$count))
-                ->with('practice_error', 'Part 7 yêu cầu tối thiểu 2 câu để tạo một nhóm bài đọc. Vui lòng chọn lại số lượng câu.');
+        $isReload = (
+            ! $isNewRequest &&
+            ! $isRetryWrong &&
+            ! empty($existingSession) &&
+            ($existingSession['part'] ?? null) === $part &&
+            ! empty($existingSession['question_ids']) &&
+            $countMatches &&
+            $userMatches
+        );
+
+        if ($isReload) {
+            $questionIds = $existingSession['question_ids'];
+            $count = $existingSession['target_count'] ?? count($questionIds);
+            $loaded = $this->loadReadingQuestions($part, count($questionIds), $questionIds);
+            $selectedQuestions = $loaded['questions'];
+            $noticeMessage = $loaded['notice'] ?? null;
+
+            if (empty($selectedQuestions)) {
+                session()->forget('reading_practice_session');
+
+                return redirect()->to(url('/luyen-tap/doc?part='.$part))
+                    ->with('practice_error', 'Lượt luyện tập không còn tồn tại hoặc dữ liệu câu hỏi đã thay đổi.');
+            }
+
+            return view('pages.doc-luyen-tap', [
+                'part' => $part,
+                'questions' => $selectedQuestions,
+                'totalCount' => count($selectedQuestions),
+                'targetCount' => $count,
+                'noticeMessage' => $noticeMessage,
+                'savedAnswers' => $existingSession['answers'] ?? [],
+                'savedQuestionStates' => $existingSession['question_states'] ?? [],
+                'savedGroupStates' => $existingSession['groups'] ?? [],
+                'savedFlags' => $existingSession['flagged_questions'] ?? [],
+            ]);
         }
 
         $specificIds = null;
         // Xử lý làm lại các câu bị sai
-        if ($request->query('retry_wrong')) {
+        if ($isRetryWrong) {
             $lastResult = session('reading_practice_result');
             if ($lastResult && ! empty($lastResult['details'])) {
                 $wrongIds = collect($lastResult['details'])
@@ -59,6 +101,49 @@ class ReadingPracticeController extends Controller
                 if (! empty($wrongIds)) {
                     $specificIds = $wrongIds;
                 }
+            }
+
+            if (empty($specificIds)) {
+                return redirect()->to(url('/luyen-tap/doc?part='.$part))
+                    ->with('practice_error', 'Không tìm thấy câu hỏi sai từ lượt luyện tập trước.');
+            }
+
+            $count = count($specificIds);
+        } else {
+            $rawCount = $request->query('count');
+
+            if ($rawCount === null || trim((string) $rawCount) === '') {
+                return redirect()->to(url('/luyen-tap/doc?part='.$part))
+                    ->with('practice_error', 'Vui lòng chọn số lượng câu hỏi để bắt đầu luyện tập.');
+            }
+
+            $trimmedCount = trim((string) $rawCount);
+            if (! preg_match('/^\d+$/', $trimmedCount)) {
+                return redirect()->to(url('/luyen-tap/doc?part='.$part.'&count='.$rawCount))
+                    ->with('practice_error', 'Số lượng câu hỏi không hợp lệ. Vui lòng nhập một số nguyên dương.');
+            }
+
+            $count = (int) $trimmedCount;
+
+            if ($count > 100) {
+                return redirect()->to(url('/luyen-tap/doc?part='.$part.'&count='.$count))
+                    ->with('practice_error', 'Số lượng câu hỏi không được vượt quá giới hạn 100 câu của hệ thống.');
+            }
+
+            // 1. Kiểm tra số lượng câu tối thiểu của từng Part
+            if ($part === 5 && $count < 1) {
+                return redirect()->to(url('/luyen-tap/doc?part=5&count='.$count))
+                    ->with('practice_error', 'Part 5 yêu cầu tối thiểu 1 câu hỏi. Vui lòng chọn lại số lượng câu.');
+            }
+
+            if ($part === 6 && $count < 4) {
+                return redirect()->to(url('/luyen-tap/doc?part=6&count='.$count))
+                    ->with('practice_error', 'Part 6 yêu cầu tối thiểu 4 câu (1 đoạn văn). Vui lòng chọn lại số lượng câu.');
+            }
+
+            if ($part === 7 && $count < 2) {
+                return redirect()->to(url('/luyen-tap/doc?part=7&count='.$count))
+                    ->with('practice_error', 'Part 7 yêu cầu tối thiểu 2 câu để tạo một nhóm bài đọc. Vui lòng chọn lại số lượng câu.');
             }
         }
 
@@ -76,6 +161,11 @@ class ReadingPracticeController extends Controller
 
         // Lưu danh sách ID câu hỏi và thông tin nhóm (nếu có) của lượt luyện tập vào session để kiểm tra bảo mật & chấm điểm đúng thứ tự
         $questionIds = collect($selectedQuestions)->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $sequenceMap = [];
+        foreach ($questionIds as $index => $qid) {
+            $sequenceMap[$qid] = $index + 1;
+        }
+
         $groups = [];
         if ($part === 6 || $part === 7) {
             $grouped = collect($selectedQuestions)->groupBy('question_set_id');
@@ -92,10 +182,17 @@ class ReadingPracticeController extends Controller
 
         session([
             'reading_practice_session' => [
+                'user_id' => auth()->id(),
                 'part' => $part,
                 'target_count' => $count,
+                'actual_count' => count($questionIds),
+                'started_at' => now()->toIso8601String(),
                 'question_ids' => $questionIds,
+                'sequence_map' => $sequenceMap,
+                'answers' => [],
+                'question_states' => [],
                 'groups' => $groups,
+                'flagged_questions' => [],
             ],
         ]);
 
@@ -105,6 +202,10 @@ class ReadingPracticeController extends Controller
             'totalCount' => count($selectedQuestions),
             'targetCount' => $count,
             'noticeMessage' => $noticeMessage,
+            'savedAnswers' => [],
+            'savedQuestionStates' => [],
+            'savedGroupStates' => $groups,
+            'savedFlags' => [],
         ]);
     }
 
@@ -152,7 +253,7 @@ class ReadingPracticeController extends Controller
             ->where('status', Question::STATUS_ACTIVE)
             ->whereNotNull('content')
             ->whereRaw("TRIM(content) != ''")
-            ->whereHas('section', fn ($s) => $s->where('code', 'PART5'))
+            ->whereHas('section', fn ($s) => $s->where('code', 'PART5')->whereHas('skill', fn ($sk) => $sk->where('code', 'RC')))
             ->whereHas('questionType', fn ($qt) => $qt->where('response_mode', 'SINGLE_CHOICE'))
             ->has('options', '=', 4)
             ->whereHas('options', fn ($opt) => $opt->where('is_correct', true), '=', 1)
@@ -162,7 +263,7 @@ class ReadingPracticeController extends Controller
             ->whereHas('options', fn ($opt) => $opt->whereRaw("UPPER(TRIM(label)) = 'D'")->whereNotNull('content')->whereRaw("TRIM(content) != ''"))
             ->with([
                 'options' => fn ($opt) => $opt->select(['option_id', 'question_id', 'label', 'content', 'is_correct']),
-                'section',
+                'section.skill',
                 'questionType',
             ]);
 
@@ -176,6 +277,18 @@ class ReadingPracticeController extends Controller
 
         // Lọc qua validator để đảm bảo 100% tính toàn vẹn nghiệp vụ
         $validQuestions = $questions->filter(fn (Question $q) => $this->isValidPart5Question($q))->values();
+
+        // Đảm bảo thứ tự khớp đúng danh sách $specificIds nếu được chỉ định (khôi phục lượt làm dở)
+        if (! empty($specificIds)) {
+            $byId = $validQuestions->keyBy('question_id');
+            $ordered = collect();
+            foreach ($specificIds as $sid) {
+                if ($byId->has($sid)) {
+                    $ordered->push($byId->get($sid));
+                }
+            }
+            $validQuestions = $ordered;
+        }
 
         if ($validQuestions->isEmpty()) {
             return [
@@ -280,9 +393,27 @@ class ReadingPracticeController extends Controller
             ];
         }
 
-        $selectedSets = empty($specificIds)
-            ? $validSets->shuffle()->take($targetGroups)
-            : $validSets;
+        if (! empty($specificIds)) {
+            // Sắp xếp các nhóm QuestionSet theo đúng thứ tự xuất hiện của câu hỏi trong $specificIds
+            $firstQidPos = [];
+            foreach ($specificIds as $pos => $qid) {
+                if (! isset($firstQidPos[$qid])) {
+                    $firstQidPos[$qid] = $pos;
+                }
+            }
+            $selectedSets = $validSets->sortBy(function (QuestionSet $s) use ($firstQidPos) {
+                $minPos = 999999;
+                foreach ($s->questions as $q) {
+                    if (isset($firstQidPos[$q->question_id])) {
+                        $minPos = min($minPos, $firstQidPos[$q->question_id]);
+                    }
+                }
+
+                return $minPos;
+            })->values();
+        } else {
+            $selectedSets = $validSets->shuffle()->take($targetGroups);
+        }
 
         $mapped = [];
         $globalNum = 1;
@@ -316,7 +447,7 @@ class ReadingPracticeController extends Controller
             }
             if (count($mapped) < $roundedTarget) {
                 $actualSets = (int) (count($mapped) / 4);
-                $notice = 'Ngân hàng hiện chỉ có '.count($mapped)." câu Part 6 hợp lệ (gồm {$actualSets} đoạn văn).";
+                $notice = "Bạn đã chọn {$targetCount} câu. Ngân hàng hiện chỉ có ".count($mapped)." câu Part 6 hợp lệ (gồm {$actualSets} đoạn văn).";
             }
         }
 
@@ -406,9 +537,27 @@ class ReadingPracticeController extends Controller
             ];
         }
 
-        $selectedSets = empty($specificIds)
-            ? $this->selectOptimalPart7Sets($validSets, $targetCount)
-            : $validSets;
+        if (! empty($specificIds)) {
+            // Sắp xếp các nhóm QuestionSet theo đúng thứ tự xuất hiện của câu hỏi trong $specificIds
+            $firstQidPos = [];
+            foreach ($specificIds as $pos => $qid) {
+                if (! isset($firstQidPos[$qid])) {
+                    $firstQidPos[$qid] = $pos;
+                }
+            }
+            $selectedSets = $validSets->sortBy(function (QuestionSet $s) use ($firstQidPos) {
+                $minPos = 999999;
+                foreach ($s->questions as $q) {
+                    if (isset($firstQidPos[$q->question_id])) {
+                        $minPos = min($minPos, $firstQidPos[$q->question_id]);
+                    }
+                }
+
+                return $minPos;
+            })->values();
+        } else {
+            $selectedSets = $this->selectOptimalPart7Sets($validSets, $targetCount);
+        }
 
         if ($selectedSets->isEmpty()) {
             return [
@@ -449,7 +598,12 @@ class ReadingPracticeController extends Controller
 
         $notice = null;
         if (empty($specificIds) && count($mapped) < $targetCount) {
-            $notice = "Bạn đã chọn {$targetCount} câu. Hệ thống đã chọn tổ hợp bài đọc nguyên vẹn tối ưu nhất gồm ".count($mapped).' câu.';
+            $totalAvailable = $validSets->sum(fn (QuestionSet $s) => $s->questions->count());
+            if ($totalAvailable < $targetCount) {
+                $notice = "Bạn đã chọn {$targetCount} câu. Ngân hàng hiện chỉ có {$totalAvailable} câu Part 7 hợp lệ (gồm ".count($validSets).' bài đọc).';
+            } else {
+                $notice = "Bạn đã chọn {$targetCount} câu. Do Part 7 giữ nguyên vẹn nhóm bài đọc (2–5 câu), hệ thống đã chọn tổ hợp tối ưu gồm ".count($mapped).' câu.';
+            }
         }
 
         return [
@@ -570,6 +724,10 @@ class ReadingPracticeController extends Controller
         }
 
         if ($q->section?->code !== 'PART5') {
+            return false;
+        }
+
+        if ($q->section?->skill?->code !== 'RC') {
             return false;
         }
 
@@ -810,16 +968,55 @@ class ReadingPracticeController extends Controller
             'question_id' => ['required', 'integer'],
             'selected_option' => ['nullable', 'string', 'in:A,B,C,D,a,b,c,d'],
             'action' => ['nullable', 'string', 'in:answer,reveal'],
+            'version' => ['nullable', 'integer'],
         ]);
 
         $questionId = (int) $validated['question_id'];
         $action = $validated['action'] ?? (! empty($validated['selected_option']) ? 'answer' : 'reveal');
 
-        // Backend kiểm tra câu hỏi thuộc đúng lượt luyện tập của người dùng hiện tại
-        $sessionData = session('reading_practice_session');
-        $sessionPart = $sessionData['part'] ?? null;
+        $question = Question::query()
+            ->where('question_id', $questionId)
+            ->with([
+                'options' => fn ($opt) => $opt->select(['option_id', 'question_id', 'label', 'content', 'is_correct']),
+                'section',
+            ])
+            ->first();
+
+        if (! $question) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy câu hỏi trong hệ thống.',
+            ], 404);
+        }
 
         // BẢO MẬT: Tuyệt đối không cho phép gửi câu hỏi Part 6 hoặc Part 7 riêng lẻ đến endpoint Part 5 để xem trước đáp án
+        $sectionCode = $question->section?->code;
+        if ($sectionCode === 'PART6' || $sectionCode === 'PART7') {
+            $pNum = $sectionCode === 'PART6' ? 6 : 7;
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Câu hỏi Part '.$pNum.' phải được kiểm tra theo nhóm đoạn văn.',
+            ], 403);
+        }
+
+        // Backend kiểm tra phiên làm việc và câu hỏi thuộc đúng lượt luyện tập của người dùng hiện tại
+        $sessionData = session('reading_practice_session');
+        if (empty($sessionData)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lượt luyện tập không tồn tại hoặc đã hết hạn.',
+            ], 403);
+        }
+
+        if (auth()->check() && isset($sessionData['user_id']) && $sessionData['user_id'] !== auth()->id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lượt luyện tập không thuộc về tài khoản hiện tại.',
+            ], 403);
+        }
+
+        $sessionPart = $sessionData['part'] ?? null;
         if ($sessionPart === 6 || $sessionPart === 7) {
             return response()->json([
                 'success' => false,
@@ -836,19 +1033,19 @@ class ReadingPracticeController extends Controller
             ], 403);
         }
 
-        $question = Question::query()
-            ->where('question_id', $questionId)
-            ->with([
-                'options' => fn ($opt) => $opt->select(['option_id', 'question_id', 'label', 'content', 'is_correct']),
-                'section',
-            ])
-            ->first();
-
-        if (! $question) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Không tìm thấy câu hỏi trong hệ thống.',
-            ], 404);
+        // Request Versioning ở Backend: nếu có version, kiểm tra không để request cũ ghi đè
+        $incomingVersion = $request->has('version') ? (int) $request->input('version') : null;
+        if ($incomingVersion !== null) {
+            $prevVersion = (int) ($sessionData['question_versions'][$questionId] ?? 0);
+            if ($incomingVersion < $prevVersion) {
+                return response()->json([
+                    'success' => true,
+                    'stale' => true,
+                    'question_id' => $questionId,
+                    'message' => 'Bỏ qua request cũ do độ trễ mạng.',
+                ]);
+            }
+            $sessionData['question_versions'][$questionId] = $incomingVersion;
         }
 
         if ($question->section?->code === 'PART6' || $question->section?->code === 'PART7') {
@@ -868,6 +1065,19 @@ class ReadingPracticeController extends Controller
 
         // Trường hợp người học bấm nút Giải thích trước khi chọn đáp án
         if ($action === 'reveal' || empty($validated['selected_option'])) {
+            if ($sessionData && empty($sessionData['answers'][$questionId])) {
+                $sessionData['question_states'][$questionId] = [
+                    'answered' => false,
+                    'userPick' => null,
+                    'correctPick' => $correctLabel,
+                    'isCorrect' => false,
+                    'revealed' => true,
+                    'explanation' => $explanation,
+                    'explainOpen' => true,
+                ];
+                session(['reading_practice_session' => $sessionData]);
+            }
+
             return response()->json([
                 'success' => true,
                 'question_id' => $questionId,
@@ -879,6 +1089,20 @@ class ReadingPracticeController extends Controller
 
         $selectedOption = strtoupper(trim((string) $validated['selected_option']));
         $isCorrect = ($selectedOption === $correctLabel);
+
+        if ($sessionData) {
+            $sessionData['answers'][$questionId] = $selectedOption;
+            $sessionData['question_states'][$questionId] = [
+                'answered' => true,
+                'userPick' => $selectedOption,
+                'correctPick' => $correctLabel,
+                'isCorrect' => $isCorrect,
+                'revealed' => false,
+                'explanation' => $explanation,
+                'explainOpen' => true,
+            ];
+            session(['reading_practice_session' => $sessionData]);
+        }
 
         return response()->json([
             'success' => true,
@@ -895,9 +1119,10 @@ class ReadingPracticeController extends Controller
     /**
      * Kiểm tra đáp án theo nhóm đoạn văn (Dùng chung cho Part 6 và tái sử dụng cho Part 7).
      * BẢO MẬT:
-     * - Chỉ nhận request khi có đủ câu trả lời của toàn bộ nhóm.
+     * - Chỉ nhận request khi có đủ câu trả lời của toàn bộ nhóm khi nộp kết quả.
+     * - Hỗ trợ lưu tiến độ dở dang (action = 'save_progress').
      * - Đối chiếu trực tiếp với CSDL (answer_option.is_correct).
-     * - Khóa và lưu kết quả nhóm vào Session, chống gửi lặp lại hoặc chỉnh sửa sau khi chốt.
+     * - Cập nhật kết quả khi thay đổi đáp án theo nghiệp vụ luyện tập.
      */
     public function checkGroupAnswers(Request $request): JsonResponse
     {
@@ -905,6 +1130,8 @@ class ReadingPracticeController extends Controller
             'question_set_id' => ['required', 'integer'],
             'action' => ['nullable', 'string'],
             'answers' => ['nullable', 'array'],
+            'question_id' => ['nullable', 'integer'],
+            'version' => ['nullable', 'integer'],
         ]);
 
         $setId = (int) $validated['question_set_id'];
@@ -918,6 +1145,13 @@ class ReadingPracticeController extends Controller
             ], 403);
         }
 
+        if (auth()->check() && isset($sessionData['user_id']) && $sessionData['user_id'] !== auth()->id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lượt luyện tập không thuộc về tài khoản hiện tại.',
+            ], 403);
+        }
+
         if (! isset($sessionData['groups'][$setId])) {
             return response()->json([
                 'success' => false,
@@ -928,15 +1162,47 @@ class ReadingPracticeController extends Controller
         $groupInfo = $sessionData['groups'][$setId];
         $expectedQids = $groupInfo['question_ids'] ?? [];
 
-        // Nếu nhóm đã hoàn thành và đã chốt trước đó, trả lại kết quả đã lưu (chống sửa đáp án / chống spam request)
-        if (! empty($groupInfo['completed']) && ! empty($groupInfo['result'])) {
+        // Hỗ trợ lưu tiến độ từng câu đang làm dở trong nhóm
+        if ($action === 'save_progress') {
+            $incomingQid = $request->has('question_id') ? (int) $request->input('question_id') : null;
+            $incomingVersion = $request->has('version') ? (int) $request->input('version') : null;
+
+            if ($incomingQid !== null && $incomingVersion !== null) {
+                $prevVersion = (int) ($sessionData['question_versions'][$incomingQid] ?? 0);
+                if ($incomingVersion < $prevVersion) {
+                    return response()->json([
+                        'success' => true,
+                        'stale' => true,
+                        'question_id' => $incomingQid,
+                        'saved' => false,
+                        'message' => 'Bỏ qua cập nhật tiến độ câu cũ do đến trễ.',
+                    ]);
+                }
+                $sessionData['question_versions'][$incomingQid] = $incomingVersion;
+            }
+            $userAnswers = (array) ($validated['answers'] ?? []);
+            $normalizedAnswers = [];
+            foreach ($userAnswers as $qid => $val) {
+                $qInt = (int) $qid;
+                if (in_array($qInt, $expectedQids, true)) {
+                    $lbl = strtoupper(trim((string) $val));
+                    if (in_array($lbl, ['A', 'B', 'C', 'D'], true)) {
+                        $normalizedAnswers[$qInt] = $lbl;
+                        $sessionData['answers'][$qInt] = $lbl;
+                    }
+                }
+            }
+            $sessionData['groups'][$setId]['answers'] = array_merge(
+                $sessionData['groups'][$setId]['answers'] ?? [],
+                $normalizedAnswers
+            );
+            session(['reading_practice_session' => $sessionData]);
+
             return response()->json([
                 'success' => true,
-                'already_completed' => true,
+                'saved' => true,
                 'question_set_id' => $setId,
-                'correct_count' => $groupInfo['result']['correct_count'],
-                'total_questions' => count($expectedQids),
-                'results' => $groupInfo['result']['results'],
+                'answers' => $normalizedAnswers,
             ]);
         }
 
@@ -969,6 +1235,10 @@ class ReadingPracticeController extends Controller
                 ];
             }
 
+            $sessionData['groups'][$setId]['revealed'] = true;
+            $sessionData['groups'][$setId]['explainOpen'] = true;
+            session(['reading_practice_session' => $sessionData]);
+
             return response()->json([
                 'success' => true,
                 'action' => 'reveal',
@@ -991,6 +1261,28 @@ class ReadingPracticeController extends Controller
                     'success' => false,
                     'message' => 'Bạn cần trả lời đầy đủ tất cả các câu hỏi trong đoạn văn trước khi xem kết quả.',
                 ], 422);
+            }
+        }
+
+        // Nếu nhóm đã hoàn thành và gửi lại đúng tập đáp án cũ thì trả về kết quả đã lưu
+        if (! empty($groupInfo['completed']) && ! empty($groupInfo['result'])) {
+            $prevAnswers = $groupInfo['answers'] ?? [];
+            $hasNewAnswers = false;
+            foreach ($normalizedAnswers as $qid => $ans) {
+                if (($prevAnswers[$qid] ?? null) !== $ans) {
+                    $hasNewAnswers = true;
+                    break;
+                }
+            }
+            if (! $hasNewAnswers && count($prevAnswers) === count($normalizedAnswers)) {
+                return response()->json([
+                    'success' => true,
+                    'already_completed' => true,
+                    'question_set_id' => $setId,
+                    'correct_count' => $groupInfo['result']['correct_count'],
+                    'total_questions' => count($expectedQids),
+                    'results' => $groupInfo['result']['results'],
+                ]);
             }
         }
 
@@ -1031,6 +1323,18 @@ class ReadingPracticeController extends Controller
                 'is_correct' => $isCorrect,
                 'is_right' => $isCorrect,
                 'explanation' => $explanation,
+            ];
+
+            // Cập nhật câu trả lời và trạng thái câu vào session
+            $sessionData['answers'][$qid] = $userPick;
+            $sessionData['question_states'][$qid] = [
+                'answered' => true,
+                'userPick' => $userPick,
+                'correctPick' => $correctLabel,
+                'isCorrect' => $isCorrect,
+                'revealed' => false,
+                'explanation' => $explanation,
+                'explainOpen' => true,
             ];
         }
 
@@ -1105,22 +1409,27 @@ class ReadingPracticeController extends Controller
                 foreach ($orderedQuestions as $idx => $q) {
                     $qid = (int) $q->question_id;
 
-                    // Ưu tiên lấy từ đáp án đã chốt trong Session đối với nhóm đã hoàn thành (chống sửa đáp án thủ công)
-                    $lockedAnswer = null;
+                    // Đối với câu hỏi thuộc nhóm đã hoàn thành trong Session, ưu tiên đáp án đã ghi nhận trong session
+                    // Nếu không có trong group session, lấy từ $sessionData['answers'][$qid] hoặc $submittedAnswers[$qid]
+                    $groupAnswer = null;
                     if (! empty($sessionData['groups'])) {
                         foreach ($sessionData['groups'] as $grp) {
                             if (! empty($grp['completed']) && isset($grp['answers'][$qid])) {
-                                $lockedAnswer = $grp['answers'][$qid];
+                                $groupAnswer = $grp['answers'][$qid];
                                 break;
                             }
                         }
                     }
 
-                    $userPick = $lockedAnswer !== null
-                        ? $lockedAnswer
-                        : (isset($submittedAnswers[$qid]) && trim((string) $submittedAnswers[$qid]) !== ''
-                            ? strtoupper(trim((string) $submittedAnswers[$qid]))
-                            : null);
+                    $sessionAnswer = $sessionData['answers'][$qid] ?? null;
+                    $submittedPick = isset($submittedAnswers[$qid]) && trim((string) $submittedAnswers[$qid]) !== ''
+                        ? strtoupper(trim((string) $submittedAnswers[$qid]))
+                        : null;
+
+                    $userPick = $groupAnswer ?? ($sessionAnswer ?? ($submittedPick ?? null));
+                    if ($userPick !== null && ! in_array($userPick, ['A', 'B', 'C', 'D'], true)) {
+                        $userPick = null;
+                    }
 
                     $correctOpt = $q->options->firstWhere('is_correct', true);
                     $correctLabel = $correctOpt ? strtoupper(trim((string) $correctOpt->label)) : null;
@@ -1203,7 +1512,6 @@ class ReadingPracticeController extends Controller
                 ];
 
                 session(['reading_practice_result' => $resultData]);
-                session()->forget('reading_practice_session');
                 session()->forget('reading_practice_session');
 
                 return redirect()->route('luyen-tap.doc.ket-qua');

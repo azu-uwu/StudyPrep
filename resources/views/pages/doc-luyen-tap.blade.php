@@ -173,7 +173,7 @@
             <x-button variant="primary" type="button" disabled title="Chức năng Lưu & Thoát sẽ được kích hoạt tại BE-007.8" style="opacity: 0.6; cursor: not-allowed;">
                 Lưu & Thoát
             </x-button>
-            <x-button variant="danger" type="button" onclick="window.location.href='{{ url('/luyen-tap/doc') }}'">
+            <x-button variant="danger" type="button" onclick="window.location.href='{{ url('/luyen-tap/doc?exit=1') }}'">
                 Thoát
             </x-button>
             <x-button variant="neutral" type="button" data-sp-modal-close>
@@ -228,11 +228,10 @@
         const isGroupMode = (currentPart === 6 || currentPart === 7);
 
         let currentIndex = 0; // Dùng cho Part 5
-        let currentGroupIndex = 0; // Dùng cho Part 6 (Group Mode)
+        let currentGroupIndex = 0; // Dùng cho Part 6 & 7 (Group Mode)
         let groups = [];
-        let groupStates = {}; // groupStates[setId] = { completed, correctCount, totalQuestions, results, explainOpen }
 
-        // Khởi tạo nhóm câu hỏi cho Part 6
+        // Khởi tạo nhóm câu hỏi cho Part 6 & 7
         if (isGroupMode && questionsData && questionsData.length > 0) {
             let lastSetId = null;
             let currentGrp = null;
@@ -253,11 +252,79 @@
             });
         }
 
-        let userAnswers = {}; // userAnswers[qid] = 'A'|'B'|'C'|'D' (CHỈ ghi nhận khi người học trả lời)
-        let questionStates = {}; // questionStates[qid] = { answered, userPick, correctPick, isCorrect, revealed, explanation, explainOpen }
+        // Khởi tạo trạng thái đã lưu từ Session (hỗ trợ tải lại trang mà không mất dữ liệu)
+        let rawSavedAnswers = @json(!empty($savedAnswers) ? $savedAnswers : (object)[]);
+        let userAnswers = {};
+        if (rawSavedAnswers && typeof rawSavedAnswers === 'object') {
+            for (const [k, v] of Object.entries(rawSavedAnswers)) {
+                if (v) userAnswers[k] = v;
+            }
+        }
+
+        let rawSavedQStates = @json(!empty($savedQuestionStates) ? $savedQuestionStates : (object)[]);
+        let questionStates = {};
+        if (rawSavedQStates && typeof rawSavedQStates === 'object') {
+            for (const [k, v] of Object.entries(rawSavedQStates)) {
+                if (v) questionStates[k] = v;
+            }
+        }
+
+        let rawSavedGStates = @json(!empty($savedGroupStates) ? $savedGroupStates : (object)[]);
+        let groupStates = {};
+        if (rawSavedGStates && typeof rawSavedGStates === 'object') {
+            for (const [k, v] of Object.entries(rawSavedGStates)) {
+                if (v && v.completed && v.result) {
+                    groupStates[k] = {
+                        completed: true,
+                        correctCount: v.result.correct_count,
+                        totalQuestions: v.question_ids ? v.question_ids.length : 0,
+                        results: v.result.results,
+                        explainOpen: true
+                    };
+                }
+            }
+        }
+
+        let rawSavedFlags = @json(!empty($savedFlags) ? $savedFlags : (object)[]);
         let flaggedQuestions = {};
+        if (rawSavedFlags && typeof rawSavedFlags === 'object') {
+            for (const [k, v] of Object.entries(rawSavedFlags)) {
+                if (v) flaggedQuestions[k] = true;
+            }
+        }
+
+        let requestVersions = {}; // Race condition tracking: requestVersions[qid] = int
+        let pendingPromises = []; // Theo dõi các AJAX request đang xử lý để đồng bộ trước khi submit
         let timerSeconds = 0;
         let isCheckingAnswer = false;
+
+        function syncHiddenAnswerInput(qid, letter) {
+            let hiddenInput = document.getElementById('answer_input_' + qid);
+            if (!hiddenInput) {
+                hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.id = 'answer_input_' + qid;
+                hiddenInput.name = `answers[${qid}]`;
+                document.getElementById('practiceExamForm').appendChild(hiddenInput);
+            }
+            hiddenInput.value = letter;
+        }
+
+        // Tự động đồng bộ các câu trả lời đã lưu vào form khi khởi tạo trang
+        for (const [qid, letter] of Object.entries(userAnswers)) {
+            syncHiddenAnswerInput(qid, letter);
+        }
+
+        // Dọn dẹp param &new=1 khỏi URL sau khi tải trang để khi F5 tải lại trang không bốc bài mới
+        if (window.history.replaceState) {
+            try {
+                const url = new URL(window.location);
+                if (url.searchParams.has('new')) {
+                    url.searchParams.delete('new');
+                    window.history.replaceState({}, document.title, url.toString());
+                }
+            } catch (e) {}
+        }
 
         // Đóng thanh thông báo điều chỉnh số câu nhẹ nhàng (chỉ tác động UI, không đổi câu hỏi/bài thi)
         function dismissAdjustmentNotice() {
@@ -474,25 +541,22 @@
             document.getElementById('prevBtn').disabled = (currentGroupIndex === 0);
             document.getElementById('nextBtn').disabled = false;
 
+            const flagBtn = document.getElementById('flagBtn');
+            if (flagBtn && grp) {
+                const isAnyFlagged = grp.questions.some(q => !!flaggedQuestions[q.id]);
+                flagBtn.style.color = isAnyFlagged ? '#F59E0B' : '#64748B';
+            }
+
             updateProgress();
         }
 
         async function selectGroupAnswer(setId, qid, letter) {
-            if (isCheckingAnswer) return;
-
             // Ghi nhận lựa chọn của người dùng (cho phép chọn và đổi đáp án bất kỳ lúc nào)
             userAnswers[qid] = letter;
+            syncHiddenAnswerInput(qid, letter);
 
-            // Đồng bộ input hidden vào form nộp bài
-            let hiddenInput = document.getElementById('answer_input_' + qid);
-            if (!hiddenInput) {
-                hiddenInput = document.createElement('input');
-                hiddenInput.type = 'hidden';
-                hiddenInput.id = 'answer_input_' + qid;
-                hiddenInput.name = `answers[${qid}]`;
-                document.getElementById('practiceExamForm').appendChild(hiddenInput);
-            }
-            hiddenInput.value = letter;
+            requestVersions[qid] = (requestVersions[qid] || 0) + 1;
+            const reqVersion = requestVersions[qid];
 
             const grp = groups[currentGroupIndex];
             const answeredInGroup = grp.questions.filter(q => !!userAnswers[q.id]).length;
@@ -504,9 +568,46 @@
                 renderDrawerQuestions();
             }
 
-            // Khi đã chọn đủ tất cả các câu trong nhóm, tự động kiểm tra đáp án
-            if (answeredInGroup === totalInGroup) {
+            // Lưu tiến độ dở dang vào Session nếu chưa trả lời đủ nhóm
+            if (answeredInGroup < totalInGroup) {
+                saveGroupProgress(grp, qid, reqVersion);
+            } else {
+                // Đã chọn đủ cả nhóm: Kiểm tra đáp án toàn bộ nhóm
                 await submitGroupAnswers(grp);
+            }
+        }
+
+        async function saveGroupProgress(grp, qid, version) {
+            const groupAnswers = {};
+            grp.questions.forEach(q => {
+                if (userAnswers[q.id]) {
+                    groupAnswers[q.id] = userAnswers[q.id];
+                }
+            });
+
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                    || document.querySelector('input[name="_token"]')?.value;
+
+                const p = fetch('{{ route("luyen-tap.doc.kiem-tra-nhom") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        question_set_id: grp.setId,
+                        action: 'save_progress',
+                        question_id: qid,
+                        version: version,
+                        answers: groupAnswers
+                    })
+                });
+                pendingPromises.push(p);
+                await p;
+            } catch (err) {
+                // Lưu tiến độ nền không ảnh hưởng thao tác người dùng
             }
         }
 
@@ -523,7 +624,7 @@
                 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
                     || document.querySelector('input[name="_token"]')?.value;
 
-                const response = await fetch('{{ route("luyen-tap.doc.kiem-tra-nhom") }}', {
+                const fetchPromise = fetch('{{ route("luyen-tap.doc.kiem-tra-nhom") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -535,6 +636,8 @@
                         answers: groupAnswers
                     })
                 });
+                pendingPromises.push(fetchPromise);
+                const response = await fetchPromise;
 
                 const data = await response.json();
                 if (data && data.success) {
@@ -843,14 +946,19 @@
         }
 
         async function selectAnswer(qid, letter) {
-            if (isCheckingAnswer) return;
+            // Cập nhật ngay lập tức UI và form
+            userAnswers[qid] = letter;
+            syncHiddenAnswerInput(qid, letter);
+            updateProgress();
 
-            isCheckingAnswer = true;
+            requestVersions[qid] = (requestVersions[qid] || 0) + 1;
+            const reqVersion = requestVersions[qid];
+
             try {
                 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
                     || document.querySelector('input[name="_token"]')?.value;
 
-                const response = await fetch('{{ route("luyen-tap.doc.kiem-tra-cau-hoi") }}', {
+                const fetchPromise = fetch('{{ route("luyen-tap.doc.kiem-tra-cau-hoi") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -860,14 +968,21 @@
                     body: JSON.stringify({
                         question_id: qid,
                         selected_option: letter,
-                        action: 'answer'
+                        action: 'answer',
+                        version: reqVersion
                     })
                 });
+                pendingPromises.push(fetchPromise);
+                const response = await fetchPromise;
 
                 const data = await response.json();
-                if (data && data.success) {
-                    userAnswers[qid] = letter;
 
+                // Kiểm tra race condition: nếu đáp án đã thay đổi hoặc có request mới hơn, bỏ qua response cũ
+                if (reqVersion !== requestVersions[qid] || userAnswers[qid] !== letter) {
+                    return;
+                }
+
+                if (data && data.success) {
                     questionStates[qid] = {
                         answered: true,
                         userPick: letter,
@@ -877,16 +992,6 @@
                         explanation: data.explanation || 'Chưa có giải thích cho câu hỏi này.',
                         explainOpen: true
                     };
-
-                    let hiddenInput = document.getElementById('answer_input_' + qid);
-                    if (!hiddenInput) {
-                        hiddenInput = document.createElement('input');
-                        hiddenInput.type = 'hidden';
-                        hiddenInput.id = 'answer_input_' + qid;
-                        hiddenInput.name = `answers[${qid}]`;
-                        document.getElementById('practiceExamForm').appendChild(hiddenInput);
-                    }
-                    hiddenInput.value = letter;
 
                     renderCurrentQuestion(true);
 
@@ -898,8 +1003,6 @@
                 }
             } catch (err) {
                 console.error('Lỗi khi gửi đáp án:', err);
-            } finally {
-                isCheckingAnswer = false;
             }
         }
 
@@ -1101,16 +1204,19 @@
 
         function toggleFlagCurrentQuestion() {
             if (!questionsData || questionsData.length === 0) return;
-            const activeId = isGroupMode
-                ? (groups[currentGroupIndex]?.questions[0]?.id)
-                : questionsData[currentIndex]?.id;
-
-            if (!activeId) return;
-            flaggedQuestions[activeId] = !flaggedQuestions[activeId];
 
             if (isGroupMode) {
+                const grp = groups[currentGroupIndex];
+                if (!grp || !grp.questions || grp.questions.length === 0) return;
+                const isAnyFlagged = grp.questions.some(q => !!flaggedQuestions[q.id]);
+                grp.questions.forEach(q => {
+                    flaggedQuestions[q.id] = !isAnyFlagged;
+                });
                 renderCurrentGroup();
             } else {
+                const q = questionsData[currentIndex];
+                if (!q) return;
+                flaggedQuestions[q.id] = !flaggedQuestions[q.id];
                 renderCurrentQuestion();
             }
 
@@ -1152,25 +1258,29 @@
                 let borderColor = isCurrent ? '#F59E0B' : '#CBD5E1';
                 let borderWidth = isCurrent ? '2.5px' : '1.5px';
 
-                if (state?.answered) {
-                    if (state.isCorrect) {
-                        bg = '#22C55E';
-                        textColor = '#FFFFFF';
-                        borderColor = isCurrent ? '#F59E0B' : '#22C55E';
+                const hasAnswer = !!userAnswers[item.id];
+                if (hasAnswer) {
+                    if (state?.answered) {
+                        if (state.isCorrect) {
+                            bg = '#22C55E';
+                            textColor = '#FFFFFF';
+                            borderColor = isCurrent ? '#F59E0B' : '#22C55E';
+                        } else {
+                            bg = '#EF4444';
+                            textColor = '#FFFFFF';
+                            borderColor = isCurrent ? '#F59E0B' : '#EF4444';
+                        }
                     } else {
-                        bg = '#EF4444';
-                        textColor = '#FFFFFF';
-                        borderColor = isCurrent ? '#F59E0B' : '#EF4444';
+                        // Đã chọn trong nhóm đang làm
+                        bg = '#EDE9FE';
+                        textColor = '#5B4BF5';
+                        borderColor = isCurrent ? '#F59E0B' : '#5B4BF5';
                     }
-                } else if (state?.revealed) {
-                    bg = '#FEF3C7';
-                    textColor = '#B45309';
-                    borderColor = isCurrent ? '#F59E0B' : '#F59E0B';
-                } else if (userAnswers[item.id]) {
-                    // Đã chọn trong nhóm đang làm
-                    bg = '#EDE9FE';
-                    textColor = '#5B4BF5';
-                    borderColor = isCurrent ? '#F59E0B' : '#5B4BF5';
+                } else {
+                    // Chưa trả lời: Dù có xem giải thích trước (revealed) hay chưa, vẫn hiển thị là chưa làm
+                    bg = '#FFFFFF';
+                    textColor = '#1E293B';
+                    borderColor = isCurrent ? '#F59E0B' : '#CBD5E1';
                 }
 
                 html += `
@@ -1263,7 +1373,7 @@
         }
 
         let isSubmittingExam = false;
-        function submitExamDirectly() {
+        async function submitExamDirectly() {
             if (isSubmittingExam) return;
             isSubmittingExam = true;
 
@@ -1271,6 +1381,13 @@
             if (submitBtn) {
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = '<span>Đang nộp...</span>';
+            }
+
+            // Đảm bảo mọi request cập nhật Session dở dang đã hoàn tất trước khi submit form
+            if (pendingPromises && pendingPromises.length > 0) {
+                try {
+                    await Promise.allSettled(pendingPromises);
+                } catch (e) {}
             }
 
             clearInterval(examTimer);

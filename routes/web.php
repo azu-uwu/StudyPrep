@@ -35,6 +35,9 @@ Route::get('/luyen-tap/doc', function () {
     if (request('skill') === 'viet') {
         return redirect('/luyen-tap/viet');
     }
+    if (request('exit')) {
+        session()->forget('reading_practice_session');
+    }
 
     return view('pages.luyen-tap-doc');
 })->name('luyen-tap.doc');
