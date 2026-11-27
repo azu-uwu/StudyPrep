@@ -14,7 +14,11 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReadingPracticeController;
 use App\Http\Controllers\StudySettingController;
 use App\Http\Controllers\VocabularyPracticeController;
+use App\Models\Question;
+use App\Models\TestForm;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 
 // use Illuminate\Support\Facades\Route;
 
@@ -63,9 +67,82 @@ Route::view('/luyen-tap/viet', 'pages.luyen-tap-viet')->name('luyen-tap.viet');
 Route::view('/luyen-tap/viet-cau', 'pages.viet-cau')->name('luyen-tap.viet-cau');
 Route::view('/luyen-tap/viet-doan', 'pages.viet-doan')->name('luyen-tap.viet-doan');
 
-Route::view('/thi-thu', 'pages.thi-thu')->name('thi-thu');
+Route::get('/thi-thu', function () {
+    $publishedLrTests = collect();
+    $publishedSwTests = collect();
+
+    if (Schema::hasTable('test_form') && Schema::hasTable('test_form_question')) {
+        $dbTests = TestForm::query()
+            ->with('blueprint')
+            ->withCount([
+                'questions as active_questions_count' => fn ($q) => $q->where('questions.status', Question::STATUS_ACTIVE),
+            ])
+            ->whereHas('questions', fn ($q) => $q->where('questions.status', Question::STATUS_ACTIVE))
+            ->orderByDesc('test_form_id')
+            ->get();
+
+        foreach ($dbTests as $dbTest) {
+            $examType = strtoupper((string) ($dbTest->blueprint?->exam_type ?? TestForm::EXAM_TYPE_LR));
+            if (in_array($examType, [TestForm::EXAM_TYPE_SW, TestForm::EXAM_TYPE_SPEAKING, TestForm::EXAM_TYPE_WRITING], true)) {
+                $publishedSwTests->push($dbTest);
+            } else {
+                $publishedLrTests->push($dbTest);
+            }
+        }
+    }
+
+    return view('pages.thi-thu', [
+        'publishedLrTests' => $publishedLrTests,
+        'publishedSwTests' => $publishedSwTests,
+    ]);
+})->name('thi-thu');
 Route::view('/thi-thu/gioi-thieu-de', 'pages.thi-thu-gioi-thieu-de')->name('thi-thu-gioi-thieu-de');
-Route::view('/thi-thu/giao-dien-thi', 'pages.thi-thu-giao-dien-thi')->name('thi-thu-giao-dien-thi');
+Route::get('/thi-thu/giao-dien-thi', function (Request $request) {
+    $examTestForm = null;
+    $examQuestions = [];
+
+    if ($request->filled('test_id') && Schema::hasTable('test_form')) {
+        $examTestForm = TestForm::query()
+            ->with('blueprint')
+            ->find((int) $request->query('test_id'));
+
+        if ($examTestForm && Schema::hasTable('test_form_question')) {
+            $loadedQuestions = $examTestForm->questions()
+                ->where('questions.status', Question::STATUS_ACTIVE)
+                ->with([
+                    'section',
+                    'questionSet',
+                    'options' => fn ($opt) => $opt->select(['option_id', 'question_id', 'label', 'content']),
+                ])
+                ->orderBy('test_form_question.sequence_no')
+                ->get();
+
+            foreach ($loadedQuestions as $idx => $q) {
+                $opts = [];
+                foreach ($q->options->sortBy('label') as $opt) {
+                    $opts[strtoupper(trim((string) $opt->label))] = (string) $opt->content;
+                }
+                $examQuestions[] = [
+                    'id' => (int) $q->question_id,
+                    'sequence_no' => $idx + 1,
+                    'part_code' => strtoupper((string) ($q->section?->code ?? 'PART5')),
+                    'content' => (string) $q->content,
+                    'stimulus_text' => $q->questionSet?->stimulus_text,
+                    'media_url' => $q->questionSet?->resolved_media_url,
+                    'audio_url' => $q->questionSet?->resolved_audio_url,
+                    'part_directions_text' => $q->section?->directions_text,
+                    'part_directions_audio_url' => $q->section?->resolved_directions_audio_url,
+                    'options' => $opts,
+                ];
+            }
+        }
+    }
+
+    return view('pages.thi-thu-giao-dien-thi', [
+        'examTestForm' => $examTestForm,
+        'examQuestions' => $examQuestions,
+    ]);
+})->name('thi-thu-giao-dien-thi');
 Route::view('/thi-thu/ket-qua', 'pages.thi-thu-ket-qua')->name('thi-thu-ket-qua');
 
 Route::get('/tu-vung', [VocabularyPracticeController::class, 'index'])->name('tu-vung');
@@ -166,6 +243,7 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::get('/questions/sample-docx', [QuestionController::class, 'sampleDocx'])->name('questions.sample-docx');
         Route::get('/questions/bulk-import', [QuestionController::class, 'importView'])->name('questions.bulk-import');
         Route::post('/questions/import/preview', [QuestionController::class, 'previewStagingImport'])->name('questions.import.preview');
+        Route::post('/questions/import/pdf-preview', [QuestionController::class, 'previewPdfStagingImport'])->name('questions.import.pdf-preview');
         Route::get('/questions/import/review/{batchId}', [QuestionController::class, 'showStagingReview'])->name('questions.import.review');
         Route::get('/questions/import/review/{batchId}/xml', [QuestionController::class, 'downloadStagingXml'])->name('questions.import.xml');
         Route::post('/questions/import/review/{batchId}/commit', [QuestionController::class, 'commitStagingImport'])->name('questions.import.commit');

@@ -53,14 +53,9 @@
         </div>
     @endif
 
-    {{-- 1. Tiêu đề trang & Các nút thao tác phía trên (Page Header) --}}
-    <div class="user-page-header">
+    {{-- 1. Tiêu đề trang & Các nút thao tác phía trên (Page Header ngang hàng) --}}
+    <div class="user-page-header" style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
         <div>
-            <div class="qbank-breadcrumb-sub">
-                <span>Quản lý đào tạo</span>
-                <span>></span>
-                <span class="crumb-active">Ngân hàng câu hỏi TOEIC</span>
-            </div>
             <div class="user-title-row">
                 <h1 class="user-page-title">Ngân hàng câu hỏi TOEIC</h1>
             </div>
@@ -69,58 +64,38 @@
             </p>
         </div>
 
-        <div class="user-header-actions" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px;">
-            {{-- Nhóm hành động phụ: Tải mẫu & Xuất Excel --}}
-            <div style="display: inline-flex; align-items: center; gap: 6px; padding-right: 8px; border-right: 1px solid #e2e8f0;">
-                <a href="{{ route('admin.questions.sample-docx') }}" class="btn-admin-action" style="padding: 8px 11px; font-size: 13px;" title="Tải file Word (.docx) mẫu chuẩn cấu trúc nhập câu hỏi">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                        <path d="M12 18v-6"></path>
-                        <path d="M9 15l3 3 3-3"></path>
-                    </svg>
-                    <span>Word mẫu</span>
-                </a>
-
-                <a href="{{ route('admin.questions.export') }}" class="btn-admin-action excel" style="padding: 8px 11px; font-size: 13px;" title="Xuất danh sách câu hỏi ra Excel (CSV)">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    <span>Xuất Excel</span>
-                </a>
+        <div class="user-header-actions" style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+            <div style="position: relative;">
+                <button type="button"
+                        class="btn-admin-action"
+                        onclick="event.stopPropagation(); var m = document.getElementById('qbankMoreMenu'); m.style.display = (m.style.display === 'block') ? 'none' : 'block';"
+                        style="padding: 8px 14px; font-size: 13px; white-space: nowrap;">
+                    <span>Thao tác khác ▾</span>
+                </button>
+                <div id="qbankMoreMenu" style="display: none; position: absolute; right: 0; top: calc(100% + 6px); min-width: 210px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12); padding: 6px; z-index: 60;">
+                    <a href="{{ route('admin.questions.bulk-import') }}" style="display: block; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; color: #334155; text-decoration: none;">
+                        Import hàng loạt (.docx)
+                    </a>
+                    <a href="{{ route('admin.questions.group.create') }}" style="display: block; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; color: #4338ca; text-decoration: none;">
+                        Tạo nhóm câu hỏi (Part 3,4,6,7)
+                    </a>
+                    <a href="{{ route('admin.questions.sample-docx') }}" style="display: block; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; color: #334155; text-decoration: none;">
+                        Tải Word mẫu (.docx)
+                    </a>
+                    <a href="{{ route('admin.questions.export') }}" style="display: block; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; color: #047857; text-decoration: none;">
+                        Xuất Excel / CSV
+                    </a>
+                </div>
             </div>
 
-            {{-- Nhóm hành động chính: Import, Tạo nhóm, Thêm mới --}}
-            <div style="display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                <a href="{{ route('admin.questions.bulk-import') }}" class="btn-admin-action import" style="padding: 8px 12px; font-size: 13px;" title="Thêm câu hỏi hàng loạt (Bulk Import Studio)">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                        <line x1="12" y1="18" x2="12" y2="12"></line>
-                        <line x1="9" y1="15" x2="15" y2="15"></line>
-                    </svg>
-                    <span>Import hàng loạt</span>
-                </a>
-
-                <a href="{{ route('admin.questions.group.create') }}" class="btn-admin-action" style="padding: 8px 12px; font-size: 13px; color: #4338ca; border-color: #c7d2fe; background: #f5f3ff; font-weight: 700;" title="Tạo nhóm câu hỏi TOEIC (Passage / Stimulus)">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-                    </svg>
-                    <span>Tạo nhóm câu hỏi</span>
-                </a>
-
-                <a href="{{ route('admin.questions.create') }}" class="btn-admin-primary" style="padding: 8px 14px; font-size: 13px;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="8" x2="12" y2="16"></line>
-                        <line x1="8" y1="12" x2="16" y2="12"></line>
-                    </svg>
-                    <span>Thêm câu hỏi mới</span>
-                </a>
-            </div>
+            <a href="{{ route('admin.questions.create') }}" class="btn-admin-primary" style="padding: 8px 14px; font-size: 13px; white-space: nowrap;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="16"></line>
+                    <line x1="8" y1="12" x2="16" y2="12"></line>
+                </svg>
+                <span>Thêm câu hỏi mới</span>
+            </a>
         </div>
     </div>
 
@@ -188,10 +163,15 @@
             </div>
             <div class="qbank-kpi-val-row">
                 <span class="qbank-kpi-num">{{ number_format($stats['lc_rc']) }}</span>
-                <span class="qbank-kpi-sub">Part 1 - 7</span>
+                <span class="qbank-kpi-sub">câu L&amp;R</span>
             </div>
-            <div class="qbank-kpi-foot">
-                <span>Đã chuẩn hóa thang điểm 990</span>
+            <div class="qbank-kpi-foot" style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+                <span style="font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">
+                    Listening: {{ number_format($listeningCount ?? ($stats['listening'] ?? 0)) }}
+                </span>
+                <span style="font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #dcfce7; color: #047857; border: 1px solid #a7f3d0;">
+                    Reading: {{ number_format($readingCount ?? ($stats['reading'] ?? 0)) }}
+                </span>
             </div>
         </div>
 
@@ -208,7 +188,7 @@
             </div>
             <div class="qbank-kpi-val-row">
                 <span class="qbank-kpi-num">{{ number_format($stats['sw']) }}</span>
-                <span class="qbank-kpi-sub">câu SW</span>
+                <span class="qbank-kpi-sub">câu S&amp;W</span>
             </div>
             <div class="qbank-kpi-foot" style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
                 <span style="font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #fef3c7; color: #b45309; border: 1px solid #fde68a;">

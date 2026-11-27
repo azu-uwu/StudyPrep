@@ -46,7 +46,7 @@
     @endif
 
     {{-- Page Header --}}
-    <div class="vcb-header">
+    <div class="vcb-header" style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: nowrap;">
         <div class="vcb-title-area">
             <h1 class="vcb-title">Quản lý Từ vựng & Flashcards</h1>
             <div class="vcb-count-badge">
@@ -57,65 +57,38 @@
             </div>
         </div>
 
-        <div class="vcb-header-actions">
-            {{-- Xuất dữ liệu --}}
-            <a href="{{ route('admin.vocabularies.export') }}" class="vcb-btn-secondary" title="Xuất toàn bộ từ vựng ra file CSV">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="7 10 12 15 17 10"></polyline>
-                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                <span>Xuất dữ liệu</span>
-            </a>
+        <div class="vcb-header-actions" style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+            <div class="vcb-dropdown" style="position: relative;">
+                <button type="button" class="vcb-btn-secondary" onclick="event.stopPropagation(); toggleHeaderMoreMenu('vcbMoreActionsMenu')" style="display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
+                    <span>Thao tác khác ▾</span>
+                </button>
+                <div id="vcbMoreActionsMenu" class="vcb-dropdown-menu" style="min-width: 220px; right: 0; left: auto; z-index: 60;">
+                    <a href="{{ route('admin.vocabularies.export') }}" class="vcb-dropdown-item" style="text-decoration: none;">
+                        <span>Xuất Excel / CSV</span>
+                    </a>
+                    <a href="{{ route('admin.vocabularies.import-view') }}" class="vcb-dropdown-item" style="text-decoration: none;">
+                        <span>Nhập file (Excel/Anki)</span>
+                    </a>
+                    <button type="button" class="vcb-dropdown-item" onclick="openModal('modal-manage-topics')">
+                        <span>Quản lý bộ thẻ</span>
+                    </button>
+                    <button type="button" class="vcb-dropdown-item" onclick="openModal('modal-new-topic')">
+                        <span>+ Tạo bộ thẻ mới</span>
+                    </button>
+                    <button type="button" class="vcb-dropdown-item" onclick="toggleSidePreviewDrawer()">
+                        <span>Flashcard Panel</span>
+                    </button>
+                </div>
+            </div>
 
-            {{-- Nhập file --}}
-            <a href="{{ route('admin.vocabularies.import-view') }}" class="vcb-btn-secondary">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                    <line x1="16" y1="13" x2="8" y2="13"></line>
-                    <line x1="16" y1="17" x2="8" y2="17"></line>
-                    <polyline points="10 9 9 9 8 9"></polyline>
-                </svg>
-                <span>Nhập file (Excel/Anki)</span>
-            </a>
-
-            {{-- Quản lý bộ thẻ Flashcard (Sửa / Xóa) --}}
-            <button type="button" class="vcb-btn-secondary" onclick="openModal('modal-manage-topics')" title="Quản lý, chỉnh sửa, xóa các bộ thẻ Flashcards">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 20h9"></path>
-                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                </svg>
-                <span>Quản lý bộ thẻ</span>
-            </button>
-
-            {{-- Bật / Tắt Flashcard Side Panel --}}
-            <button type="button" class="vcb-btn-secondary" onclick="toggleSidePreviewDrawer()" title="Xem nhanh Flashcard ở bảng trượt cạnh phải">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="5" y="4" width="14" height="17" rx="2"></rect>
-                    <line x1="9" y1="9" x2="15" y2="9"></line>
-                    <line x1="9" y1="13" x2="15" y2="13"></line>
-                </svg>
-                <span>Flashcard Panel</span>
-            </button>
-
-            {{-- Tạo bộ thẻ mới --}}
-            <button type="button" class="vcb-btn-deck" onclick="openModal('modal-new-topic')">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-                </svg>
-                <span>+ Tạo bộ thẻ mới</span>
-            </button>
-
-            {{-- Thêm từ vựng mới --}}
-            <a href="{{ route('admin.vocabularies.create') }}" class="vcb-btn-primary">
+            {{-- Nút chính duy nhất: Thêm từ vựng mới --}}
+            <a href="{{ route('admin.vocabularies.create') }}" class="vcb-btn-primary" style="white-space: nowrap;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10"></circle>
                     <line x1="12" y1="8" x2="12" y2="16"></line>
                     <line x1="8" y1="12" x2="16" y2="12"></line>
                 </svg>
-                <span>+ Thêm từ vựng mới</span>
+                <span>Thêm từ vựng</span>
             </a>
         </div>
     </div>
@@ -331,7 +304,6 @@
                                     <th style="text-align: center;">ẢNH</th>
                                     <th>NGỮ CẢNH TOEIC & VÍ DỤ</th>
                                     <th>BỘ THẺ FLASHCARD</th>
-                                    <th>HỌC VIÊN</th>
                                     <th class="vcb-actions-col">THAO TÁC</th>
                                 </tr>
                             </thead>
@@ -415,20 +387,6 @@
                                         {{-- BỘ THẺ FLASHCARD --}}
                                         <td class="vcb-deck-col">
                                             <span class="vcb-deck-badge">{{ $item->topic?->name ?? 'Bộ thẻ chung' }}</span>
-                                        </td>
-
-                                        {{-- HỌC VIÊN TIẾN ĐỘ --}}
-                                        <td class="vcb-learner-col" style="white-space: nowrap;">
-                                            <div style="font-size: 13px; font-weight: 700; color: #1e1b4b; display: flex; align-items: center; gap: 4px;">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                                    <circle cx="12" cy="7" r="4"></circle>
-                                                </svg>
-                                                <span>{{ number_format($item->learners_count ?? 0) }} học viên</span>
-                                            </div>
-                                            <div style="font-size: 11.5px; color: #16a34a; font-weight: 600; margin-top: 2px;">
-                                                ✓ {{ number_format($item->mastered_count ?? 0) }} đã ghi nhớ
-                                            </div>
                                         </td>
 
                                         {{-- THAO TÁC --}}
@@ -524,27 +482,84 @@
                             </select>
                         </div>
 
-                        <div class="vcb-pagination-wrap">
-                            @if ($vocabularies->onFirstPage())
-                                <span class="vcb-page-btn disabled">|&lt;</span>
-                                <span class="vcb-page-btn disabled">&lt;</span>
+                        <div class="user-pagination">
+                            @php
+                                $vcbPaginator = $vocabularies->appends(request()->query());
+                                $curPage = max(1, (int) $vcbPaginator->currentPage());
+                                $lastPage = max(1, (int) $vcbPaginator->lastPage());
+                            @endphp
+
+                            {{-- Nút về trang đầu --}}
+                            @if ($vcbPaginator->onFirstPage())
+                                <span class="page-btn disabled" title="Trang đầu" aria-disabled="true" style="pointer-events: none; opacity: 0.45;">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="11 17 6 12 11 7"></polyline>
+                                        <polyline points="18 17 13 12 18 7"></polyline>
+                                    </svg>
+                                </span>
                             @else
-                                <a href="{{ $vocabularies->url(1) }}" class="vcb-page-btn">|&lt;</a>
-                                <a href="{{ $vocabularies->previousPageUrl() }}" class="vcb-page-btn">&lt;</a>
+                                <a href="{{ $vcbPaginator->url(1) }}" class="page-btn" title="Trang đầu">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="11 17 6 12 11 7"></polyline>
+                                        <polyline points="18 17 13 12 18 7"></polyline>
+                                    </svg>
+                                </a>
                             @endif
 
-                            <span class="vcb-page-btn active">1</span>
-                            <a href="{{ $vocabularies->url(2) }}" class="vcb-page-btn">2</a>
-                            <a href="{{ $vocabularies->url(3) }}" class="vcb-page-btn">3</a>
-                            <span class="vcb-page-btn disabled">...</span>
-                            <a href="{{ $vocabularies->url(1845) }}" class="vcb-page-btn">1,845</a>
-
-                            @if ($vocabularies->hasMorePages())
-                                <a href="{{ $vocabularies->nextPageUrl() }}" class="vcb-page-btn">&gt;</a>
-                                <a href="{{ $vocabularies->url($vocabularies->lastPage()) }}" class="vcb-page-btn">&gt;|</a>
+                            {{-- Nút trang trước --}}
+                            @if ($vcbPaginator->onFirstPage())
+                                <span class="page-btn disabled" title="Trang trước" aria-disabled="true" style="pointer-events: none; opacity: 0.45;">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="15 18 9 12 15 6"></polyline>
+                                    </svg>
+                                </span>
                             @else
-                                <span class="vcb-page-btn disabled">&gt;</span>
-                                <span class="vcb-page-btn disabled">&gt;|</span>
+                                <a href="{{ $vcbPaginator->previousPageUrl() }}" class="page-btn" title="Trang trước">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="15 18 9 12 15 6"></polyline>
+                                    </svg>
+                                </a>
+                            @endif
+
+                            {{-- Số trang động theo Database (luôn hiển thị ít nhất trang 1) --}}
+                            @for ($p = max(1, $curPage - 2); $p <= min($lastPage, $curPage + 2); $p++)
+                                @if ($p === $curPage)
+                                    <span class="page-btn active">{{ $p }}</span>
+                                @else
+                                    <a href="{{ $vcbPaginator->url($p) }}" class="page-btn">{{ $p }}</a>
+                                @endif
+                            @endfor
+
+                            {{-- Nút trang sau --}}
+                            @if ($vcbPaginator->hasMorePages())
+                                <a href="{{ $vcbPaginator->nextPageUrl() }}" class="page-btn" title="Trang sau">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="9 18 15 12 9 6"></polyline>
+                                    </svg>
+                                </a>
+                            @else
+                                <span class="page-btn disabled" title="Trang sau" aria-disabled="true" style="pointer-events: none; opacity: 0.45;">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="9 18 15 12 9 6"></polyline>
+                                    </svg>
+                                </a>
+                            @endif
+
+                            {{-- Nút về trang cuối --}}
+                            @if ($vcbPaginator->hasMorePages())
+                                <a href="{{ $vcbPaginator->url($lastPage) }}" class="page-btn" title="Trang cuối">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="13 17 18 12 13 7"></polyline>
+                                        <polyline points="6 17 11 12 6 7"></polyline>
+                                    </svg>
+                                </a>
+                            @else
+                                <span class="page-btn disabled" title="Trang cuối" aria-disabled="true" style="pointer-events: none; opacity: 0.45;">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="13 17 18 12 13 7"></polyline>
+                                        <polyline points="6 17 11 12 6 7"></polyline>
+                                    </svg>
+                                </a>
                             @endif
                         </div>
                     </div>
@@ -648,23 +663,6 @@
     </div>
 </div>
 
-    {{-- Floating Mobile Preview Bar (Dành cho màn hình nhỏ <= 1200px) --}}
-    <div class="vcb-mobile-preview-bar" id="vcbMobilePreviewBar" onclick="openVocabPreviewModal()">
-        <div class="vcb-mobile-preview-content">
-            <div class="vcb-mobile-preview-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="5" y="4" width="14" height="17" rx="2" transform="rotate(-6 12 12)"></rect>
-                    <rect x="6" y="3" width="14" height="17" rx="2"></rect>
-                </svg>
-            </div>
-            <div class="vcb-mobile-preview-text">
-                Xem trước thẻ: <strong id="mobilePreviewWord">{{ $previewVocab?->word ?? ($vocabularies->first()?->word ?? 'Flashcard') }}</strong>
-            </div>
-        </div>
-        <button type="button" class="vcb-btn-mobile-open">
-            Mở xem trước &rarr;
-        </button>
-    </div>
 </div>
 
 {{-- MODAL XEM CHI TIẾT & XEM TRƯỚC FLASHCARD (Dành cho mọi kích thước thiết bị & cuộn/duyệt qua lại) --}}
@@ -708,55 +706,59 @@
                     </button>
                 </div>
 
-                {{-- 3D Flip Viewport inside Modal --}}
-                <div class="vcb-card-viewport" onclick="toggleModalCardFlip()" style="cursor: pointer; min-height: 220px;">
+                {{-- 3D Flip Viewport inside Modal (Kế thừa kiểu dáng Flashcard User) --}}
+                <div class="vcb-card-viewport" onclick="toggleModalCardFlip()" style="cursor: pointer; min-height: 240px;">
                     <div class="vcb-card-flipper" id="modalCardFlipper">
                         {{-- Mặt trước --}}
-                        <div class="vcb-card-face vcb-card-front" style="padding: 24px 20px;">
-                            <img id="modalSimCardImg" hidden alt="" class="vcb-card-banner-img" style="max-height: 120px; object-fit: cover; border-radius: 8px; margin-bottom: 12px;">
-
-                            <div class="vcb-sim-word-row">
-                                <span class="vcb-sim-word" id="modalSimWord" style="font-size: 26px;">Word</span>
-                                <button type="button" class="vcb-audio-btn" onclick="event.stopPropagation(); playAudio(document.getElementById('modalSimWord').innerText)" title="Nghe phát âm chuẩn">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        <div class="vcb-card-face vcb-card-front" style="padding: 24px 20px; background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); border: 1.5px solid #e2e8f0; border-radius: 18px; position: relative;">
+                            <div style="position: absolute; top: 14px; right: 14px; display: flex; gap: 6px;">
+                                <button type="button" onclick="event.stopPropagation(); playAudio(document.getElementById('modalSimWord').innerText)" title="Nghe phát âm chuẩn" style="width: 34px; height: 34px; border-radius: 999px; border: 1px solid #fde68a; background: #fffbeb; color: #d97706; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
+                                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="#fbbf24"></polygon>
                                         <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
                                     </svg>
                                 </button>
                             </div>
 
-                            <div class="vcb-sim-ipa" id="modalSimIpa" style="font-size: 15px; margin-bottom: 12px;">/ipa/</div>
+                            <img id="modalSimCardImg" hidden alt="" class="vcb-card-banner-img" style="max-height: 110px; object-fit: cover; border-radius: 10px; margin-bottom: 12px;">
+
+                            <div class="vcb-sim-word-row">
+                                <span class="vcb-sim-word" id="modalSimWord" style="font-size: 28px; font-weight: 900; color: #0f172a;">Word</span>
+                            </div>
+
+                            <div class="vcb-sim-ipa" id="modalSimIpa" style="font-size: 15px; color: #64748b; margin-bottom: 12px;">/ipa/</div>
 
                             <div class="vcb-sim-badges">
                                 <span class="vcb-pos-badge" id="modalSimPos">POS</span>
                                 <span class="vcb-lvl-badge" id="modalSimLvl">Target Level</span>
                             </div>
 
-                            <div class="vcb-sim-hint" style="margin-top: 14px;">
-                                Bấm vào thẻ để lật sang mặt sau (Nghĩa &amp; Ví dụ)
+                            <div class="vcb-sim-hint" style="margin-top: 16px; color: #d97706; font-weight: 700;">
+                                👆 Chạm để lật thẻ (Nghĩa &amp; Ví dụ TOEIC)
                             </div>
                         </div>
 
                         {{-- Mặt sau --}}
-                        <div class="vcb-card-face vcb-card-back" style="padding: 22px 20px; text-align: left;">
-                            <div class="vcb-back-meaning" id="modalSimMeaning" style="font-size: 17px; margin-bottom: 8px;">Nghĩa</div>
-                            <div class="vcb-back-def" id="modalSimDef" style="font-size: 13px; margin-bottom: 14px;">Definition</div>
+                        <div class="vcb-card-face vcb-card-back" style="padding: 22px 20px; text-align: left; background: linear-gradient(180deg, #ffffff 0%, #f5f3ff 100%); border: 1.5px solid #c7d2fe; border-radius: 18px;">
+                            <div style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px;">Nghĩa tiếng Việt</div>
+                            <div class="vcb-back-meaning" id="modalSimMeaning" style="font-size: 18px; font-weight: 800; color: #1e1b4b; margin-bottom: 6px;">Nghĩa</div>
+                            <div class="vcb-back-def" id="modalSimDef" style="font-size: 13px; color: #475569; margin-bottom: 14px;">Definition</div>
 
-                            <div class="vcb-back-example-box" style="padding: 12px 14px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px;">
-                                <div class="vcb-back-example-en" id="modalSimExEn" style="font-size: 13px;">Example</div>
-                                <div class="vcb-back-example-vi" id="modalSimExVi" style="font-size: 12.5px; margin-top: 4px;">Dịch nghĩa</div>
+                            <div class="vcb-back-example-box" style="padding: 12px 14px; background: #ffffff; border: 1px dashed #c7d2fe; border-radius: 10px;">
+                                <div class="vcb-back-example-en" id="modalSimExEn" style="font-size: 13px; font-weight: 700; color: #0f172a;">Example</div>
+                                <div class="vcb-back-example-vi" id="modalSimExVi" style="font-size: 12.5px; color: #4338ca; margin-top: 4px;">Dịch nghĩa</div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {{-- Thông tin chi tiết mở rộng --}}
+            {{-- Thông tin chi tiết mở rộng (Lưới 4 cột trên 1 hàng) --}}
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px;">
                 <h4 style="font-size: 13.5px; font-weight: 800; color: #1e293b; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 0.03em;">
                     Dữ liệu chi tiết từ vựng trong hệ thống
                 </h4>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 13px;">
+                <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; font-size: 13px;">
                     <div>
                         <span style="color: #64748b; font-size: 12px;">Bộ thẻ hiện tại:</span>
                         <div id="modalDetailTopic" style="font-weight: 700; color: #1e1b4b; margin-top: 2px;">--</div>
@@ -779,10 +781,10 @@
 
         <div class="vcb-modal-footer" style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 14px 22px; display: flex; justify-content: space-between; align-items: center;">
             <div style="display: flex; gap: 8px;">
-                <button type="button" class="vcb-btn-secondary" onclick="navigateModalVocab(-1)" title="Chuyển sang từ trước">
+                <button type="button" id="modalPrevVocabBtn" class="vcb-btn-secondary" onclick="navigateModalVocab(-1)" title="Chuyển sang từ trước">
                     &larr; Từ trước
                 </button>
-                <button type="button" class="vcb-btn-secondary" onclick="navigateModalVocab(1)" title="Chuyển sang từ tiếp theo">
+                <button type="button" id="modalNextVocabBtn" class="vcb-btn-secondary" onclick="navigateModalVocab(1)" title="Chuyển sang từ tiếp theo">
                     Từ tiếp theo &rarr;
                 </button>
             </div>
@@ -1314,6 +1316,34 @@
     }
 
     // Open Vocabulary Preview Modal
+    function toggleHeaderMoreMenu(menuId) {
+        var menu = document.getElementById(menuId);
+        if (!menu) return;
+        var parent = menu.closest('.vcb-dropdown');
+        if (parent) {
+            parent.classList.toggle('open');
+        }
+    }
+
+    function updateModalNavButtons() {
+        var rows = Array.from(document.querySelectorAll('.vcb-row-item'));
+        var prevBtn = document.getElementById('modalPrevVocabBtn');
+        var nextBtn = document.getElementById('modalNextVocabBtn');
+        var isFirst = CURRENT_VOCAB_INDEX <= 0;
+        var isLast = rows.length === 0 || CURRENT_VOCAB_INDEX >= rows.length - 1;
+
+        if (prevBtn) {
+            prevBtn.disabled = isFirst;
+            prevBtn.style.opacity = isFirst ? '0.45' : '';
+            prevBtn.style.cursor = isFirst ? 'not-allowed' : '';
+        }
+        if (nextBtn) {
+            nextBtn.disabled = isLast;
+            nextBtn.style.opacity = isLast ? '0.45' : '';
+            nextBtn.style.cursor = isLast ? 'not-allowed' : '';
+        }
+    }
+
     function openVocabPreviewModal(item, rowElem) {
         if (item) {
             selectVocabItem(item, rowElem, false);
@@ -1323,17 +1353,17 @@
                 firstRow.click();
             }
         }
+        updateModalNavButtons();
         openModal('modal-preview-vocab');
     }
 
-    // Navigate next / previous vocab
+    // Navigate next / previous vocab (khóa ở đầu/cuối danh sách)
     function navigateVocab(delta) {
         var rows = Array.from(document.querySelectorAll('.vcb-row-item'));
         if (rows.length === 0) return;
 
         var nextIdx = CURRENT_VOCAB_INDEX + delta;
-        if (nextIdx < 0) nextIdx = rows.length - 1;
-        if (nextIdx >= rows.length) nextIdx = 0;
+        if (nextIdx < 0 || nextIdx >= rows.length) return;
 
         CURRENT_VOCAB_INDEX = nextIdx;
         var targetRow = rows[nextIdx];
@@ -1341,6 +1371,7 @@
             targetRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             targetRow.click();
         }
+        updateModalNavButtons();
     }
 
     // Navigate inside Modal
@@ -1461,8 +1492,8 @@
         }
 
         var topicSelect = document.getElementById('edit_vocab_topic');
-        if (topicSelect && item.topic_id) {
-            topicSelect.value = item.topic_id;
+        if (topicSelect) {
+            topicSelect.value = String(item.topic_id || '');
         }
 
         // Close dropdown if opened

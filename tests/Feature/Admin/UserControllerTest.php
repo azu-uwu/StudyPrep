@@ -44,12 +44,12 @@ class UserControllerTest extends TestCase
 
         $response->assertOk();
         $response->assertViewIs('admin.users.index');
-        $response->assertSee('User Management');
-        $response->assertSee('TOTAL USERS');
-        $response->assertSee('TEACHERS & STAFF', false);
-        $response->assertSee('LOCKED / SUSPENDED');
-        $response->assertSee('Export CSV');
-        $response->assertSee('Add User');
+        $response->assertSee('Quản lý người dùng');
+        $response->assertSee('TỔNG SỐ NGƯỜI DÙNG');
+        $response->assertSee('GIẢNG VIÊN &amp; NHÂN SỰ', false);
+        $response->assertSee('TÀI KHOẢN BỊ KHÓA');
+        $response->assertSee('Xuất CSV');
+        $response->assertSee('Thêm người dùng');
     }
 
     public function test_admin_can_create_new_user(): void
@@ -293,5 +293,37 @@ class UserControllerTest extends TestCase
         $response->assertSessionHas('success');
         $this->assertDatabaseHas('users', ['email' => 'imported.student@example.com']);
         $this->assertDatabaseHas('users', ['email' => 'imported.teacher@example.com', 'role' => 'teacher']);
+    }
+
+    public function test_admin_cannot_lock_or_delete_self_via_toggle_or_bulk_action_and_short_reset_password_is_rejected(): void
+    {
+        $admin = User::factory()->admin()->create(['status' => 'ACTIVE']);
+        $target = User::factory()->create(['status' => 'ACTIVE']);
+
+        // 1. Chặn tự khóa tài khoản đang đăng nhập qua PATCH toggle-status
+        $toggleSelf = $this->actingAs($admin)->patch(route('admin.users.toggle-status', $admin->user_id));
+        $toggleSelf->assertSessionHas('error');
+        $this->assertSame('ACTIVE', $admin->fresh()->status);
+
+        // 2. Chặn tự khóa / tự xóa qua bulk-action
+        $bulkSelfLock = $this->actingAs($admin)->post(route('admin.users.bulk-action'), [
+            'action' => 'lock',
+            'user_ids' => [$admin->user_id],
+        ]);
+        $bulkSelfLock->assertSessionHas('error');
+        $this->assertSame('ACTIVE', $admin->fresh()->status);
+
+        $bulkSelfDelete = $this->actingAs($admin)->post(route('admin.users.bulk-action'), [
+            'action' => 'delete',
+            'user_ids' => [$admin->user_id],
+        ]);
+        $bulkSelfDelete->assertSessionHas('error');
+        $this->assertDatabaseHas('users', ['user_id' => $admin->user_id]);
+
+        // 3. Reset mật khẩu quá ngắn (< 6 ký tự) bị từ chối
+        $shortReset = $this->actingAs($admin)->patch(route('admin.users.reset-password', $target->user_id), [
+            'new_password' => '123',
+        ]);
+        $shortReset->assertSessionHas('error');
     }
 }

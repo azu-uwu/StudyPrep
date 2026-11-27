@@ -242,7 +242,11 @@ class ListeningPracticeController extends Controller
         }
 
         $allQuestions = $this->loadListeningQuestions($partFilter, $count);
-        $selectedQuestions = array_slice($allQuestions, 0, min($count, count($allQuestions)));
+        $selectedQuestions = array_map(static function (array $q): array {
+            unset($q['correct'], $q['explanation'], $q['translation'], $q['transcript']);
+
+            return $q;
+        }, array_slice($allQuestions, 0, min($count, count($allQuestions))));
 
         return view('pages.nghe-lam-bai', [
             'questions' => $selectedQuestions,

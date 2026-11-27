@@ -366,7 +366,7 @@
             var isImage = qSet ? Boolean(qSet.is_image) : false;
             var isAudio = Boolean(audioUrl) || (qSet ? Boolean(qSet.is_audio) : false);
             if (mediaUrl && !isImage && !audioUrl) {
-                isImage = /\.(png|jpe?g|gif|webp|bmp)$/i.test(mediaUrl);
+                isImage = /\.(png|jpe?g|gif|webp|bmp)$/i.test(mediaUrl) || /^blob:/i.test(mediaUrl) || /^data:image\//i.test(mediaUrl);
                 if (!isImage) {
                     audioUrl = mediaUrl;
                     isAudio = true;
@@ -375,11 +375,12 @@
 
             if (mediaWrap) {
                 mediaWrap.innerHTML = '';
+                mediaWrap.style.padding = (isImage && mediaUrl) ? '6px' : '14px';
                 if (isImage && mediaUrl) {
                     var img = document.createElement('img');
                     img.src = mediaUrl;
                     img.alt = 'Hình minh họa câu hỏi';
-                    img.style.cssText = 'max-width:100%;max-height:280px;border-radius:10px;border:1px solid #cbd5e1;object-fit:contain;box-shadow:0 2px 8px rgba(15,23,42,0.06);display:block;margin:0 auto;';
+                    img.style.cssText = 'width:100%;max-width:672px;max-height:420px;border-radius:8px;border:1px solid #cbd5e1;object-fit:contain;box-shadow:0 2px 8px rgba(15,23,42,0.08);display:block;margin:0 auto;';
                     mediaWrap.appendChild(img);
                     hasStimulusAnything = true;
                 }

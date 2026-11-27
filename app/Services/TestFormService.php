@@ -97,8 +97,12 @@ class TestFormService
         $query = TestForm::query()
             ->with([
                 'blueprint',
-                'questions' => fn ($q) => $q->select('questions.question_id', 'questions.section_id', 'questions.status', 'questions.content')
-                    ->with('section:section_id,code'),
+                'questions' => fn ($q) => $q->select('questions.question_id', 'questions.section_id', 'questions.question_set_id', 'questions.status', 'questions.content')
+                    ->with([
+                        'section:section_id,code',
+                        'questionSet:question_set_id,media_url,audio_url,transcript,stimulus_text',
+                        'options',
+                    ]),
             ]);
 
         $this->applySearch($query, $search);
@@ -242,11 +246,21 @@ class TestFormService
      */
     public function delete(TestForm $testForm): array
     {
+        $attemptsCount = 0;
         $attemptsTable = $testForm->attempts()->getRelated()->getTable();
-        if (Schema::hasTable($attemptsTable) && $testForm->attempts()->exists()) {
+        if (Schema::hasTable($attemptsTable)) {
+            $attemptsCount += $testForm->attempts()->count();
+        }
+        if ($attemptsTable !== 'exam_attempt' && Schema::hasTable('exam_attempt')) {
+            $attemptsCount += DB::table('exam_attempt')
+                ->where('test_form_id', $testForm->test_form_id)
+                ->count();
+        }
+
+        if ($attemptsCount > 0) {
             return [
                 'deleted' => false,
-                'attempts_count' => $testForm->attempts()->count(),
+                'attempts_count' => $attemptsCount,
             ];
         }
 
@@ -841,7 +855,7 @@ class TestFormService
 
         $attachedQuestions = $testForm->relationLoaded('questions')
             ? $testForm->questions
-            : $testForm->questions()->with('section:section_id,code')->get();
+            : $testForm->questions()->with(['section:section_id,code', 'questionSet:question_set_id,media_url,audio_url,transcript,stimulus_text', 'options'])->get();
 
         $activeCountsByPart = [];
         $unapprovedCount = 0;

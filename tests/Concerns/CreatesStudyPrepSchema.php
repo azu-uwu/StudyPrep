@@ -39,6 +39,8 @@ trait CreatesStudyPrepSchema
             $table->string('name', 150);
             $table->smallInteger('sequence_no');
             $table->integer('default_time_limit')->nullable();
+            $table->text('directions_text')->nullable();
+            $table->string('directions_audio_url', 500)->nullable();
         });
 
         Schema::create('question_type', function (Blueprint $table): void {

@@ -30,10 +30,6 @@ class WordQuestionImportService
         'WRITING_T1', 'WRITING_T2', 'WRITING_T3',
     ];
 
-    public function __construct(
-        protected AiToeicService $aiService
-    ) {}
-
     /**
      * Đọc file .docx, .json, .csv hoặc .txt và trả về mảng câu hỏi chuẩn hóa cho cả 4 kỹ năng TOEIC.
      *
@@ -72,15 +68,8 @@ class WordQuestionImportService
     {
         $scope = strtoupper(trim($importScope)) ?: 'AUTO';
         $extractedLines = $this->extractDocxLinesWithMediaPlaceholders($filePath);
-        $rawText = implode("\n", $extractedLines);
 
-        // 1. Ưu tiên gọi AI Parser (Gemini / OpenAI) nếu đã cấu hình API Key
-        $aiStructured = $this->aiService->parseDocxTextWithAi($rawText, $scope);
-        if ($aiStructured !== null) {
-            return $aiStructured;
-        }
-
-        // 2. Deterministic Parser chuẩn 4 kỹ năng / 15 phần ETS (offline fallback)
+        // Deterministic Parser chuẩn 4 kỹ năng / 15 phần ETS
         $flatQuestions = $this->parseLines($extractedLines, $scope);
         if (empty($flatQuestions)) {
             $flatQuestions = $this->parseFreeformLines($extractedLines, $scope);
@@ -543,12 +532,13 @@ class WordQuestionImportService
         };
 
         foreach ($lines as $rawLine) {
-            $line = trim(preg_replace('/^\xEF\xBB\xBF/', '', (string) $rawLine));
+            $line = trim(preg_replace('/^\xEF\xBB\xBF|\f/u', '', (string) $rawLine));
             if (
                 $line === ''
                 || str_starts_with($line, '//')
                 || preg_match('/^={3,}$/', $line) === 1
-                || preg_match('/^\d{1,3}\s*\/\s*\d{1,3}$/', $line) === 1
+                || preg_match('/^(?:Page\s*)?\d{1,3}(?:\s*\/\s*\d{1,3})?$/iu', $line) === 1
+                || preg_match('/^(?:ETS\s+TOEIC.*|GO\s+ON\s+TO\s+THE\s+NEXT\s+PAGE.*)$/iu', $line) === 1
                 || preg_match('/^Audio$/iu', $line) === 1
                 || preg_match('/^(?:Audio\s+)?\d{2}:\d{2}\s*\/\s*\d{2}:\d{2}$/iu', $line) === 1
                 || preg_match('/^(?:▶|►|⏸|⏹|🔊)$/u', $line) === 1
@@ -938,7 +928,7 @@ class WordQuestionImportService
                     'audio_transcript' => null,
                     'image_url' => $inlineImg,
                     'audio_url' => $inlineAud,
-                    'content' => 'Look at the picture and listen to the four statements.',
+                    'content' => '',
                     'options' => [],
                     'correct' => 'A',
                     'difficulty' => 'UNSET',
@@ -953,7 +943,7 @@ class WordQuestionImportService
             }
 
             // 6. Nhiều phương án trên cùng 1 dòng (chỉ áp dụng cho L&R)
-            if (! $currentIsProductive && $currentQuestion !== null && preg_match_all('/(?:^|\s)\*?(\(?[A-D]\)?[\.\)\:])\s*([^\(\n]+?)(?=\s+\*?\(?[B-D]\)?[\.\)\:]|\s*$)/u', $line, $matches, PREG_SET_ORDER) && count($matches) >= 2) {
+            if (! $currentIsProductive && $currentQuestion !== null && preg_match_all('/(?:^|\s)\*?((?:\([A-D]\)|[A-D][\.\)\:]))\s*(.+?)(?=(?:\s+\*?(?:\([A-D]\)|[A-D][\.\)\:]))|\s*$)/u', $line, $matches, PREG_SET_ORDER) && count($matches) >= 2) {
                 $this->assignMultipleOptionsFromMatches($currentQuestion, $matches, $maxOptionsForCurrent);
 
                 continue;
@@ -1026,9 +1016,6 @@ class WordQuestionImportService
 
                 if ($stem === '' && ! $isBarePart1Header && ! $isBareReadingDual && ! $isBareWritingTask && ! $isExplicitBareHeader) {
                     continue;
-                }
-                if ($isBarePart1Header) {
-                    $stem = 'Look at the picture and listen to the four statements.';
                 }
 
                 // Nếu ngay sau câu tiếng Anh là dòng đánh số chứa bản dịch tiếng Việt -> gộp inline!
@@ -1247,11 +1234,18 @@ class WordQuestionImportService
                 continue;
             }
 
-            // 12. Nối tiếp nội dung đề bài nhiều dòng (chưa vào options và chưa vào phần dịch)
-            if ($currentQuestion !== null && empty($currentQuestion['options']) && $currentQuestion['explanation'] === null && empty($currentQuestion['_in_vn_block'])) {
-                $currentQuestion['content'] = trim($currentQuestion['content']) === ''
-                    ? $line
-                    : ($currentQuestion['content']."\n".$line);
+            // 12. Nối tiếp nội dung đề bài hoặc phương án cuối bị ngắt dòng/ngắt trang
+            if ($currentQuestion !== null && $currentQuestion['explanation'] === null && empty($currentQuestion['_in_vn_block'])) {
+                if (empty($currentQuestion['options'])) {
+                    $currentQuestion['content'] = trim($currentQuestion['content']) === ''
+                        ? $line
+                        : ($currentQuestion['content']."\n".$line);
+                } elseif (! $currentIsProductive) {
+                    $lastOptKey = array_key_last($currentQuestion['options']);
+                    if ($lastOptKey !== null) {
+                        $currentQuestion['options'][$lastOptKey] = trim($currentQuestion['options'][$lastOptKey].' '.$line);
+                    }
+                }
             }
         }
 
@@ -1259,6 +1253,7 @@ class WordQuestionImportService
 
         // Hậu xử lý gộp cặp câu song ngữ Anh – Việt nếu vẫn còn cặp tách rời
         $questions = $this->mergeBilingualQuestions($questions);
+        $questions = $this->mergeFragmentedQuestionsBySeq($questions);
 
         // Map bảng Answer Key cuối file (nếu có) vào đúng question_number cho L&R
         if (! empty($answerKeyMap)) {
@@ -1274,6 +1269,72 @@ class WordQuestionImportService
         }
 
         return $questions;
+    }
+
+    /**
+     * Hợp nhất các mảnh câu hỏi bị tách rời có cùng question_number (seq) do ngắt trang hoặc chia ô bảng.
+     *
+     * @param  list<array<string, mixed>>  $questions
+     * @return list<array<string, mixed>>
+     */
+    public function mergeFragmentedQuestionsBySeq(array $questions): array
+    {
+        $bySeq = [];
+        $order = [];
+
+        foreach ($questions as $q) {
+            $seq = (int) ($q['question_number'] ?? 0);
+            if ($seq <= 0) {
+                continue;
+            }
+            $partKey = strtoupper((string) ($q['part_code'] ?? 'PART5')).'#'.$seq;
+
+            if (! isset($bySeq[$partKey])) {
+                $bySeq[$partKey] = $q;
+                $order[] = $partKey;
+
+                continue;
+            }
+
+            $base = $bySeq[$partKey];
+            if (trim((string) ($base['content'] ?? '')) === '' && trim((string) ($q['content'] ?? '')) !== '') {
+                $base['content'] = $q['content'];
+            }
+            if (trim((string) ($base['stimulus_text'] ?? '')) === '' && trim((string) ($q['stimulus_text'] ?? '')) !== '') {
+                $base['stimulus_text'] = $q['stimulus_text'];
+            }
+            if (empty($base['image_url']) && ! empty($q['image_url'])) {
+                $base['image_url'] = $q['image_url'];
+            }
+            if (empty($base['audio_url']) && ! empty($q['audio_url'])) {
+                $base['audio_url'] = $q['audio_url'];
+            }
+            $baseOpts = is_array($base['options'] ?? null) ? $base['options'] : [];
+            $newOpts = is_array($q['options'] ?? null) ? $q['options'] : [];
+            if ((empty($base['correct']) || (empty($baseOpts) && ! empty($newOpts))) && ! empty($q['correct'])) {
+                $base['correct'] = $q['correct'];
+            }
+            if (trim((string) ($base['explanation'] ?? '')) === '' && trim((string) ($q['explanation'] ?? '')) !== '') {
+                $base['explanation'] = $q['explanation'];
+            }
+
+            foreach ($newOpts as $lbl => $txt) {
+                if (trim((string) ($baseOpts[$lbl] ?? '')) === '' && trim((string) $txt) !== '') {
+                    $baseOpts[$lbl] = $txt;
+                }
+            }
+            ksort($baseOpts);
+            $base['options'] = $baseOpts;
+
+            $bySeq[$partKey] = $base;
+        }
+
+        $result = [];
+        foreach ($order as $partKey) {
+            $result[] = $bySeq[$partKey];
+        }
+
+        return $result;
     }
 
     /**
@@ -1454,15 +1515,13 @@ class WordQuestionImportService
                 }
 
                 $contentText = trim((string) ($item['content'] ?? ''));
-                if ($contentText === '') {
-                    $contentText = $partCode === 'PART1'
-                        ? 'Look at the picture and choose the statement that best describes what you see.'
-                        : 'Listen to the audio and select the best response.';
+                if ($contentText === '' && $partCode !== 'PART1') {
+                    $contentText = 'Listen to the audio and select the best response.';
                 }
 
                 $difficulty = strtoupper((string) ($item['difficulty'] ?? 'UNSET'));
                 if (! in_array($difficulty, ['EASY', 'MEDIUM', 'HARD'], true) || $difficulty === 'UNSET') {
-                    $difficulty = AiToeicService::assessToeicDifficulty(
+                    $difficulty = self::assessToeicDifficulty(
                         $item['skill'] ?? null,
                         $partCode,
                         $contentText,
@@ -1921,6 +1980,16 @@ class WordQuestionImportService
         if ($hasStar || str_ends_with($optText, '*') || str_contains($optText, '[Đúng]') || str_contains($optText, '[CORRECT:')) {
             $optText = trim((string) preg_replace('/\*|\[Đúng\]|\[đúng\]|\[CORRECT:\s*[A-D]\]/iu', '', $optText));
             $currentQuestion['correct'] = $label;
+        }
+
+        // Nếu là PART1 và option có kèm bản dịch tiếng Việt trong ngoặc -> tách phần tiếng Anh sạch cho options/transcript và lưu bản dịch vào explanation
+        if (($currentQuestion['part_code'] ?? '') === 'PART1' && preg_match('/^([^\(\n]+?)\s*\(([^\)\n]+)\)\s*$/u', $optText, $enMatch) && $this->isVietnameseText($enMatch[2])) {
+            if (! empty($currentQuestion['_in_explanation'])) {
+                $currentQuestion['explanation'] = $this->appendExplanation($currentQuestion['explanation'] ?? null, "({$label}) {$optText}");
+            } else {
+                $currentQuestion['_vn_options'][$label] = trim($enMatch[2]);
+            }
+            $optText = trim($enMatch[1]);
         }
 
         $currentQuestion['options'][$label] = $optText;
@@ -2634,5 +2703,26 @@ class WordQuestionImportService
         fclose($handle);
 
         return $questions;
+    }
+
+    /**
+     * Đánh giá độ khó TOEIC chuẩn (EASY / MEDIUM / HARD) theo Part & độ phức tạp văn bản.
+     *
+     * @param  array<string, string>  $options
+     */
+    public static function assessToeicDifficulty(?string $skill, string $partCode, string $content = '', ?string $stimulus = '', array $options = []): string
+    {
+        $part = strtoupper(trim($partCode));
+        $wordCount = str_word_count(trim($content).' '.trim((string) $stimulus));
+
+        if (in_array($part, ['PART1', 'PART2'], true)) {
+            return $wordCount > 25 ? 'MEDIUM' : 'EASY';
+        }
+
+        if (in_array($part, ['PART6', 'PART7'], true) || $wordCount >= 140) {
+            return 'HARD';
+        }
+
+        return $wordCount >= 40 ? 'MEDIUM' : 'EASY';
     }
 }

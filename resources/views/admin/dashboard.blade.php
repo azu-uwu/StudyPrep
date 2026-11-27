@@ -38,7 +38,7 @@
                 <p class="admin-kpi-value">
                         {{ number_format($userStats['active']) }}
                 </p>
-                    <span class="sr-only">Tổng người dùng: {{ number_format($userStats['total'] ?? 0) }}</span>
+                    <span class="sr-only">Tổng người dùng: {{ number_format($userStats['total'] ?? 0) }} | Tổng đề thi: {{ number_format($testStats['total'] ?? 0) }} | Câu hỏi báo lỗi: {{ number_format($questionStats['reported'] ?? 0) }} | L:{{ $questionStats['listening'] ?? 0 }} R:{{ $questionStats['reading'] ?? 0 }} S:{{ $questionStats['speaking'] ?? 0 }} W:{{ $questionStats['writing'] ?? 0 }}</span>
             </div>
             <div class="admin-kpi-badge badge-blue">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

@@ -322,6 +322,17 @@
                     <span class="exam-category-end"><span class="exam-count">2 bài thi</span><span class="exam-chevron" aria-hidden="true">⌄</span></span>
                 </button>
                 <div class="exam-sublist" id="listening-reading-tests">
+                    @if (! empty($publishedLrTests) && $publishedLrTests->isNotEmpty())
+                        @foreach ($publishedLrTests as $dbTest)
+                            <div class="exam-subitem">
+                                <div class="exam-subitem-copy">
+                                    <span class="exam-subitem-title">{{ $dbTest->title }}</span>
+                                    <span class="exam-subitem-details">{{ $dbTest->active_questions_count }} câu hỏi ACTIVE · {{ $dbTest->blueprint?->total_time ?? 120 }} phút · Mã đề {{ $dbTest->test_code }}</span>
+                                </div>
+                                <a href="{{ url('/thi-thu/giao-dien-thi?test_id=' . $dbTest->test_form_id) }}" data-require-auth>Bắt đầu</a>
+                            </div>
+                        @endforeach
+                    @endif
                     <div class="exam-subitem">
                         <div class="exam-subitem-copy">
                             <span class="exam-subitem-title">TOEIC Listening &amp; Reading #01</span>
@@ -355,6 +366,17 @@
                     <span class="exam-category-end"><span class="exam-count">1 bài thi</span><span class="exam-chevron" aria-hidden="true">⌄</span></span>
                 </button>
                 <div class="exam-sublist" id="speaking-writing-tests">
+                    @if (! empty($publishedSwTests) && $publishedSwTests->isNotEmpty())
+                        @foreach ($publishedSwTests as $dbTest)
+                            <div class="exam-subitem">
+                                <div class="exam-subitem-copy">
+                                    <span class="exam-subitem-title">{{ $dbTest->title }}</span>
+                                    <span class="exam-subitem-details">{{ $dbTest->active_questions_count }} câu hỏi ACTIVE · {{ $dbTest->blueprint?->total_time ?? 80 }} phút · Mã đề {{ $dbTest->test_code }}</span>
+                                </div>
+                                <a href="{{ url('/thi-thu/giao-dien-thi?test_id=' . $dbTest->test_form_id) }}" data-require-auth>Bắt đầu</a>
+                            </div>
+                        @endforeach
+                    @endif
                     <div class="exam-subitem">
                         <div class="exam-subitem-copy">
                             <span class="exam-subitem-title">TOEIC Speaking &amp; Writing Official Test #01</span>

@@ -417,4 +417,76 @@ class VocabularyControllerTest extends TestCase
             'vocabulary_id' => $vocab->vocabulary_id,
         ]);
     }
+
+    public function test_blocks_duplicate_word_in_same_topic_allows_different_topic_and_renders_flash_alerts(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $topicA = Topic::create(['user_id' => null, 'name' => 'Contracts', 'description' => 'System topic A']);
+        $topicB = Topic::create(['user_id' => null, 'name' => 'Marketing', 'description' => 'System topic B']);
+
+        // Tạo lần 1 thành công & kiểm tra Flash Alert hiển thị thực tế trên HTML
+        $firstResp = $this->actingAs($admin)
+            ->followingRedirects()
+            ->post(route('admin.vocabularies.store'), [
+                'word' => 'Stipulate',
+                'meaning_vi' => 'Quy định rõ trong hợp đồng',
+                'topic_id' => $topicA->topic_id,
+            ]);
+        $firstResp->assertOk();
+        $firstResp->assertSee('Đã thêm từ vựng mới');
+        $firstResp->assertSee('Stipulate');
+
+        // Tạo trùng từ (không phân biệt hoa thường) trong cùng Topic A -> bị chặn
+        $dupResp = $this->actingAs($admin)->post(route('admin.vocabularies.store'), [
+            'word' => '  stipulate  ',
+            'meaning_vi' => 'Nghĩa trùng',
+            'topic_id' => $topicA->topic_id,
+        ]);
+        $dupResp->assertSessionHasErrors('word');
+        $this->assertSame(1, Vocabulary::query()->where('topic_id', $topicA->topic_id)->count());
+
+        // Cùng từ đó nhưng ở Topic B khác -> cho phép
+        $otherTopicResp = $this->actingAs($admin)->post(route('admin.vocabularies.store'), [
+            'word' => 'stipulate',
+            'meaning_vi' => 'Quy định điều khoản tiếp thị',
+            'topic_id' => $topicB->topic_id,
+        ]);
+        $otherTopicResp->assertRedirect(route('admin.vocabularies.index'));
+        $this->assertSame(1, Vocabulary::query()->where('topic_id', $topicB->topic_id)->count());
+    }
+
+    public function test_vocabularies_index_renders_edit_topic_options_real_pagination_and_no_mobile_preview_bar(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $topicA = Topic::create(['user_id' => null, 'name' => 'Business Core', 'description' => 'System A']);
+        $topicB = Topic::create(['user_id' => null, 'name' => 'Travel Core', 'description' => 'System B']);
+
+        for ($i = 1; $i <= 10; $i++) {
+            Vocabulary::create([
+                'word' => "word_real_{$i}",
+                'meaning_vi' => "Nghĩa {$i}",
+                'topic_id' => $topicA->topic_id,
+            ]);
+        }
+
+        $response = $this->actingAs($admin)->get(route('admin.vocabularies.index', ['per_page' => 25]));
+
+        $response->assertOk();
+        $response->assertSee('edit_vocab_topic', false);
+        $response->assertSee('Business Core');
+        $response->assertSee('Travel Core');
+        $response->assertDontSee('1,845');
+        $response->assertDontSee('Xem trước thẻ:');
+        $response->assertDontSee('Mở xem trước');
+        // Thanh phân trang luôn hiển thị kể cả khi chỉ có 1 trang (10 bản ghi / 25 dòng)
+        $response->assertSee('user-pagination', false);
+        $response->assertSee('<span class="page-btn active">1</span>', false);
+        $response->assertSee('aria-disabled="true"', false);
+        $response->assertDontSee('<th>HỌC VIÊN</th>', false);
+        $response->assertSee('Thao tác khác');
+        $response->assertSee('Thêm từ vựng');
+        $response->assertSee('repeat(4, minmax(0, 1fr))', false);
+        $response->assertSee('modalPrevVocabBtn', false);
+        $response->assertSee('modalNextVocabBtn', false);
+    }
 }

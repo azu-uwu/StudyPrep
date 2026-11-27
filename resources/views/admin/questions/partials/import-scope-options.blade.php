@@ -1,5 +1,4 @@
-<option value="AUTO" selected>AUTO — Tự động nhận diện toàn bộ file (Đa kỹ năng: Listening, Reading, Speaking, Writing)</option>
-<option value="LISTENING">LISTENING — Kỹ năng Listening (Tự động chia Part 1, 2, 3, 4 theo tiêu đề trong file)</option>
+<option value="LISTENING" select>LISTENING — Kỹ năng Listening (Tự động chia Part 1, 2, 3, 4 theo tiêu đề trong file)</option>
 <option value="READING">READING — Kỹ năng Reading (Tự động chia Part 5, 6, 7 theo tiêu đề trong file)</option>
 <option value="SPEAKING">SPEAKING — Kỹ năng Speaking (Tự động chia Task 1–5 chuẩn 11 câu ETS)</option>
 <option value="WRITING">WRITING — Kỹ năng Writing (Tự động chia Task 1–3 chuẩn 8 câu ETS)</option>

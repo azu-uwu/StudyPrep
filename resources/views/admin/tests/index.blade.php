@@ -46,14 +46,9 @@
         </div>
     @endif
 
-    {{-- 1. Tiêu đề trang & Nút thao tác phía trên (Đồng bộ bố cục với Ngân hàng câu hỏi) --}}
-    <div class="user-page-header">
+    {{-- 1. Tiêu đề trang & Nút thao tác phía trên (Đồng bộ bố cục ngang hàng) --}}
+    <div class="user-page-header" style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
         <div>
-            <div class="qbank-breadcrumb-sub">
-                <span>Quản lý đào tạo</span>
-                <span>></span>
-                <span class="crumb-active">Quản lý đề thi TOEIC</span>
-            </div>
             <div class="user-title-row">
                 <h1 class="user-page-title">Quản lý đề thi TOEIC</h1>
             </div>
@@ -62,7 +57,7 @@
             </p>
         </div>
 
-        <div class="user-header-actions">
+        <div class="user-header-actions" style="flex-shrink: 0;">
             <button type="button" class="btn-admin-primary" onclick="openAdminModal('modal-add-test')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -110,8 +105,12 @@
                 <span class="qbank-kpi-num">{{ $stats['lr_count'] }}</span>
                 <span class="qbank-kpi-sub">đề (Full L&amp;R / Nghe / Đọc)</span>
             </div>
-            <div class="qbank-kpi-foot">
-                <span>Đề 200 câu hoặc tách lẻ 100 câu</span>
+            <div class="qbank-kpi-foot" style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px;">
+                <span style="font-weight: 700; color: #0369a1;">Listening 100 câu</span>
+                <span style="color: #cbd5e1;">·</span>
+                <span style="font-weight: 700; color: #047857;">Reading 100 câu</span>
+                <span style="color: #cbd5e1;">·</span>
+                <span style="font-weight: 700; color: #4338ca;">Full LR 200 câu</span>
             </div>
         </div>
 
@@ -130,8 +129,12 @@
                 <span class="qbank-kpi-num">{{ $stats['sw_count'] }}</span>
                 <span class="qbank-kpi-sub">đề (Full S&amp;W / Nói / Viết)</span>
             </div>
-            <div class="qbank-kpi-foot">
-                <span>Speaking 11 câu - Writing 8 câu - Full 19 câu</span>
+            <div class="qbank-kpi-foot" style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px;">
+                <span style="font-weight: 700; color: #b45309;">Speaking 11 câu</span>
+                <span style="color: #cbd5e1;">·</span>
+                <span style="font-weight: 700; color: #7e22ce;">Writing 8 câu</span>
+                <span style="color: #cbd5e1;">·</span>
+                <span style="font-weight: 700; color: #be123c;">Full SW 19 câu</span>
             </div>
         </div>
 

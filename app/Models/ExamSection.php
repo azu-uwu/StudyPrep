@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'name',
     'sequence_no',
     'default_time_limit',
+    'directions_text',
+    'directions_audio_url',
 ])]
 class ExamSection extends Model
 {
@@ -21,6 +23,23 @@ class ExamSection extends Model
     protected $table = 'exam_section';
 
     protected $primaryKey = 'section_id';
+
+    public function getResolvedDirectionsAudioUrlAttribute(): ?string
+    {
+        $raw = trim((string) ($this->directions_audio_url ?? ''));
+        if ($raw === '') {
+            return null;
+        }
+        if (preg_match('/^(?:https?:\/\/|data:)/i', $raw) === 1) {
+            return $raw;
+        }
+        $clean = ltrim($raw, '/');
+        if (! str_starts_with($clean, 'storage/')) {
+            $clean = 'storage/'.$clean;
+        }
+
+        return asset($clean);
+    }
 
     /**
      * @return BelongsTo<Skill, $this>

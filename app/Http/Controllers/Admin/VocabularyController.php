@@ -72,7 +72,7 @@ class VocabularyController extends Controller
         $totalLearnersInteractions = $hasUserVocab ? UserVocabulary::count() : 0;
         $totalMasteredCount = $hasUserVocab ? UserVocabulary::where('is_done', 1)->count() : 0;
 
-        $topics = Topic::system()->orderBy('name')->get();
+        $topics = Topic::system()->orderBy('name')->get(['topic_id', 'name']);
 
         // Selected preview item for live flashcard simulator
         $previewId = $request->input('preview_id');
@@ -112,7 +112,7 @@ class VocabularyController extends Controller
      */
     public function create(): View
     {
-        $topics = Topic::system()->orderBy('name')->get();
+        $topics = Topic::system()->orderBy('name')->get(['topic_id', 'name']);
 
         return view('admin.vocabularies.create', compact('topics'));
     }
@@ -159,6 +159,17 @@ class VocabularyController extends Controller
         if (empty($topicId)) {
             $defaultTopic = Topic::system()->first() ?? Topic::first();
             $topicId = $defaultTopic ? $defaultTopic->topic_id : 1;
+        }
+
+        $normalizedWord = mb_strtolower(trim($validated['word']), 'UTF-8');
+        $duplicateInTopic = Vocabulary::query()
+            ->where('topic_id', (int) $topicId)
+            ->whereRaw('LOWER(TRIM(word)) = ?', [$normalizedWord])
+            ->exists();
+        if ($duplicateInTopic) {
+            return redirect()->back()
+                ->withErrors(['word' => 'Từ vựng này đã tồn tại trong bộ thẻ đã chọn.'])
+                ->withInput();
         }
 
         $pos = trim((string) ($validated['part_of_speech'] ?? 'Từ vựng'));
@@ -214,6 +225,18 @@ class VocabularyController extends Controller
             'topic_id.required' => 'Vui lòng chọn bộ thẻ cho từ vựng.',
             'image_url.url' => 'Đường dẫn hình ảnh không đúng định dạng URL hợp lệ.',
         ]);
+
+        $normalizedWord = mb_strtolower(trim($validated['word']), 'UTF-8');
+        $duplicateInTopic = Vocabulary::query()
+            ->where('topic_id', (int) $validated['topic_id'])
+            ->where('vocabulary_id', '!=', $vocabulary->vocabulary_id)
+            ->whereRaw('LOWER(TRIM(word)) = ?', [$normalizedWord])
+            ->exists();
+        if ($duplicateInTopic) {
+            return redirect()->back()
+                ->withErrors(['word' => 'Từ vựng này đã tồn tại trong bộ thẻ đã chọn.'])
+                ->withInput();
+        }
 
         $pos = trim((string) ($validated['part_of_speech'] ?? 'Từ vựng'));
         $level = $this->normalizeLevel($validated['level'] ?? null);
@@ -465,7 +488,7 @@ class VocabularyController extends Controller
      */
     public function importView(Request $request): View
     {
-        $topics = Topic::system()->orderBy('name')->get();
+        $topics = Topic::system()->orderBy('name')->get(['topic_id', 'name']);
 
         $importedIds = session('imported_ids', []);
         $importedVocabs = collect();

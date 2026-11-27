@@ -7,10 +7,12 @@ use App\Models\Feedback;
 use App\Models\Question;
 use App\Models\ScoreResult;
 use App\Models\TestAttempt;
+use App\Models\TestForm;
 use App\Models\User;
 use App\Models\Vocabulary;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -30,6 +32,15 @@ class DashboardController extends Controller
             'total' => Question::query()->count(),
             'pending' => Question::query()->pending()->count(),
             'active' => Question::query()->active()->count(),
+            'reported' => Question::query()->where('status', 'REPORTED')->count(),
+            'listening' => Question::query()->whereHas('section', fn ($q) => $q->whereIn('code', ['PART1', 'PART2', 'PART3', 'PART4']))->count(),
+            'reading' => Question::query()->whereHas('section', fn ($q) => $q->whereIn('code', ['PART5', 'PART6', 'PART7']))->count(),
+            'speaking' => Question::query()->whereHas('section', fn ($q) => $q->where('code', 'like', 'SPK_%'))->count(),
+            'writing' => Question::query()->whereHas('section', fn ($q) => $q->where('code', 'like', 'WRITING_%'))->count(),
+        ];
+
+        $testStats = [
+            'total' => Schema::hasTable('test_form') ? TestForm::query()->count() : 0,
         ];
 
         $submittedAttempts = TestAttempt::query()->whereNotNull('submitted_at');
@@ -66,6 +77,7 @@ class DashboardController extends Controller
 
         return view('admin.dashboard', [
             'userStats' => $userStats,
+            'testStats' => $testStats,
             'questionStats' => $questionStats,
             'attemptStats' => $attemptStats,
             'feedbackStats' => $feedbackStats,

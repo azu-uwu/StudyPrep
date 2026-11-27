@@ -444,8 +444,20 @@
                                                         </div>
                                                     @endif
                                                     @if (!empty($item['image_url']))
+                                                        @php
+                                                            $rawSetImg = trim((string) $item['image_url']);
+                                                            if (preg_match('/^(?:https?:\/\/|data:)/i', $rawSetImg) === 1) {
+                                                                $resolvedSetImg = $rawSetImg;
+                                                            } else {
+                                                                $cleanSetImg = ltrim($rawSetImg, '/');
+                                                                if (! str_starts_with($cleanSetImg, 'storage/')) {
+                                                                    $cleanSetImg = 'storage/'.$cleanSetImg;
+                                                                }
+                                                                $resolvedSetImg = asset($cleanSetImg);
+                                                            }
+                                                        @endphp
                                                         <div style="margin-bottom: 8px;">
-                                                            <img src="{{ $item['image_url'] }}" alt="Minh họa nhóm câu hỏi" style="max-height: 150px; border-radius: 8px; border: 1px solid #e2e8f0; object-fit: contain;">
+                                                            <img src="{{ $resolvedSetImg }}" alt="Minh họa nhóm câu hỏi" style="max-height: 150px; border-radius: 8px; border: 1px solid #e2e8f0; object-fit: contain;">
                                                         </div>
                                                     @endif
                                                     @if (!empty($item['stimulus_text']))
@@ -1893,6 +1905,15 @@
             setTimeout(function () { window.location.reload(); }, 900);
         }
     }
+
+    @if (request()->boolean('auto_start_tts') || session('auto_start_tts'))
+        document.addEventListener('DOMContentLoaded', function () {
+            if (Array.isArray(TEST_MISSING_AUDIO_IDS) && TEST_MISSING_AUDIO_IDS.length > 0) {
+                openTestBatchTtsModal();
+                runTestBatchTts();
+            }
+        });
+    @endif
 </script>
 @endpush
 @include('admin.questions.partials.question-preview-modal')

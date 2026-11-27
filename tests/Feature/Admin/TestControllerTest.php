@@ -4,6 +4,9 @@ namespace Tests\Feature\Admin;
 
 use App\Models\ExamSection;
 use App\Models\Question;
+use App\Models\QuestionSet;
+use App\Models\QuestionType;
+use App\Models\Skill;
 use App\Models\TestBlueprint;
 use App\Models\TestForm;
 use App\Models\User;
@@ -803,5 +806,217 @@ TXT;
         $this->assertDatabaseHas('test_form_question', ['test_form_id' => $testForm->test_form_id, 'question_id' => $q1Id]);
         $this->assertDatabaseHas('test_form_question', ['test_form_id' => $testForm->test_form_id, 'question_id' => $q2Id]);
         $this->assertDatabaseMissing('test_form_question', ['test_form_id' => $testForm->test_form_id, 'question_id' => $q3DupId]);
+    }
+
+    public function test_all_six_ets_blueprints_title_length_boundaries_unset_difficulty_and_delete_preserves_bank_questions(): void
+    {
+        $this->seedSectionsAndBlueprints();
+        $admin = User::factory()->admin()->create();
+        $student = User::factory()->create(['role' => 'student']);
+
+        // 1. Tạo đề 0 câu theo đủ 6 Blueprint chuẩn ETS (200, 100, 100, 11, 8, 19)
+        $expectedTargets = [
+            TestForm::EXAM_TYPE_LR => 200,
+            TestForm::EXAM_TYPE_LISTENING => 100,
+            TestForm::EXAM_TYPE_READING => 100,
+            TestForm::EXAM_TYPE_SPEAKING => 11,
+            TestForm::EXAM_TYPE_WRITING => 8,
+            TestForm::EXAM_TYPE_SW => 19,
+        ];
+
+        foreach ($expectedTargets as $examType => $targetCount) {
+            $this->assertSame($targetCount, TestForm::targetQuestionsFor($examType));
+            $resp = $this->actingAs($admin)->post(route('admin.tests.store'), [
+                'title' => "Blueprint Zero Init {$examType}",
+                'exam_type' => $examType,
+            ]);
+            $created = TestForm::query()->where('title', "Blueprint Zero Init {$examType}")->firstOrFail();
+            $resp->assertRedirect(route('admin.tests.show', $created->test_form_id));
+            $this->assertSame(0, $created->questions()->count());
+        }
+
+        // Kiểm tra khóa cứng chỉ tiêu từng Part của TOEIC_LR (6, 25, 39, 30, 30, 16, 54)
+        $this->assertSame([
+            'PART1' => 6,
+            'PART2' => 25,
+            'PART3' => 39,
+            'PART4' => 30,
+            'PART5' => 30,
+            'PART6' => 16,
+            'PART7' => 54,
+        ], TestForm::partTargetsFor(TestForm::EXAM_TYPE_LR));
+
+        // 2. Validation biên tên đề: 2 ký tự lỗi, 3 ký tự pass, 200 ký tự pass, 201 ký tự lỗi, sửa giữ nguyên tên cũ pass
+        $this->actingAs($admin)->post(route('admin.tests.store'), [
+            'title' => 'AB',
+            'exam_type' => TestForm::EXAM_TYPE_LR,
+        ])->assertSessionHasErrors('title');
+
+        $this->actingAs($admin)->post(route('admin.tests.store'), [
+            'title' => 'ABC',
+            'exam_type' => TestForm::EXAM_TYPE_LR,
+        ])->assertSessionDoesntHaveErrors();
+
+        $title200 = str_repeat('T', 200);
+        $this->actingAs($admin)->post(route('admin.tests.store'), [
+            'title' => $title200,
+            'exam_type' => TestForm::EXAM_TYPE_LR,
+        ])->assertSessionDoesntHaveErrors();
+
+        $this->actingAs($admin)->post(route('admin.tests.store'), [
+            'title' => str_repeat('X', 201),
+            'exam_type' => TestForm::EXAM_TYPE_LR,
+        ])->assertSessionHasErrors('title');
+
+        $abcTest = TestForm::query()->where('title', 'ABC')->firstOrFail();
+        $this->actingAs($admin)->put(route('admin.tests.update', $abcTest->test_form_id), [
+            'title' => 'ABC',
+            'exam_type' => TestForm::EXAM_TYPE_LR,
+        ])->assertRedirect(route('admin.tests.index'));
+
+        // 3. Sửa nhanh câu hỏi với difficulty = UNSET
+        $this->attachQuestionsByCode($abcTest->test_form_id, 'PART5', 1, Question::STATUS_ACTIVE);
+        $attachedQuestionId = (int) DB::table('test_form_question')->where('test_form_id', $abcTest->test_form_id)->value('question_id');
+
+        $this->actingAs($admin)->put(route('admin.tests.questions.update', [
+            'id' => $abcTest->test_form_id,
+            'questionId' => $attachedQuestionId,
+        ]), [
+            'content' => 'Question with UNSET difficulty allowed',
+            'difficulty' => 'UNSET',
+        ])->assertRedirect(route('admin.tests.show', $abcTest->test_form_id));
+
+        $this->assertDatabaseHas('questions', [
+            'question_id' => $attachedQuestionId,
+            'difficulty' => 'UNSET',
+        ]);
+
+        // 4. Toàn vẹn xóa: xóa đề 0 lượt thi KHÔNG làm mất câu hỏi trong bảng questions
+        $this->actingAs($admin)->delete(route('admin.tests.destroy', $abcTest->test_form_id))
+            ->assertRedirect(route('admin.tests.index'));
+        $this->assertDatabaseMissing('test_form', ['test_form_id' => $abcTest->test_form_id]);
+        $this->assertDatabaseHas('questions', ['question_id' => $attachedQuestionId]);
+
+        // CHẶN TUYỆT ĐỐI xóa đề đã có bản ghi trong exam_attempt (hoặc attempts)
+        if (! Schema::hasTable('exam_attempt')) {
+            Schema::create('exam_attempt', function (Blueprint $table): void {
+                $table->id();
+                $table->unsignedBigInteger('user_id');
+                $table->unsignedBigInteger('test_form_id');
+            });
+        }
+        $protectedTest = TestForm::query()->where('title', $title200)->firstOrFail();
+        DB::table('exam_attempt')->insert([
+            'user_id' => $student->user_id,
+            'test_form_id' => $protectedTest->test_form_id,
+        ]);
+
+        $blockedResp = $this->actingAs($admin)->delete(route('admin.tests.destroy', $protectedTest->test_form_id));
+        $blockedResp->assertRedirect(route('admin.tests.index'));
+        $blockedResp->assertSessionHas('error');
+        $this->assertDatabaseHas('test_form', ['test_form_id' => $protectedTest->test_form_id]);
+
+        // Kiểm tra mô tả phụ KPI Listening & Reading và Speaking & Writing đồng bộ màu sắc badge kỹ năng
+        $indexResp = $this->actingAs($admin)->get(route('admin.tests.index'));
+        $indexResp->assertOk();
+        $indexResp->assertSee('Listening 100 câu');
+        $indexResp->assertSee('Reading 100 câu');
+        $indexResp->assertSee('Full LR 200 câu');
+        $indexResp->assertSee('Speaking 11 câu');
+        $indexResp->assertSee('Writing 8 câu');
+        $indexResp->assertSee('#0369a1', false);
+        $indexResp->assertSee('#047857', false);
+        $indexResp->assertSee('#4338ca', false);
+        $indexResp->assertSee('#b45309', false);
+        $indexResp->assertSee('#7e22ce', false);
+        $indexResp->assertDontSee('qbank-breadcrumb-sub', false);
+        $indexResp->assertDontSee('admin-sidebar-footer', false);
+    }
+
+    public function test_speaking_test_with_same_prompt_and_different_media_url_reports_zero_duplicates_in_both_list_and_detail(): void
+    {
+        if (! Schema::hasTable('test_form_question')) {
+            Schema::create('test_form_question', function (Blueprint $table): void {
+                $table->unsignedBigInteger('test_form_id');
+                $table->unsignedBigInteger('question_id');
+                $table->integer('sequence_no');
+                $table->decimal('point', 6, 2)->default(1);
+                $table->primary(['test_form_id', 'question_id']);
+            });
+        }
+
+        $admin = User::factory()->admin()->create();
+        $swSkill = Skill::firstOrCreate(['code' => 'SW'], ['skill_id' => 3, 'skill_name' => 'Speaking & Writing']);
+        $spkT2 = ExamSection::firstOrCreate(
+            ['code' => 'SPK_T2'],
+            ['section_id' => 9, 'skill_id' => $swSkill->skill_id, 'name' => 'Describe a picture', 'sequence_no' => 9]
+        );
+        QuestionType::firstOrCreate(['question_type_id' => 4], ['name' => 'Speaking', 'response_mode' => 'AUDIO']);
+
+        $blueprint = TestBlueprint::create([
+            'name' => 'TOEIC Speaking 11',
+            'exam_type' => TestForm::EXAM_TYPE_SPEAKING,
+            'total_time' => 20,
+            'status' => 'ACTIVE',
+        ]);
+        $testForm = TestForm::create([
+            'blueprint_id' => $blueprint->blueprint_id,
+            'title' => 'Speaking Picture Diff Media Test',
+            'exam_type' => TestForm::EXAM_TYPE_SPEAKING,
+            'status' => 'ACTIVE',
+        ]);
+
+        $set1 = QuestionSet::create([
+            'title' => 'Picture 1',
+            'media_url' => 'storage/questions/images/spk_pic_1.png',
+            'media_type' => 'IMAGE',
+        ]);
+        $set2 = QuestionSet::create([
+            'title' => 'Picture 2',
+            'media_url' => 'storage/questions/images/spk_pic_2.png',
+            'media_type' => 'IMAGE',
+        ]);
+
+        $q1 = Question::create([
+            'section_id' => $spkT2->section_id,
+            'question_type_id' => 4,
+            'question_set_id' => $set1->question_set_id,
+            'content' => 'Describe the picture on your screen in as much detail as you can.',
+            'difficulty' => 'MEDIUM',
+            'status' => 'ACTIVE',
+        ]);
+        $q2 = Question::create([
+            'section_id' => $spkT2->section_id,
+            'question_type_id' => 4,
+            'question_set_id' => $set2->question_set_id,
+            'content' => 'Describe the picture on your screen in as much detail as you can.',
+            'difficulty' => 'MEDIUM',
+            'status' => 'ACTIVE',
+        ]);
+
+        DB::table('test_form_question')->insert([
+            ['test_form_id' => $testForm->test_form_id, 'question_id' => $q1->question_id, 'sequence_no' => 1, 'point' => 1],
+            ['test_form_id' => $testForm->test_form_id, 'question_id' => $q2->question_id, 'sequence_no' => 2, 'point' => 1],
+        ]);
+
+        $service = app(TestFormService::class);
+        $paginated = $service->paginate('', '', '', null, 20);
+        $row = collect($paginated->items())->firstWhere('id', $testForm->test_form_id);
+        $this->assertNotNull($row);
+        $this->assertSame(0, $row['duplicate_count']);
+
+        $indexResp = $this->actingAs($admin)->get(route('admin.tests.index'));
+        $indexResp->assertOk();
+        $indexResp->assertDontSee('Trùng 1 câu');
+
+        $detailQuality = $service->analyzeTestQuality(
+            $testForm->fresh(),
+            TestForm::EXAM_TYPE_SPEAKING,
+            $testForm->questions()->with(['section', 'questionSet', 'options'])->get()
+        );
+        $this->assertCount(0, $detailQuality['duplicate_ids']);
+
+        $showResp = $this->actingAs($admin)->get(route('admin.tests.show', $testForm->test_form_id));
+        $showResp->assertOk();
     }
 }

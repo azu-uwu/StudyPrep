@@ -1,11 +1,11 @@
 @extends('layouts.admin', ['active' => 'nguoi-dung'])
 
-@section('title', 'User Management')
+@section('title', 'Quản lý người dùng')
 
 @section('top_breadcrumb')
-    <span>System</span>
+    <span>Hệ thống</span>
     <span class="crumb-arrow">></span>
-    <span style="color: var(--admin-primary); font-weight: 600;">User Management</span>
+    <span style="color: var(--admin-primary); font-weight: 600;">Quản lý người dùng</span>
 @endsection
 
 @section('content')
@@ -33,38 +33,38 @@
         </div>
     @endif
 
-    {{-- 1. Page Header & Actions --}}
-    <div class="user-page-header">
+    {{-- 1. Tiêu đề trang & Nút thao tác ngang hàng --}}
+    <div class="user-page-header" style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
         <div>
             <div class="user-title-row">
-                <h1 class="user-page-title">User Management</h1>
-                <span class="user-count-badge">{{ number_format($stats['total']) }} users</span>
+                <h1 class="user-page-title">Quản lý người dùng</h1>
+                <span class="user-count-badge">{{ number_format($stats['total']) }} người dùng</span>
             </div>
             <p class="user-page-subtitle">
-                Manage students, teachers, and system administrators. Control system roles and account access permissions.
+                Quản lý học viên, giảng viên và quản trị viên hệ thống. Kiểm soát vai trò và quyền truy cập tài khoản.
             </p>
         </div>
 
-        <div class="user-header-actions">
+        <div class="user-header-actions" style="flex-shrink: 0;">
             {{-- Export CSV --}}
-            <a href="{{ route('admin.users.export') }}" class="btn-admin-action excel" title="Export users list to CSV">
+            <a href="{{ route('admin.users.export') }}" class="btn-admin-action excel" title="Xuất danh sách người dùng ra CSV">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                     <polyline points="7 10 12 15 17 10"></polyline>
                     <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
-                <span>Export CSV</span>
+                <span>Xuất CSV</span>
             </a>
 
             {{-- Import CSV --}}
-            <button type="button" class="btn-admin-action import" onclick="openAdminModal('modal-import')" title="Import accounts from CSV">
+            <button type="button" class="btn-admin-action import" onclick="openAdminModal('modal-import')" title="Nhập tài khoản từ file CSV">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                     <polyline points="14 2 14 8 20 8"></polyline>
                     <line x1="12" y1="18" x2="12" y2="12"></line>
                     <line x1="9" y1="15" x2="15" y2="15"></line>
                 </svg>
-                <span>Import CSV</span>
+                <span>Nhập CSV</span>
             </button>
 
             {{-- Add New User --}}
@@ -75,17 +75,17 @@
                     <line x1="20" y1="8" x2="20" y2="14"></line>
                     <line x1="23" y1="11" x2="17" y2="11"></line>
                 </svg>
-                <span>Add User</span>
+                <span>Thêm người dùng</span>
             </button>
         </div>
     </div>
 
-    {{-- 2. KPI Stat Cards --}}
+    {{-- 2. Thẻ thống kê KPI --}}
     <div class="user-kpi-grid">
-        {{-- Card 1: Total Users --}}
+        {{-- Card 1: Tổng số người dùng --}}
         <div class="user-kpi-card">
             <div class="user-kpi-header">
-                <p class="user-kpi-label">TOTAL USERS</p>
+                <p class="user-kpi-label">TỔNG SỐ NGƯỜI DÙNG</p>
                 <div class="user-kpi-icon icon-purple">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -98,16 +98,16 @@
             <div class="user-kpi-value">{{ number_format($stats['total']) }}</div>
             <div class="user-kpi-footer">
                 <span class="kpi-trend-pill trend-purple">
-                    {{ number_format($stats['active']) }} active
+                    {{ number_format($stats['active']) }} hoạt động
                 </span>
-                <span>registered accounts</span>
+                <span>tài khoản đã đăng ký</span>
             </div>
         </div>
 
-        {{-- Card 2: Teachers & Staff --}}
+        {{-- Card 2: Giảng viên & Nhân sự --}}
         <div class="user-kpi-card">
             <div class="user-kpi-header">
-                <p class="user-kpi-label">TEACHERS & STAFF</p>
+                <p class="user-kpi-label">GIẢNG VIÊN &amp; NHÂN SỰ</p>
                 <div class="user-kpi-icon icon-purple">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
@@ -120,14 +120,14 @@
             </div>
             <div class="user-kpi-value">{{ number_format($stats['teachers']) }}</div>
             <div class="user-kpi-footer">
-                <span>Teaching staff & test reviewers</span>
+                <span>Đội ngũ giảng viên &amp; kiểm duyệt đề</span>
             </div>
         </div>
 
-        {{-- Card 3: Locked / Suspended --}}
+        {{-- Card 3: Tài khoản bị khóa --}}
         <div class="user-kpi-card">
             <div class="user-kpi-header">
-                <p class="user-kpi-label">LOCKED / SUSPENDED</p>
+                <p class="user-kpi-label">TÀI KHOẢN BỊ KHÓA</p>
                 <div class="user-kpi-icon icon-red">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
@@ -137,12 +137,12 @@
             </div>
             <div class="user-kpi-value" style="color: #dc2626;">{{ number_format($stats['locked']) }}</div>
             <div class="user-kpi-footer">
-                <span>Access restricted or locked</span>
+                <span>Đang bị hạn chế hoặc tạm khóa</span>
             </div>
         </div>
     </div>
 
-    {{-- 3. Search & Filter Bar --}}
+    {{-- 3. Thanh tìm kiếm & Bộ lọc --}}
     <form method="GET" action="{{ route('admin.users.index') }}" class="user-filter-bar">
         {{-- Search input --}}
         <div class="user-search-wrap">
@@ -153,17 +153,17 @@
             <input type="text"
                    name="search"
                    value="{{ $filters['search'] }}"
-                   placeholder="Search by name, email, username or ID..."
+                   placeholder="Tìm kiếm theo tên, email, username hoặc ID..."
                    class="user-search-input">
         </div>
 
         {{-- Role filter --}}
         <div class="user-filter-select-wrap">
             <select name="role" class="user-filter-select" onchange="this.form.submit()">
-                <option value="all" {{ $filters['role'] === 'all' ? 'selected' : '' }}>All Roles</option>
-                <option value="student" {{ $filters['role'] === 'student' ? 'selected' : '' }}>Student</option>
-                <option value="teacher" {{ $filters['role'] === 'teacher' ? 'selected' : '' }}>Teacher</option>
-                <option value="admin" {{ $filters['role'] === 'admin' ? 'selected' : '' }}>Admin</option>
+                <option value="all" {{ $filters['role'] === 'all' ? 'selected' : '' }}>Tất cả vai trò</option>
+                <option value="student" {{ $filters['role'] === 'student' ? 'selected' : '' }}>Học viên</option>
+                <option value="teacher" {{ $filters['role'] === 'teacher' ? 'selected' : '' }}>Giảng viên</option>
+                <option value="admin" {{ $filters['role'] === 'admin' ? 'selected' : '' }}>Quản trị viên</option>
             </select>
             <svg class="user-select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="6 9 12 15 18 9"></polyline>
@@ -173,10 +173,10 @@
         {{-- Status filter --}}
         <div class="user-filter-select-wrap">
             <select name="status" class="user-filter-select" onchange="this.form.submit()">
-                <option value="ALL" {{ $filters['status'] === 'ALL' ? 'selected' : '' }}>All Statuses</option>
-                <option value="ACTIVE" {{ $filters['status'] === 'ACTIVE' ? 'selected' : '' }}>• Active</option>
-                <option value="PENDING" {{ $filters['status'] === 'PENDING' ? 'selected' : '' }}>• Pending</option>
-                <option value="LOCKED" {{ $filters['status'] === 'LOCKED' ? 'selected' : '' }}>• Locked</option>
+                <option value="ALL" {{ $filters['status'] === 'ALL' ? 'selected' : '' }}>Tất cả trạng thái</option>
+                <option value="ACTIVE" {{ $filters['status'] === 'ACTIVE' ? 'selected' : '' }}>• Hoạt động</option>
+                <option value="PENDING" {{ $filters['status'] === 'PENDING' ? 'selected' : '' }}>• Chờ duyệt</option>
+                <option value="LOCKED" {{ $filters['status'] === 'LOCKED' ? 'selected' : '' }}>• Đã khóa</option>
             </select>
             <svg class="user-select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="6 9 12 15 18 9"></polyline>
@@ -186,10 +186,10 @@
         {{-- Time filter --}}
         <div class="user-filter-select-wrap">
             <select name="time" class="user-filter-select" onchange="this.form.submit()" style="padding-left: 36px;">
-                <option value="all" {{ $filters['time'] === 'all' ? 'selected' : '' }}>All Time</option>
-                <option value="7" {{ $filters['time'] === '7' ? 'selected' : '' }}>Last 7 days</option>
-                <option value="30" {{ $filters['time'] === '30' ? 'selected' : '' }}>Last 30 days</option>
-                <option value="90" {{ $filters['time'] === '90' ? 'selected' : '' }}>Last 90 days</option>
+                <option value="all" {{ $filters['time'] === 'all' ? 'selected' : '' }}>Tất cả thời gian</option>
+                <option value="7" {{ $filters['time'] === '7' ? 'selected' : '' }}>7 ngày qua</option>
+                <option value="30" {{ $filters['time'] === '30' ? 'selected' : '' }}>30 ngày qua</option>
+                <option value="90" {{ $filters['time'] === '90' ? 'selected' : '' }}>90 ngày qua</option>
             </select>
             <svg style="position: absolute; left: 12px; width: 16px; height: 16px; color: #94a3b8; pointer-events: none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
@@ -203,7 +203,7 @@
         </div>
 
         {{-- Reset filter button --}}
-        <a href="{{ route('admin.users.index') }}" class="user-refresh-btn" title="Reset filters">
+        <a href="{{ route('admin.users.index') }}" class="user-refresh-btn" title="Đặt lại bộ lọc">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="23 4 23 10 17 10"></polyline>
                 <polyline points="1 20 1 14 7 14"></polyline>
@@ -212,35 +212,35 @@
         </a>
     </form>
 
-    {{-- 4. Bulk Action Selection Bar (shown when checkboxes are checked) --}}
+    {{-- 4. Thanh thao tác hàng loạt --}}
     <div id="user-selection-bar" class="qbank-selection-bar" style="display: none;">
         <div class="qbank-sel-left">
             <span class="qbank-sel-circle" id="selected-badge-count">0</span>
-            <span>user(s) selected</span>
+            <span>người dùng đã chọn</span>
             <span style="color: #cbd5e1;">|</span>
-            <button type="button" class="qbank-sel-link" onclick="clearAllSelections()" style="background: none; border: none; padding: 0;">Clear selection</button>
+            <button type="button" class="qbank-sel-link" onclick="clearAllSelections()" style="background: none; border: none; padding: 0;">Bỏ chọn</button>
         </div>
         <div class="qbank-sel-actions" style="display: flex; align-items: center; gap: 8px;">
-            <button type="button" class="btn-admin-action" onclick="submitBulkAction('lock')" title="Lock selected users">
+            <button type="button" class="btn-admin-action" onclick="submitBulkAction('lock')" title="Khóa các tài khoản đã chọn">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                     <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                 </svg>
-                <span>Lock Selected</span>
+                <span>Khóa đã chọn</span>
             </button>
-            <button type="button" class="btn-admin-action" onclick="submitBulkAction('unlock')" title="Unlock selected users">
+            <button type="button" class="btn-admin-action" onclick="submitBulkAction('unlock')" title="Mở khóa các tài khoản đã chọn">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                     <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
                 </svg>
-                <span>Unlock Selected</span>
+                <span>Mở khóa đã chọn</span>
             </button>
-            <button type="button" class="btn-admin-action danger" onclick="submitBulkAction('delete')" title="Delete selected users">
+            <button type="button" class="btn-admin-action danger" onclick="submitBulkAction('delete')" title="Xóa các tài khoản đã chọn">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="3 6 5 6 21 6"></polyline>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                 </svg>
-                <span>Delete Selected</span>
+                <span>Xóa đã chọn</span>
             </button>
         </div>
     </div>
@@ -252,21 +252,21 @@
         <div id="bulk-action-ids-container"></div>
     </form>
 
-    {{-- 5. Users Data Table --}}
+    {{-- 5. Bảng dữ liệu người dùng --}}
     <div class="user-table-card">
         <div class="user-table-scroll">
             <table class="user-data-table">
                 <thead>
                     <tr>
                         <th style="width: 44px; text-align: center;">
-                            <input type="checkbox" id="check-all-users" class="custom-checkbox" title="Select All">
+                            <input type="checkbox" id="check-all-users" class="custom-checkbox" title="Chọn tất cả">
                         </th>
-                        <th>USER</th>
-                        <th>ROLE</th>
-                        <th>ENERGY / ATTEMPTS</th>
-                        <th>STATUS</th>
-                        <th>JOINED</th>
-                        <th class="admin-actions-heading">ACTIONS</th>
+                        <th>NGƯỜI DÙNG</th>
+                        <th>VAI TRÒ</th>
+                        <th>NĂNG LƯỢNG / LƯỢT THI</th>
+                        <th>TRẠNG THÁI</th>
+                        <th>NGÀY THAM GIA</th>
+                        <th class="admin-actions-heading">THAO TÁC</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -413,9 +413,9 @@
                                         <circle cx="11" cy="11" r="8"></circle>
                                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                     </svg>
-                                    <p style="margin: 0; font-weight: 600; font-size: 15px;">No matching users found</p>
-                                    <p style="margin: 0; font-size: 13px; color: #94a3b8;">Try adjusting your search query or filter options</p>
-                                    <a href="{{ route('admin.users.index') }}" class="btn-admin-action" style="margin-top: 10px;">Clear Filters</a>
+                                    <p style="margin: 0; font-weight: 600; font-size: 15px;">Không tìm thấy người dùng phù hợp</p>
+                                    <p style="margin: 0; font-size: 13px; color: #94a3b8;">Vui lòng thử điều chỉnh từ khóa tìm kiếm hoặc bộ lọc</p>
+                                    <a href="{{ route('admin.users.index') }}" class="btn-admin-action" style="margin-top: 10px;">Đặt lại bộ lọc</a>
                                 </div>
                             </td>
                         </tr>
@@ -424,15 +424,15 @@
             </table>
         </div>
 
-        {{-- 6. Table Footer & Dynamic Pagination --}}
+        {{-- 6. Chân bảng & Phân trang --}}
         <div class="user-table-footer">
             <div class="user-footer-left">
                 <span>
-                    Showing {{ $users->firstItem() ?? 0 }}–{{ $users->lastItem() ?? 0 }} of {{ number_format($users->total()) }} users
+                    Hiển thị {{ $users->firstItem() ?? 0 }}–{{ $users->lastItem() ?? 0 }} trong tổng số {{ number_format($users->total()) }} người dùng
                 </span>
 
                 <div class="user-per-page-select">
-                    <span>Rows per page:</span>
+                    <span>Dòng/trang:</span>
                     <input type="number"
                            class="per-page-input"
                            value="{{ $filters['per_page'] }}"
@@ -502,22 +502,22 @@
 <div id="modal-add-user" class="admin-modal-backdrop {{ $openAddModal ? 'open' : '' }}">
     <div class="admin-modal-box">
         <div class="admin-modal-header">
-            <h3 class="admin-modal-title">Add New User</h3>
+            <h3 class="admin-modal-title">Thêm người dùng mới</h3>
             <button type="button" class="admin-modal-close" onclick="closeAdminModal('modal-add-user')">&times;</button>
         </div>
         <form id="form-add-user" method="POST" action="{{ route('admin.users.store') }}" novalidate autocomplete="off">
             @csrf
             <input type="hidden" name="_modal" value="modal-add-user">
             <div class="admin-modal-body">
-                {{-- Full Name --}}
+                {{-- Họ và tên --}}
                 <div class="form-group-admin">
-                    <label>Full Name <span style="color: #dc2626;">*</span></label>
+                    <label>Họ và tên <span style="color: #dc2626;">*</span></label>
                     <input type="text"
                            id="add_full_name"
                            name="full_name"
                            value="{{ old('_modal') === 'modal-add-user' ? old('full_name') : '' }}"
                            class="form-control-admin {{ $errors->has('full_name') && old('_modal') === 'modal-add-user' ? 'is-invalid' : '' }}"
-                           placeholder="e.g. John Doe"
+                           placeholder="Ví dụ: Nguyễn Văn A"
                            autocomplete="off">
                     <span class="field-error-text" id="error-add_full_name">
                         @if ($errors->has('full_name') && old('_modal') === 'modal-add-user')
@@ -526,9 +526,9 @@
                     </span>
                 </div>
 
-                {{-- Email Address --}}
+                {{-- Địa chỉ Email --}}
                 <div class="form-group-admin">
-                    <label>Email Address <span style="color: #dc2626;">*</span></label>
+                    <label>Địa chỉ Email <span style="color: #dc2626;">*</span></label>
                     <input type="email"
                            id="add_email"
                            name="email"
@@ -543,15 +543,15 @@
                     </span>
                 </div>
 
-                {{-- Username --}}
+                {{-- Tên đăng nhập --}}
                 <div class="form-group-admin">
-                    <label>Username</label>
+                    <label>Tên đăng nhập (Username)</label>
                     <input type="text"
                            id="add_user_name"
                            name="user_name"
                            value="{{ old('_modal') === 'modal-add-user' ? old('user_name') : '' }}"
                            class="form-control-admin {{ $errors->has('user_name') && old('_modal') === 'modal-add-user' ? 'is-invalid' : '' }}"
-                           placeholder="Leave empty to auto-generate from email"
+                           placeholder="Để trống để tự động tạo từ email"
                            autocomplete="off">
                     <span class="field-error-text" id="error-add_user_name">
                         @if ($errors->has('user_name') && old('_modal') === 'modal-add-user')
@@ -560,14 +560,14 @@
                     </span>
                 </div>
 
-                {{-- Initial Password --}}
+                {{-- Mật khẩu khởi tạo --}}
                 <div class="form-group-admin">
-                    <label>Initial Password <span style="color: #dc2626;">*</span></label>
+                    <label>Mật khẩu khởi tạo <span style="color: #dc2626;">*</span></label>
                     <input type="password"
                            id="add_password"
                            name="password"
                            class="form-control-admin {{ $errors->has('password') && old('_modal') === 'modal-add-user' ? 'is-invalid' : '' }}"
-                           placeholder="Minimum 6 characters"
+                           placeholder="Tối thiểu 6 ký tự"
                            autocomplete="new-password">
                     <span class="field-error-text" id="error-add_password">
                         @if ($errors->has('password') && old('_modal') === 'modal-add-user')
@@ -576,53 +576,53 @@
                     </span>
                 </div>
 
-                {{-- System Role --}}
+                {{-- Vai trò hệ thống --}}
                 <div class="form-group-admin">
-                    <label>System Role <span style="color: #dc2626;">*</span></label>
+                    <label>Vai trò hệ thống <span style="color: #dc2626;">*</span></label>
                     <select id="add_role" name="role" class="form-control-admin">
-                        <option value="student" {{ old('role') === 'student' ? 'selected' : '' }}>Student</option>
-                        <option value="teacher" {{ old('role') === 'teacher' ? 'selected' : '' }}>Teacher</option>
-                        <option value="admin" {{ old('role') === 'admin' ? 'selected' : '' }}>Admin</option>
+                        <option value="student" {{ old('role') === 'student' ? 'selected' : '' }}>Học viên</option>
+                        <option value="teacher" {{ old('role') === 'teacher' ? 'selected' : '' }}>Giảng viên</option>
+                        <option value="admin" {{ old('role') === 'admin' ? 'selected' : '' }}>Quản trị viên</option>
                     </select>
                 </div>
 
-                {{-- Initial Status --}}
+                {{-- Trạng thái ban đầu --}}
                 <div class="form-group-admin">
-                    <label>Initial Status <span style="color: #dc2626;">*</span></label>
+                    <label>Trạng thái ban đầu <span style="color: #dc2626;">*</span></label>
                     <select id="add_status" name="status" class="form-control-admin">
-                        <option value="ACTIVE" {{ old('status') === 'ACTIVE' ? 'selected' : '' }}>Active</option>
-                        <option value="PENDING" {{ old('status') === 'PENDING' ? 'selected' : '' }}>Pending (Email unverified)</option>
-                        <option value="LOCKED" {{ old('status') === 'LOCKED' ? 'selected' : '' }}>Locked</option>
+                        <option value="ACTIVE" {{ old('status') === 'ACTIVE' ? 'selected' : '' }}>Hoạt động</option>
+                        <option value="PENDING" {{ old('status') === 'PENDING' ? 'selected' : '' }}>Chờ duyệt (Chưa xác thực email)</option>
+                        <option value="LOCKED" {{ old('status') === 'LOCKED' ? 'selected' : '' }}>Đã khóa</option>
                     </select>
                 </div>
 
-                {{-- Initial Energy Points --}}
+                {{-- Điểm năng lượng ban đầu --}}
                 <div class="form-group-admin">
-                    <label>Initial Energy Points</label>
+                    <label>Điểm năng lượng ban đầu</label>
                     <input type="number"
                            id="add_energy"
                            name="energy"
                            value="{{ old('energy') }}"
                            class="form-control-admin"
-                           placeholder="Default: 5 (999 for Admin)" min="0" max="99999">
+                           placeholder="Mặc định: 5 (999 cho Quản trị viên)" min="0" max="99999">
                 </div>
             </div>
             <div class="admin-modal-footer">
-                <button type="button" class="btn-admin-action" onclick="closeAdminModal('modal-add-user')">Cancel</button>
-                <button type="submit" class="btn-admin-primary">Create User</button>
+                <button type="button" class="btn-admin-action" onclick="closeAdminModal('modal-add-user')">Hủy</button>
+                <button type="submit" class="btn-admin-primary">Tạo người dùng</button>
             </div>
         </form>
     </div>
 </div>
 
-{{-- MODAL 2: EDIT USER --}}
+{{-- MODAL 2: CHỈNH SỬA NGƯỜI DÙNG --}}
 @php
     $openEditModal = $errors->any() && old('_modal') === 'modal-edit-user';
 @endphp
 <div id="modal-edit-user" class="admin-modal-backdrop {{ $openEditModal ? 'open' : '' }}">
     <div class="admin-modal-box">
         <div class="admin-modal-header">
-            <h3 class="admin-modal-title">Edit User</h3>
+            <h3 class="admin-modal-title">Chỉnh sửa người dùng</h3>
             <button type="button" class="admin-modal-close" onclick="closeAdminModal('modal-edit-user')">&times;</button>
         </div>
         <form id="form-edit-user" method="POST" action="{{ old('_edit_action', '') }}" novalidate>
@@ -631,9 +631,9 @@
             <input type="hidden" name="_modal" value="modal-edit-user">
             <input type="hidden" id="edit_action_holder" name="_edit_action" value="{{ old('_edit_action', '') }}">
             <div class="admin-modal-body">
-                {{-- Full Name --}}
+                {{-- Họ và tên --}}
                 <div class="form-group-admin">
-                    <label>Full Name <span style="color: #dc2626;">*</span></label>
+                    <label>Họ và tên <span style="color: #dc2626;">*</span></label>
                     <input type="text"
                            id="edit_full_name"
                            name="full_name"
@@ -646,9 +646,9 @@
                     </span>
                 </div>
 
-                {{-- Email Address --}}
+                {{-- Địa chỉ Email --}}
                 <div class="form-group-admin">
-                    <label>Email Address <span style="color: #dc2626;">*</span></label>
+                    <label>Địa chỉ Email <span style="color: #dc2626;">*</span></label>
                     <input type="email"
                            id="edit_email"
                            name="email"
@@ -661,9 +661,9 @@
                     </span>
                 </div>
 
-                {{-- Username --}}
+                {{-- Tên đăng nhập --}}
                 <div class="form-group-admin">
-                    <label>Username</label>
+                    <label>Tên đăng nhập (Username)</label>
                     <input type="text"
                            id="edit_user_name"
                            name="user_name"
@@ -676,14 +676,14 @@
                     </span>
                 </div>
 
-                {{-- Password --}}
+                {{-- Mật khẩu mới --}}
                 <div class="form-group-admin">
-                    <label>New Password (Leave blank to keep unchanged)</label>
+                    <label>Mật khẩu mới (Để trống nếu giữ nguyên)</label>
                     <input type="password"
                            id="edit_password"
                            name="password"
                            class="form-control-admin {{ $errors->has('password') && old('_modal') === 'modal-edit-user' ? 'is-invalid' : '' }}"
-                           placeholder="Enter new password if changing"
+                           placeholder="Nhập mật khẩu mới nếu muốn thay đổi"
                            autocomplete="new-password">
                     <span class="field-error-text" id="error-edit_password">
                         @if ($errors->has('password') && old('_modal') === 'modal-edit-user')
@@ -692,29 +692,29 @@
                     </span>
                 </div>
 
-                {{-- System Role --}}
+                {{-- Vai trò hệ thống --}}
                 <div class="form-group-admin">
-                    <label>System Role <span style="color: #dc2626;">*</span></label>
+                    <label>Vai trò hệ thống <span style="color: #dc2626;">*</span></label>
                     <select id="edit_role" name="role" class="form-control-admin">
-                        <option value="student">Student</option>
-                        <option value="teacher">Teacher</option>
-                        <option value="admin">Admin</option>
+                        <option value="student">Học viên</option>
+                        <option value="teacher">Giảng viên</option>
+                        <option value="admin">Quản trị viên</option>
                     </select>
                 </div>
 
-                {{-- Account Status --}}
+                {{-- Trạng thái tài khoản --}}
                 <div class="form-group-admin">
-                    <label>Account Status <span style="color: #dc2626;">*</span></label>
+                    <label>Trạng thái tài khoản <span style="color: #dc2626;">*</span></label>
                     <select id="edit_status" name="status" class="form-control-admin">
-                        <option value="ACTIVE">Active</option>
-                        <option value="PENDING">Pending</option>
-                        <option value="LOCKED">Locked</option>
+                        <option value="ACTIVE">Hoạt động</option>
+                        <option value="PENDING">Chờ duyệt</option>
+                        <option value="LOCKED">Đã khóa</option>
                     </select>
                 </div>
 
-                {{-- Energy Points --}}
+                {{-- Điểm năng lượng --}}
                 <div class="form-group-admin">
-                    <label>Energy Points</label>
+                    <label>Điểm năng lượng</label>
                     <input type="number"
                            id="edit_energy"
                            name="energy"
@@ -723,18 +723,18 @@
                 </div>
             </div>
             <div class="admin-modal-footer">
-                <button type="button" class="btn-admin-action" onclick="closeAdminModal('modal-edit-user')">Cancel</button>
-                <button type="submit" class="btn-admin-primary">Save Changes</button>
+                <button type="button" class="btn-admin-action" onclick="closeAdminModal('modal-edit-user')">Hủy</button>
+                <button type="submit" class="btn-admin-primary">Lưu thay đổi</button>
             </div>
         </form>
     </div>
 </div>
 
-{{-- MODAL 3: RESET PASSWORD --}}
+{{-- MODAL 3: ĐẶT LẠI MẬT KHẨU --}}
 <div id="modal-reset-pwd" class="admin-modal-backdrop">
     <div class="admin-modal-box">
         <div class="admin-modal-header">
-            <h3 class="admin-modal-title">Reset User Password</h3>
+            <h3 class="admin-modal-title">Đặt lại mật khẩu người dùng</h3>
             <button type="button" class="admin-modal-close" onclick="closeAdminModal('modal-reset-pwd')">&times;</button>
         </div>
         <form id="form-reset-pwd" method="POST" action="">
@@ -742,36 +742,36 @@
             @method('PATCH')
             <div class="admin-modal-body">
                 <p style="font-size: 14px; color: #475569; margin-top: 0;">
-                    Resetting password for: <strong id="reset-pwd-user-name"></strong>
+                    Đặt lại mật khẩu cho: <strong id="reset-pwd-user-name"></strong>
                 </p>
                 <div class="form-group-admin">
-                    <label>New Password</label>
+                    <label>Mật khẩu mới</label>
                     <input type="text" name="new_password" class="form-control-admin" value="StudyPrep@2026">
                     <small style="color: #64748b; font-size: 12px; margin-top: 4px; display: block;">
-                        Default suggested password is <code>StudyPrep@2026</code>. You can customize it as needed.
+                        Mật khẩu gợi ý mặc định là <code>StudyPrep@2026</code>. Bạn có thể tùy chỉnh theo ý muốn.
                     </small>
                 </div>
             </div>
             <div class="admin-modal-footer">
-                <button type="button" class="btn-admin-action" onclick="closeAdminModal('modal-reset-pwd')">Cancel</button>
-                <button type="submit" class="btn-admin-primary">Confirm Reset</button>
+                <button type="button" class="btn-admin-action" onclick="closeAdminModal('modal-reset-pwd')">Hủy</button>
+                <button type="submit" class="btn-admin-primary">Xác nhận đặt lại</button>
             </div>
         </form>
     </div>
 </div>
 
-{{-- MODAL 4: IMPORT USERS FROM CSV --}}
+{{-- MODAL 4: NHẬP NGƯỜI DÙNG TỪ CSV --}}
 <div id="modal-import" class="admin-modal-backdrop">
     <div class="admin-modal-box">
         <div class="admin-modal-header">
-            <h3 class="admin-modal-title">Import Users from CSV</h3>
+            <h3 class="admin-modal-title">Nhập người dùng từ CSV</h3>
             <button type="button" class="admin-modal-close" onclick="closeAdminModal('modal-import')">&times;</button>
         </div>
         <form method="POST" action="{{ route('admin.users.import') }}" enctype="multipart/form-data">
             @csrf
             <div class="admin-modal-body">
                 <p style="font-size: 13.5px; color: #475569; margin-top: 0;">
-                    Upload a <code>.CSV</code> file with the following columns:
+                    Tải lên tệp <code>.CSV</code> gồm các cột:
                     <strong>Full Name, Email, Role (student / teacher / admin), Status (ACTIVE / PENDING / LOCKED), Password</strong>.
                 </p>
                 <div style="margin-bottom: 16px;">
@@ -781,20 +781,20 @@
                             <polyline points="7 10 12 15 17 10"></polyline>
                             <line x1="12" y1="15" x2="12" y2="3"></line>
                         </svg>
-                        <span>Download Sample CSV Template</span>
+                        <span>Tải file CSV mẫu</span>
                     </a>
                 </div>
                 <div class="form-group-admin">
-                    <label>Select CSV File</label>
+                    <label>Chọn tệp CSV</label>
                     <input type="file" name="csv_file" accept=".csv,.txt" class="form-control-admin" required>
                 </div>
                 <div style="background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 10px; padding: 12px; font-size: 12px; color: #64748b;">
-                    Example row: <code>John Doe, john.doe@example.com, student, ACTIVE, StudyPrep@123</code>
+                    Dòng mẫu: <code>Nguyen Van A, nguyenvana@example.com, student, ACTIVE, StudyPrep@123</code>
                 </div>
             </div>
             <div class="admin-modal-footer">
-                <button type="button" class="btn-admin-action" onclick="closeAdminModal('modal-import')">Cancel</button>
-                <button type="submit" class="btn-admin-primary">Upload & Import</button>
+                <button type="button" class="btn-admin-action" onclick="closeAdminModal('modal-import')">Hủy</button>
+                <button type="submit" class="btn-admin-primary">Tải lên &amp; Nhập</button>
             </div>
         </form>
     </div>
@@ -867,7 +867,7 @@
         clearFieldError('add_password');
 
         if (!fullNameInput.value.trim()) {
-            showFieldError('add_full_name', 'Please enter the user full name.');
+            showFieldError('add_full_name', 'Vui lòng nhập họ và tên người dùng.');
             if (!hasError) fullNameInput.focus();
             hasError = true;
         }
@@ -875,22 +875,22 @@
         var emailVal = emailInput.value.trim();
         var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailVal) {
-            showFieldError('add_email', 'Please enter an email address.');
+            showFieldError('add_email', 'Vui lòng nhập địa chỉ email.');
             if (!hasError) emailInput.focus();
             hasError = true;
         } else if (!emailRegex.test(emailVal)) {
-            showFieldError('add_email', 'The email address format is invalid.');
+            showFieldError('add_email', 'Định dạng địa chỉ email không hợp lệ.');
             if (!hasError) emailInput.focus();
             hasError = true;
         }
 
         var passVal = passwordInput.value;
         if (!passVal) {
-            showFieldError('add_password', 'Please enter an initial password.');
+            showFieldError('add_password', 'Vui lòng nhập mật khẩu khởi tạo.');
             if (!hasError) passwordInput.focus();
             hasError = true;
         } else if (passVal.length < 6) {
-            showFieldError('add_password', 'The password must be at least 6 characters.');
+            showFieldError('add_password', 'Mật khẩu phải có ít nhất 6 ký tự.');
             if (!hasError) passwordInput.focus();
             hasError = true;
         }
@@ -912,7 +912,7 @@
         clearFieldError('edit_password');
 
         if (!fullNameInput.value.trim()) {
-            showFieldError('edit_full_name', 'Please enter the user full name.');
+            showFieldError('edit_full_name', 'Vui lòng nhập họ và tên người dùng.');
             if (!hasError) fullNameInput.focus();
             hasError = true;
         }
@@ -920,17 +920,17 @@
         var emailVal = emailInput.value.trim();
         var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailVal) {
-            showFieldError('edit_email', 'Please enter an email address.');
+            showFieldError('edit_email', 'Vui lòng nhập địa chỉ email.');
             if (!hasError) emailInput.focus();
             hasError = true;
         } else if (!emailRegex.test(emailVal)) {
-            showFieldError('edit_email', 'The email address format is invalid.');
+            showFieldError('edit_email', 'Định dạng địa chỉ email không hợp lệ.');
             if (!hasError) emailInput.focus();
             hasError = true;
         }
 
         if (passwordInput.value && passwordInput.value.length < 6) {
-            showFieldError('edit_password', 'The new password must be at least 6 characters.');
+            showFieldError('edit_password', 'Mật khẩu mới phải có ít nhất 6 ký tự.');
             if (!hasError) passwordInput.focus();
             hasError = true;
         }
@@ -1028,20 +1028,20 @@
     function submitBulkAction(actionType) {
         var checkedBoxes = document.querySelectorAll('.user-row-checkbox:checked');
         if (checkedBoxes.length === 0) {
-            alert('Please select at least one user.');
+            alert('Vui lòng chọn ít nhất một người dùng.');
             return;
         }
 
         var actionLabels = {
-            'delete': 'PERMANENTLY DELETE',
-            'lock': 'LOCK',
-            'unlock': 'UNLOCK'
+            'delete': 'XÓA VĨNH VIỄN',
+            'lock': 'KHÓA',
+            'unlock': 'MỞ KHÓA'
         };
 
         var label = actionLabels[actionType] || actionType.toUpperCase();
-        var confirmMsg = 'Are you sure you want to ' + label + ' ' + checkedBoxes.length + ' selected user(s)?';
+        var confirmMsg = 'Bạn có chắc chắn muốn ' + label + ' ' + checkedBoxes.length + ' người dùng đã chọn?';
         if (actionType === 'delete') {
-            confirmMsg += ' This action cannot be undone!';
+            confirmMsg += ' Hành động này không thể hoàn tác!';
         }
 
         if (!confirm(confirmMsg)) {

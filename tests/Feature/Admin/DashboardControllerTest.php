@@ -205,4 +205,84 @@ class DashboardControllerTest extends TestCase
         $response->assertSee('Không có phản ánh câu hỏi cần duyệt.');
         $response->assertDontSee('Q-4402');
     }
+
+    public function test_dashboard_kpi_matches_exact_db_counts_across_four_skills_reported_tests_and_today_attempts(): void
+    {
+        $admin = User::factory()->admin()->create(['status' => 'ACTIVE']);
+        $student1 = User::factory()->create(['status' => 'ACTIVE']);
+        User::factory()->create(['status' => 'ACTIVE']);
+        User::factory()->locked()->create();
+
+        DB::table('test_blueprint')->insert([
+            ['blueprint_id' => 1, 'name' => 'TOEIC LR', 'exam_type' => 'TOEIC_LR', 'status' => 'ACTIVE'],
+            ['blueprint_id' => 2, 'name' => 'TOEIC SW', 'exam_type' => 'TOEIC_SW', 'status' => 'ACTIVE'],
+        ]);
+
+        $form1 = TestForm::query()->create(['blueprint_id' => 1, 'title' => 'ETS Live Form 1']);
+        $form2 = TestForm::query()->create(['blueprint_id' => 2, 'title' => 'ETS Live Form 2']);
+
+        // 2 lượt nộp hôm nay, 1 lượt chưa nộp (không tính vào submitted hôm nay)
+        TestAttempt::query()->create([
+            'user_id' => $student1->user_id,
+            'test_form_id' => $form1->test_form_id,
+            'session_type' => 'FULL',
+            'started_at' => now()->subHour(),
+            'submitted_at' => now(),
+            'status' => 'SUBMITTED',
+        ]);
+        TestAttempt::query()->create([
+            'user_id' => $student1->user_id,
+            'test_form_id' => $form2->test_form_id,
+            'session_type' => 'FULL',
+            'started_at' => now()->subMinutes(40),
+            'submitted_at' => now(),
+            'status' => 'SUBMITTED',
+        ]);
+        TestAttempt::query()->create([
+            'user_id' => $student1->user_id,
+            'test_form_id' => $form1->test_form_id,
+            'session_type' => 'FULL',
+            'started_at' => now(),
+            'submitted_at' => null,
+            'status' => 'IN_PROGRESS',
+        ]);
+
+        Skill::query()->insert([
+            ['skill_id' => 1, 'code' => 'LC', 'skill_name' => 'Listening'],
+            ['skill_id' => 2, 'code' => 'RC', 'skill_name' => 'Reading'],
+            ['skill_id' => 3, 'code' => 'SPK', 'skill_name' => 'Speaking'],
+            ['skill_id' => 4, 'code' => 'WRT', 'skill_name' => 'Writing'],
+        ]);
+
+        $secL = ExamSection::query()->create(['skill_id' => 1, 'code' => 'PART1', 'name' => 'Photographs', 'sequence_no' => 1]);
+        $secR = ExamSection::query()->create(['skill_id' => 2, 'code' => 'PART5', 'name' => 'Incomplete Sentences', 'sequence_no' => 5]);
+        $secS = ExamSection::query()->create(['skill_id' => 3, 'code' => 'SPK_T2', 'name' => 'Describe a Picture', 'sequence_no' => 9]);
+        $secW = ExamSection::query()->create(['skill_id' => 4, 'code' => 'WRITING_T3', 'name' => 'Opinion Essay', 'sequence_no' => 15]);
+        $qType = QuestionType::query()->create(['name' => 'Standard', 'response_mode' => 'SINGLE_CHOICE']);
+
+        // L: 2 câu, R: 3 câu (trong đó 2 REPORTED), S: 1 câu, W: 2 câu => Tổng 8 câu
+        foreach ([1, 2] as $i) {
+            Question::query()->create(['section_id' => $secL->section_id, 'question_type_id' => $qType->question_type_id, 'content' => "LC Q{$i}", 'difficulty' => 'EASY', 'status' => 'ACTIVE', 'created_at' => now()]);
+        }
+        Question::query()->create(['section_id' => $secR->section_id, 'question_type_id' => $qType->question_type_id, 'content' => 'RC Active', 'difficulty' => 'MEDIUM', 'status' => 'ACTIVE', 'created_at' => now()]);
+        Question::query()->create(['section_id' => $secR->section_id, 'question_type_id' => $qType->question_type_id, 'content' => 'RC Reported 1', 'difficulty' => 'HARD', 'status' => 'REPORTED', 'created_at' => now()]);
+        Question::query()->create(['section_id' => $secR->section_id, 'question_type_id' => $qType->question_type_id, 'content' => 'RC Reported 2', 'difficulty' => 'HARD', 'status' => 'REPORTED', 'created_at' => now()]);
+        Question::query()->create(['section_id' => $secS->section_id, 'question_type_id' => $qType->question_type_id, 'content' => 'SPK Active', 'difficulty' => 'MEDIUM', 'status' => 'ACTIVE', 'created_at' => now()]);
+        foreach ([1, 2] as $i) {
+            Question::query()->create(['section_id' => $secW->section_id, 'question_type_id' => $qType->question_type_id, 'content' => "WRT Q{$i}", 'difficulty' => 'MEDIUM', 'status' => 'ACTIVE', 'created_at' => now()]);
+        }
+
+        $response = $this->actingAs($admin)->get(route('admin.dashboard'));
+
+        $response->assertOk();
+        $response->assertViewHas('userStats', fn (array $s): bool => $s['active'] === 3 && $s['locked'] === 1 && $s['total'] === 4);
+        $response->assertViewHas('testStats', fn (array $s): bool => $s['total'] === 2);
+        $response->assertViewHas('attemptStats', fn (array $s): bool => $s['today'] === 2);
+        $response->assertViewHas('questionStats', fn (array $s): bool => $s['total'] === 8
+            && $s['reported'] === 2
+            && $s['listening'] === 2
+            && $s['reading'] === 3
+            && $s['speaking'] === 1
+            && $s['writing'] === 2);
+    }
 }

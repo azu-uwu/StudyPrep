@@ -840,11 +840,11 @@ class VocabularyComprehensiveTest extends TestCase
             ]);
         }
 
-        // 1. Verify counts in admin index view
+        // 1. Verify stats in admin index payload (table column HỌC VIÊN was removed to widen context columns)
         $response = $this->actingAs($this->admin)->get(route('admin.vocabularies.index', ['search' => $vocab->word]));
         $response->assertOk();
-        $response->assertSee("{$studentCount} học viên");
-        $response->assertSee("{$masteredCount} đã ghi nhớ");
+        $response->assertViewHas('totalLearnersInteractions', $studentCount);
+        $response->assertViewHas('totalMasteredCount', $masteredCount);
 
         // 2. Perform Single or Bulk Deletion and assert safe cascade cleanup
         if ($performDelete) {
@@ -1169,7 +1169,7 @@ class VocabularyComprehensiveTest extends TestCase
                     'Quản lý Từ vựng & Flashcards',
                     'vcb-kpi-grid',
                     'vcbMainTable',
-                    'HỌC VIÊN',
+                    'BỘ THẺ FLASHCARD',
                     'field-error-text',
                     'modal-new-vocab',
                     'modal-edit-vocab',

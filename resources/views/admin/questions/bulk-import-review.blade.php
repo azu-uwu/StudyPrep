@@ -18,6 +18,20 @@
     $summary = $staging['summary'] ?? ['total_questions' => 0, 'valid_questions' => 0, 'error_questions' => 0, 'image_count' => 0, 'transcript_count' => 0];
     $partCodesInBatch = collect($sets)->pluck('part')->unique()->values()->all();
     $hasTtsTranscripts = (int) ($summary['transcript_count'] ?? 0) > 0;
+    $initialImageUrls = [];
+    foreach ($sets as $s) {
+        $sMedia = trim((string) ($s['media_url'] ?? ''));
+        if ($sMedia !== '') {
+            $initialImageUrls[$sMedia] = true;
+        }
+        foreach ($s['questions'] ?? [] as $q) {
+            $qMedia = trim((string) ($q['media_url'] ?? ''));
+            if ($qMedia !== '') {
+                $initialImageUrls[$qMedia] = true;
+            }
+        }
+    }
+    $initialImageCount = count($initialImageUrls);
 @endphp
 
 <style>
@@ -27,7 +41,7 @@
     .srev-stat-error { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
     .srev-filter-btn { padding: 5px 11px; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
     .srev-filter-btn.active { background: #4338ca; color: #ffffff; border-color: #4338ca; }
-    .srev-set-card { background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 14px; overflow: hidden; margin-bottom: 16px; box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03); }
+    .srev-set-card { background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 14px; overflow: hidden; margin-bottom: 16px; box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03); content-visibility: auto; contain-intrinsic-size: 280px; }
     .srev-set-card.has-error { border-color: #ef4444; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.10); }
     .srev-set-head { padding: 10px 16px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
     .srev-split-grid { display: grid; grid-template-columns: 40% 60%; }
@@ -45,8 +59,9 @@
 </style>
 
 <div class="qbank-page">
-    <form method="POST" action="{{ route('admin.questions.import.commit', ['batchId' => $batchId]) }}" id="stagingCommitForm">
+    <form method="POST" action="{{ route('admin.questions.import.commit', ['batchId' => $batchId]) }}" id="stagingCommitForm" enctype="multipart/form-data">
         @csrf
+        <input type="hidden" name="payload_json" id="commit-payload-json" value="">
 
         {{-- 1. STICKY HEADER GỌN 1 HÀNG ĐIỀU KHIỂN CHÍNH --}}
         <div class="srev-sticky-bar">
@@ -55,9 +70,11 @@
                     <span style="font-size: 14.5px; font-weight: 800; color: #0f172a;" title="Batch #{{ $batchId }}">
                         {{ $staging['file_name'] }}
                     </span>
-                    <span class="srev-stat-pill">Tổng: {{ $summary['total_questions'] }}</span>
-                    <span class="srev-stat-pill srev-stat-valid">Hợp lệ: {{ $summary['valid_questions'] }}</span>
-                    <span class="srev-stat-pill srev-stat-error">Lỗi: {{ $summary['error_questions'] }}</span>
+                    <span class="srev-stat-pill" id="srev-stat-total">Tổng: {{ $summary['total_questions'] }}</span>
+                    <span class="srev-stat-pill srev-stat-valid" id="srev-stat-valid">Hợp lệ: {{ $summary['valid_questions'] }}</span>
+                    <span class="srev-stat-pill srev-stat-error" id="srev-stat-error">Lỗi: {{ $summary['error_questions'] }}</span>
+                    <span class="srev-stat-pill" id="srev-stat-images" style="background: #f0f9ff; color: #0369a1; border-color: #bae6fd;">Có ảnh: {{ $initialImageCount }}</span>
+                    <span class="srev-stat-pill" id="srev-stat-transcripts" style="background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe;">Transcript TTS: {{ $summary['transcript_count'] }}</span>
                 </div>
 
                 <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px;">
@@ -113,19 +130,64 @@
         </div>
 
         {{-- 2. KHUNG ĐỐI CHIẾU 2 CỘT (40% TRÁI / 60% PHẢI) --}}
+        @if (isset($errors) && $errors->any())
+            <div style="background: #fef2f2; border: 1.5px solid #fecaca; color: #b91c1c; padding: 12px 16px; border-radius: 12px; margin-bottom: 14px; font-size: 13px;">
+                <strong>Không thể lưu vào Ngân hàng đề:</strong>
+                <ul style="margin: 6px 0 0 18px; padding: 0;">
+                    @foreach ($errors->all() as $errMsg)
+                        <li>{{ $errMsg }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+        @if (! empty($staging['validation_errors']))
+            <div style="background: #fffbeb; border: 1.5px solid #fcd34d; color: #92400e; padding: 12px 16px; border-radius: 12px; margin-bottom: 14px; font-size: 13px;">
+                <strong>Cảnh báo kiểm tra cấu trúc đề TOEIC:</strong>
+                <ul style="margin: 6px 0 0 18px; padding: 0;">
+                    @foreach ($staging['validation_errors'] as $vErr)
+                        <li>{{ $vErr }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+        @php
+            $partDirections = $staging['part_directions'] ?? [];
+            $renderedDirectionsParts = [];
+        @endphp
         @foreach ($sets as $sIdx => $set)
             @php
                 $setHasError = ! empty($set['errors']);
                 $partCode = $set['part'] ?? 'PART5';
                 $showStimulus = in_array($partCode, ['PART3', 'PART4', 'PART6', 'PART7'], true) || ! empty($set['stimulus']);
                 $showTranscript = in_array($partCode, ['PART1', 'PART2', 'PART3', 'PART4', 'SPK_T3', 'SPK_T4'], true);
+                $showPartDirectionsBanner = ! in_array($partCode, $renderedDirectionsParts, true)
+                    && (in_array($partCode, ['PART1', 'PART2', 'PART3', 'PART4'], true) || ! empty($partDirections[$partCode]));
+                if ($showPartDirectionsBanner) {
+                    $renderedDirectionsParts[] = $partCode;
+                }
             @endphp
-            <div class="srev-set-card {{ $setHasError ? 'has-error' : '' }}" data-part="{{ $partCode }}" data-has-error="{{ $setHasError ? '1' : '0' }}" id="srev-set-{{ $sIdx }}">
+            @if ($showPartDirectionsBanner)
+                <div style="background: #f0f9ff; border: 1.5px solid #bae6fd; border-radius: 12px; padding: 12px 16px; margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
+                        <strong style="font-size: 13px; color: #0369a1;">Directions đầu {{ $partCode }} (Lời dẫn mở đầu Part — không tính vào số câu hỏi)</strong>
+                        @if (in_array($partCode, ['PART1', 'PART2', 'PART3', 'PART4'], true))
+                            <button type="button" class="btn-admin-action" style="padding: 3px 10px; font-size: 11.5px; color: #0369a1; border-color: #7dd3fc; background: #fff; font-weight: 700;" onclick="previewPartDirectionsTts('{{ $partCode }}')">
+                                🔊 Nghe thử Directions TTS
+                            </button>
+                        @endif
+                    </div>
+                    <textarea name="part_directions[{{ $partCode }}]" id="part-directions-{{ $partCode }}" rows="2" class="srev-input" style="background: #fff; font-size: 12.5px;">{{ $partDirections[$partCode] ?? '' }}</textarea>
+                    <div id="part-directions-audio-wrap-{{ $partCode }}" style="margin-top: 6px; display: none;">
+                        <audio id="part-directions-audio-{{ $partCode }}" controls style="height: 30px; width: 100%;"></audio>
+                    </div>
+                </div>
+            @endif
+            <div class="srev-set-card review-set-card {{ $setHasError ? 'has-error' : '' }}" data-part="{{ $partCode }}" data-has-error="{{ $setHasError ? '1' : '0' }}" id="srev-set-{{ $sIdx }}">
                 <div class="srev-set-head">
                     <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                         <span class="q-part-pill">{{ $partCode }}</span>
                         <strong style="font-size: 13.5px; color: #0f172a;">Cụm #{{ $sIdx + 1 }}: {{ $set['title'] ?? $partCode }}</strong>
-                        <span style="font-size: 12px; color: #64748b;">({{ count($set['questions'] ?? []) }} câu)</span>
+                        <span class="srev-set-q-count" style="font-size: 12px; color: #64748b;">({{ count($set['questions'] ?? []) }} câu)</span>
                         @foreach ($set['errors'] ?? [] as $errText)
                             <span class="srev-err-badge">⚠ {{ $errText }}</span>
                         @endforeach
@@ -141,6 +203,16 @@
                         </button>
                         <button type="button" class="srev-filter-btn active" style="padding: 3px 9px; font-size: 11.5px;" onclick="toggleSetViewMode({{ $sIdx }}, 'form', this)">Form</button>
                         <button type="button" class="srev-filter-btn" style="padding: 3px 9px; font-size: 11.5px;" onclick="toggleSetViewMode({{ $sIdx }}, 'xml', this)">Xem mã XML</button>
+                        <button type="button" class="srev-filter-btn" style="padding: 3px 9px; font-size: 11.5px; color: #b91c1c; border-color: #fecaca; background: #fef2f2; display: inline-flex; align-items: center; gap: 4px;" onclick="removeStagingSet({{ $sIdx }})" title="Xóa toàn bộ cụm câu hỏi này">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                                <path d="M10 11v6"></path>
+                                <path d="M14 11v6"></path>
+                                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+                            </svg>
+                            <span>Xóa cụm</span>
+                        </button>
                     </div>
                 </div>
 
@@ -151,7 +223,7 @@
                         @if (! empty($set['raw_images']))
                             <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
                                 @foreach ($set['raw_images'] as $rawImg)
-                                    <img src="{{ asset(ltrim($rawImg, '/')) }}" alt="Ảnh gốc Word" style="max-height: 130px; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; object-fit: contain;">
+                                    <img src="{{ asset(ltrim($rawImg, '/')) }}" loading="lazy" alt="Ảnh gốc Word" style="max-height: 130px; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; object-fit: contain;">
                                 @endforeach
                             </div>
                         @endif
@@ -164,8 +236,8 @@
                             <input type="hidden" name="sets[{{ $sIdx }}][title]" value="{{ $set['title'] ?? '' }}">
                             <input type="hidden" name="sets[{{ $sIdx }}][audio_url]" value="{{ $set['audio_url'] ?? '' }}">
 
-                            {{-- 1. Chọn Part (& Ảnh nếu có) --}}
-                            <div style="display: grid; grid-template-columns: {{ ! empty($set['media_url']) || $partCode === 'PART1' ? '1fr 1fr' : '1fr' }}; gap: 10px; margin-bottom: 10px;">
+                            {{-- 1. Chọn Part & Hình ảnh cụm (Hỗ trợ Thay ảnh / Upload mới / Kéo thả / Xóa ảnh) --}}
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; align-items: start;">
                                 <div>
                                     <label class="srev-field-label">Chọn Part</label>
                                     <select name="sets[{{ $sIdx }}][part]" class="srev-input">
@@ -177,24 +249,68 @@
                                     </select>
                                 </div>
 
-                                @if (! empty($set['media_url']) || $partCode === 'PART1')
-                                    <div>
-                                        <label class="srev-field-label">Hình ảnh cụm</label>
-                                        <div style="display: flex; align-items: center; gap: 6px;">
-                                            <input type="text"
-                                                   name="sets[{{ $sIdx }}][media_url]"
-                                                   id="set-media-{{ $sIdx }}"
-                                                   value="{{ $set['media_url'] ?? '' }}"
-                                                   class="srev-input {{ ($partCode === 'PART1' && empty($set['media_url'])) ? 'is-invalid' : '' }}"
-                                                   placeholder="Chưa có ảnh">
-                                            @if (! empty($set['media_url']))
-                                                <button type="button" class="btn-admin-action" style="padding: 5px 8px; font-size: 11.5px; color: #dc2626;" onclick="document.getElementById('set-media-{{ $sIdx }}').value = '';">Xóa</button>
-                                            @endif
+                                @php
+                                    $hasSetMedia = ! empty($set['media_url']);
+                                    $resolvedSetMediaPreview = $hasSetMedia
+                                        ? (preg_match('/^https?:\/\//i', (string) $set['media_url']) ? $set['media_url'] : asset(ltrim((string) $set['media_url'], '/')))
+                                        : '';
+                                @endphp
+                                <div>
+                                    <label class="srev-field-label">Hình ảnh cụm</label>
+                                    <input type="hidden"
+                                           name="sets[{{ $sIdx }}][media_url]"
+                                           id="set-media-{{ $sIdx }}"
+                                           value="{{ $set['media_url'] ?? '' }}">
+                                    <input type="file"
+                                           name="set_images[{{ $sIdx }}]"
+                                           id="set-image-file-{{ $sIdx }}"
+                                           class="srev-set-image-input"
+                                           accept=".jpg,.jpeg,.png,.webp,image/*"
+                                           style="display: none;"
+                                           onchange="handleStagingImageSelected({{ $sIdx }}, this)">
+
+                                    <div id="set-image-dropzone-{{ $sIdx }}"
+                                         ondragover="event.preventDefault(); this.style.borderColor='#4338ca'; this.style.background='#eef2ff';"
+                                         ondragleave="this.style.borderColor='#cbd5e1'; this.style.background='#f8fafc';"
+                                         ondrop="handleStagingImageDrop(event, {{ $sIdx }}, this)"
+                                         style="border: 1.5px dashed #cbd5e1; border-radius: 10px; padding: 8px; background: #f8fafc; transition: all 0.15s ease;">
+
+                                        <div id="set-image-preview-wrap-{{ $sIdx }}" style="display: {{ $hasSetMedia ? 'block' : 'none' }};">
+                                            <img id="set-image-preview-{{ $sIdx }}"
+                                                 src="{{ $resolvedSetMediaPreview }}"
+                                                 loading="lazy"
+                                                 data-blob-url=""
+                                                 alt="Ảnh cụm #{{ $sIdx + 1 }}"
+                                                 style="width: 100%; max-height: 256px; object-fit: contain; border-radius: 6px; background: #fff; border: 1px solid #e2e8f0; display: block; margin-bottom: 6px;">
+                                            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                                <button type="button"
+                                                        class="btn-admin-action"
+                                                        style="padding: 4px 10px; font-size: 11.5px; color: #4338ca; border-color: #c7d2fe; background: #eef2ff; font-weight: 700;"
+                                                        onclick="document.getElementById('set-image-file-{{ $sIdx }}').click()">
+                                                    Thay ảnh
+                                                </button>
+                                                <button type="button"
+                                                        class="btn-admin-action"
+                                                        style="padding: 4px 10px; font-size: 11.5px; color: #b91c1c; border-color: #fecaca; background: #fef2f2; font-weight: 700;"
+                                                        onclick="removeStagingImage({{ $sIdx }})">
+                                                    Xóa ảnh
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div id="set-image-empty-{{ $sIdx }}" style="display: {{ $hasSetMedia ? 'none' : 'flex' }}; flex-direction: column; align-items: center; justify-content: center; padding: 10px 6px; text-align: center; gap: 6px;">
+                                            <span style="font-size: 11.5px; color: {{ $partCode === 'PART1' ? '#b91c1c' : '#64748b' }}; font-weight: 600;">
+                                                {{ $partCode === 'PART1' ? 'Chưa có ảnh (Bắt buộc cho Part 1)' : 'Chưa có ảnh (kéo thả hoặc chọn file)' }}
+                                            </span>
+                                            <button type="button"
+                                                    class="btn-admin-action"
+                                                    style="padding: 5px 11px; font-size: 11.5px; color: #0369a1; border-color: #bae6fd; background: #f0f9ff; font-weight: 700;"
+                                                    onclick="document.getElementById('set-image-file-{{ $sIdx }}').click()">
+                                                + Chọn ảnh tải lên
+                                            </button>
                                         </div>
                                     </div>
-                                @else
-                                    <input type="hidden" name="sets[{{ $sIdx }}][media_url]" value="{{ $set['media_url'] ?? '' }}">
-                                @endif
+                                </div>
                             </div>
 
                             {{-- 2. Đoạn văn / Ngữ cảnh (Stimulus) - chỉ hiện với Part 3, 4, 6, 7 --}}
@@ -235,13 +351,24 @@
                                                 <span class="srev-err-badge">⚠ {{ $qErr }}</span>
                                             @endforeach
                                         </div>
-                                        <button type="button" class="btn-admin-action" style="padding: 3px 8px; font-size: 11.5px; color: #0f766e; border-color: #99f6e4; background: #f0fdfa; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;" onclick="previewStagingQuestion({{ $sIdx }}, {{ $qIdx }})" title="Xem trước câu hỏi này theo giao diện phòng thi">
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                                <circle cx="12" cy="12" r="3"></circle>
-                                            </svg>
-                                            <span>Xem trước</span>
-                                        </button>
+                                        <div style="display: inline-flex; align-items: center; gap: 4px;">
+                                            <button type="button" class="btn-admin-action" style="padding: 3px 8px; font-size: 11.5px; color: #0f766e; border-color: #99f6e4; background: #f0fdfa; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;" onclick="previewStagingQuestion({{ $sIdx }}, {{ $qIdx }})" title="Xem trước câu hỏi này theo giao diện phòng thi">
+                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                    <circle cx="12" cy="12" r="3"></circle>
+                                                </svg>
+                                                <span>Xem trước</span>
+                                            </button>
+                                            <button type="button" class="btn-admin-action" style="padding: 3px 8px; font-size: 11.5px; color: #b91c1c; border-color: #fecaca; background: #fef2f2; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;" onclick="removeStagingQuestion(this, {{ $sIdx }})" title="Xóa câu hỏi này khỏi cụm">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                                                    <path d="M10 11v6"></path>
+                                                    <path d="M14 11v6"></path>
+                                                </svg>
+                                                <span>Xóa câu</span>
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <input type="hidden" name="sets[{{ $sIdx }}][questions][{{ $qIdx }}][seq]" value="{{ $q['seq'] ?? ($qIdx + 1) }}">
@@ -258,24 +385,34 @@
                                             $letters = $partCode === 'PART2' ? ['A', 'B', 'C'] : ['A', 'B', 'C', 'D'];
                                             $opts = $q['options'] ?? [];
                                         @endphp
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px;">
+                                        <div class="srev-options-grid" data-sidx="{{ $sIdx }}" data-qidx="{{ $qIdx }}" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
                                             @foreach ($letters as $letter)
                                                 @php $isCorrect = strtoupper((string) ($q['correct'] ?? '')) === $letter; @endphp
-                                                <div style="display: flex; align-items: center; gap: 6px; padding: 4px 7px; border-radius: 7px; border: 1px solid {{ $isCorrect ? '#10b981' : '#e2e8f0' }}; background: {{ $isCorrect ? '#ecfdf5' : '#fff' }};">
+                                                <div class="srev-opt-pill" data-letter="{{ $letter }}" style="display: flex; align-items: center; gap: 6px; padding: 4px 7px; border-radius: 7px; border: 1px solid {{ $isCorrect ? '#10b981' : '#e2e8f0' }}; background: {{ $isCorrect ? '#ecfdf5' : '#fff' }};">
                                                     <input type="radio"
                                                            name="sets[{{ $sIdx }}][questions][{{ $qIdx }}][correct]"
                                                            value="{{ $letter }}"
                                                            {{ $isCorrect ? 'checked' : '' }}
-                                                           title="Đáp án đúng">
+                                                           onchange="handleCorrectOptionChange(this, {{ $sIdx }})"
+                                                           style="cursor: pointer;"
+                                                           title="Chọn {{ $letter }} làm đáp án đúng">
                                                     <strong style="font-size: 12px; color: #334155;">({{ $letter }})</strong>
                                                     <input type="text"
                                                            name="sets[{{ $sIdx }}][questions][{{ $qIdx }}][options][{{ $letter }}]"
                                                            value="{{ $opts[$letter] ?? '' }}"
                                                            class="srev-input"
                                                            style="padding: 4px 6px; font-size: 12.5px;">
+                                                    @if ($loop->last && count($letters) > 3)
+                                                        <button type="button" onclick="removeStagingOption(this, {{ $sIdx }})" title="Xóa phương án {{ $letter }}" style="border: none; background: transparent; color: #dc2626; font-weight: 700; cursor: pointer; padding: 0 3px;">&times;</button>
+                                                    @endif
                                                 </div>
                                             @endforeach
                                         </div>
+                                        @if (count($letters) < 4)
+                                            <div style="margin-bottom: 8px;">
+                                                <button type="button" class="btn-admin-action" style="padding: 2px 8px; font-size: 11px; color: #4338ca; border-color: #c7d2fe; background: #eef2ff;" onclick="addStagingOption(this, {{ $sIdx }}, {{ $qIdx }})">+ Thêm đáp án</button>
+                                            </div>
+                                        @endif
                                     @endif
 
                                     <div>
@@ -448,7 +585,11 @@
         }
 
         var meta = getStagingSkillMeta(partCode);
-        var effectiveMedia = normalizeStagingAssetUrl(selectedQ.media_url || setMedia);
+        var previewImgEl = document.getElementById('set-image-preview-' + sIdx);
+        var blobUrl = previewImgEl ? String(previewImgEl.getAttribute('data-blob-url') || '').trim() : '';
+        var effectiveMedia = blobUrl !== ''
+            ? blobUrl
+            : normalizeStagingAssetUrl(selectedQ.media_url || setMedia);
         var effectiveAudio = normalizeStagingAssetUrl(setAudio);
 
         window.openPreviewModal({
@@ -478,6 +619,35 @@
                 questions: groupQuestions
             }
         });
+    }
+
+    async function previewPartDirectionsTts(partCode) {
+        var textEl = document.getElementById('part-directions-' + partCode);
+        var wrapEl = document.getElementById('part-directions-audio-wrap-' + partCode);
+        var audioEl = document.getElementById('part-directions-audio-' + partCode);
+        if (!textEl || !textEl.value.trim()) {
+            alert('Vui lòng nhập nội dung Directions trước khi nghe thử TTS.');
+            return;
+        }
+        var partNum = parseInt(String(partCode).replace(/[^0-9]/g, ''), 10) || 1;
+        var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+        try {
+            var resp = await fetch('{{ url('/api/admin/questions/generate-tts') }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                body: JSON.stringify({ text: textEl.value.trim(), part_number: partNum })
+            });
+            var data = await resp.json();
+            if (resp.ok && data && data.audio_url) {
+                wrapEl.style.display = 'block';
+                audioEl.src = data.audio_url;
+                audioEl.play();
+            } else {
+                alert((data && data.message) ? data.message : 'Không thể sinh thử audio TTS.');
+            }
+        } catch (err) {
+            alert('Lỗi kết nối khi gọi dịch vụ TTS.');
+        }
     }
 
     async function previewStagingTts(sIdx, partCode) {
@@ -518,6 +688,355 @@
             alert('Lỗi kết nối khi gọi dịch vụ TTS.');
         }
     }
+
+    var PRODUCTIVE_PARTS_JS = ['SPK_T1', 'SPK_T2', 'SPK_T3', 'SPK_T4', 'SPK_T5', 'WRITING_T1', 'WRITING_T2', 'WRITING_T3'];
+
+    function removeStagingSet(sIdx) {
+        if (!confirm('Xóa toàn bộ cụm câu hỏi này khỏi danh sách đối chiếu?')) {
+            return;
+        }
+        var card = document.getElementById('srev-set-' + sIdx);
+        if (card) {
+            card.remove();
+            recalculateReviewStats();
+        }
+    }
+
+    function removeStagingQuestion(btn, sIdx) {
+        var qBox = btn ? btn.closest('.srev-q-box') : null;
+        if (!qBox) return;
+        var card = document.getElementById('srev-set-' + sIdx);
+        qBox.remove();
+
+        if (card) {
+            var remaining = card.querySelectorAll('.srev-q-box').length;
+            if (remaining === 0) {
+                card.remove();
+            } else {
+                var countSpan = card.querySelector('.srev-set-q-count');
+                if (countSpan) {
+                    countSpan.textContent = '(' + remaining + ' câu)';
+                }
+            }
+        }
+        recalculateReviewStats();
+    }
+
+    function recalculateReviewStats() {
+        var commitForm = document.getElementById('stagingCommitForm');
+        if (!commitForm) return;
+
+        var totalQuestions = 0;
+        var validQuestions = 0;
+        var errorQuestions = 0;
+        var uniqueMediaUrls = {};
+        var transcriptCount = 0;
+
+        commitForm.querySelectorAll('.srev-set-card').forEach(function (card) {
+            var partEl = card.querySelector('select[name$="[part]"]');
+            var partCode = partEl ? String(partEl.value || 'PART5').toUpperCase() : 'PART5';
+            var mediaEl = card.querySelector('input[name$="[media_url]"]');
+            var transEl = card.querySelector('textarea[name$="[transcript]"]');
+            var stimEl = card.querySelector('textarea[name$="[stimulus]"]');
+
+            var setMedia = mediaEl ? mediaEl.value.trim() : '';
+            var setTrans = transEl ? transEl.value.trim() : '';
+            var setStim = stimEl ? stimEl.value.trim() : '';
+
+            if (setMedia !== '') uniqueMediaUrls[setMedia] = true;
+            if (setTrans !== '') transcriptCount++;
+
+            var setHasError = false;
+            if (partCode === 'PART1' && setMedia === '') setHasError = true;
+            if (['PART1', 'PART2', 'PART3', 'PART4'].indexOf(partCode) !== -1 && setTrans === '') setHasError = true;
+            if (['PART6', 'PART7'].indexOf(partCode) !== -1 && setStim === '' && setMedia === '') setHasError = true;
+
+            var isProductive = PRODUCTIVE_PARTS_JS.indexOf(partCode) !== -1;
+            var expectedLetters = partCode === 'PART2' ? ['A', 'B', 'C'] : ['A', 'B', 'C', 'D'];
+
+            card.querySelectorAll('.srev-q-box').forEach(function (box) {
+                totalQuestions++;
+                var qMediaEl = box.querySelector('input[name$="[media_url]"]');
+                var qMedia = qMediaEl ? qMediaEl.value.trim() : '';
+                if (qMedia !== '') uniqueMediaUrls[qMedia] = true;
+
+                var contentEl = box.querySelector('textarea[name$="[content]"]');
+                var qContent = contentEl ? contentEl.value.trim() : '';
+                var qHasError = false;
+
+                if (qContent === '' && !(partCode === 'PART6' && setStim !== '') && partCode !== 'PART1') {
+                    qHasError = true;
+                }
+
+                if (!isProductive) {
+                    var filled = 0;
+                    expectedLetters.forEach(function (letter) {
+                        var optEl = box.querySelector('input[name$="[options][' + letter + ']"]');
+                        if (optEl && optEl.value.trim() !== '') filled++;
+                    });
+                    if (filled < expectedLetters.length) qHasError = true;
+
+                    var checkedOpt = box.querySelector('input[name$="[correct]"]:checked');
+                    var correctVal = checkedOpt ? String(checkedOpt.value).toUpperCase() : '';
+                    if (!correctVal || expectedLetters.indexOf(correctVal) === -1) qHasError = true;
+                } else {
+                    if ((partCode === 'SPK_T2' || partCode === 'WRITING_T1') && qMedia === '' && setMedia === '') {
+                        qHasError = true;
+                    }
+                }
+
+                if (qHasError) {
+                    errorQuestions++;
+                    setHasError = true;
+                    box.classList.add('has-error');
+                } else {
+                    validQuestions++;
+                    box.classList.remove('has-error');
+                }
+            });
+
+            card.setAttribute('data-has-error', setHasError ? '1' : '0');
+            if (setHasError) {
+                card.classList.add('has-error');
+            } else {
+                card.classList.remove('has-error');
+            }
+        });
+
+        var elTotal = document.getElementById('srev-stat-total');
+        var elValid = document.getElementById('srev-stat-valid');
+        var elError = document.getElementById('srev-stat-error');
+        var elImg = document.getElementById('srev-stat-images');
+        var elTrs = document.getElementById('srev-stat-transcripts');
+        var imageCount = Object.keys(uniqueMediaUrls).length;
+        if (elTotal) elTotal.textContent = 'Tổng: ' + totalQuestions;
+        if (elValid) elValid.textContent = 'Hợp lệ: ' + validQuestions;
+        if (elError) elError.textContent = 'Lỗi: ' + errorQuestions;
+        if (elImg) elImg.textContent = 'Có ảnh: ' + imageCount;
+        if (elTrs) elTrs.textContent = 'Transcript TTS: ' + transcriptCount;
+    }
+
+    function handleStagingImageSelected(sIdx, input) {
+        var file = input && input.files && input.files[0] ? input.files[0] : null;
+        if (!file) return;
+
+        var blobUrl = URL.createObjectURL(file);
+        var previewImg = document.getElementById('set-image-preview-' + sIdx);
+        var previewWrap = document.getElementById('set-image-preview-wrap-' + sIdx);
+        var emptyWrap = document.getElementById('set-image-empty-' + sIdx);
+        var mediaHidden = document.getElementById('set-media-' + sIdx);
+
+        if (previewImg) {
+            var oldBlob = previewImg.getAttribute('data-blob-url');
+            if (oldBlob) URL.revokeObjectURL(oldBlob);
+            previewImg.src = blobUrl;
+            previewImg.setAttribute('data-blob-url', blobUrl);
+        }
+        if (previewWrap) previewWrap.style.display = 'block';
+        if (emptyWrap) emptyWrap.style.display = 'none';
+        if (mediaHidden) mediaHidden.value = '__PENDING_UPLOAD__:' + file.name;
+
+        var setCard = document.getElementById('srev-set-' + sIdx);
+        if (setCard) {
+            setCard.querySelectorAll('.srev-q-box input[name$="[media_url]"]').forEach(function (qMediaInput) {
+                qMediaInput.value = '__PENDING_UPLOAD__:' + file.name;
+            });
+        }
+
+        recalculateReviewStats();
+    }
+
+    function handleStagingImageDrop(event, sIdx, zone) {
+        event.preventDefault();
+        if (zone) {
+            zone.style.borderColor = '#cbd5e1';
+            zone.style.background = '#f8fafc';
+        }
+        var files = event.dataTransfer ? event.dataTransfer.files : null;
+        if (!files || !files.length) return;
+        var file = files[0];
+        if (!/^image\//i.test(file.type || '')) return;
+
+        var fileInput = document.getElementById('set-image-file-' + sIdx);
+        if (fileInput) {
+            var dt = new DataTransfer();
+            dt.items.add(file);
+            fileInput.files = dt.files;
+            handleStagingImageSelected(sIdx, fileInput);
+        }
+    }
+
+    function removeStagingImage(sIdx) {
+        var fileInput = document.getElementById('set-image-file-' + sIdx);
+        var previewImg = document.getElementById('set-image-preview-' + sIdx);
+        var previewWrap = document.getElementById('set-image-preview-wrap-' + sIdx);
+        var emptyWrap = document.getElementById('set-image-empty-' + sIdx);
+        var mediaHidden = document.getElementById('set-media-' + sIdx);
+
+        if (fileInput) fileInput.value = '';
+        if (previewImg) {
+            var oldBlob = previewImg.getAttribute('data-blob-url');
+            if (oldBlob) URL.revokeObjectURL(oldBlob);
+            previewImg.src = '';
+            previewImg.setAttribute('data-blob-url', '');
+        }
+        if (previewWrap) previewWrap.style.display = 'none';
+        if (emptyWrap) emptyWrap.style.display = 'flex';
+        if (mediaHidden) mediaHidden.value = '';
+
+        var setCard = document.getElementById('srev-set-' + sIdx);
+        if (setCard) {
+            setCard.querySelectorAll('.srev-q-box input[name$="[media_url]"]').forEach(function (qMediaInput) {
+                qMediaInput.value = '';
+            });
+        }
+
+        recalculateReviewStats();
+    }
+
+    function handleCorrectOptionChange(radioEl, sIdx) {
+        var qBox = radioEl ? radioEl.closest('.srev-q-box') : null;
+        if (!qBox) return;
+
+        qBox.querySelectorAll('.srev-opt-pill').forEach(function (pill) {
+            var r = pill.querySelector('input[type="radio"]');
+            var active = r && r.checked;
+            pill.style.borderColor = active ? '#10b981' : '#e2e8f0';
+            pill.style.background = active ? '#ecfdf5' : '#fff';
+        });
+
+        qBox.querySelectorAll('.srev-err-badge').forEach(function (badge) {
+            var txt = (badge.textContent || '').toLowerCase();
+            if (txt.indexOf('đáp án') !== -1 || txt.indexOf('part 2') !== -1) {
+                badge.remove();
+            }
+        });
+
+        recalculateReviewStats();
+
+        var setCard = document.getElementById('srev-set-' + sIdx);
+        if (setCard && setCard.getAttribute('data-has-error') === '0') {
+            var head = setCard.querySelector('.srev-set-head');
+            if (head) {
+                head.querySelectorAll('.srev-err-badge').forEach(function (b) { b.remove(); });
+            }
+        }
+    }
+
+    function addStagingOption(btn, sIdx, qIdx) {
+        var qBox = btn ? btn.closest('.srev-q-box') : null;
+        var grid = qBox ? qBox.querySelector('.srev-options-grid') : null;
+        if (!grid) return;
+
+        var existingLetters = Array.from(grid.querySelectorAll('.srev-opt-pill')).map(function (p) {
+            return p.getAttribute('data-letter');
+        });
+        var nextLetter = ['A', 'B', 'C', 'D'].find(function (l) { return existingLetters.indexOf(l) === -1; });
+        if (!nextLetter) return;
+
+        var pill = document.createElement('div');
+        pill.className = 'srev-opt-pill';
+        pill.setAttribute('data-letter', nextLetter);
+        pill.style.cssText = 'display: flex; align-items: center; gap: 6px; padding: 4px 7px; border-radius: 7px; border: 1px solid #e2e8f0; background: #fff;';
+        pill.innerHTML = '<input type="radio" name="sets[' + sIdx + '][questions][' + qIdx + '][correct]" value="' + nextLetter + '" onchange="handleCorrectOptionChange(this, ' + sIdx + ')" style="cursor: pointer;" title="Chọn ' + nextLetter + ' làm đáp án đúng">'
+            + '<strong style="font-size: 12px; color: #334155;">(' + nextLetter + ')</strong>'
+            + '<input type="text" name="sets[' + sIdx + '][questions][' + qIdx + '][options][' + nextLetter + ']" value="" class="srev-input" style="padding: 4px 6px; font-size: 12.5px;">'
+            + '<button type="button" onclick="removeStagingOption(this, ' + sIdx + ')" title="Xóa phương án ' + nextLetter + '" style="border: none; background: transparent; color: #dc2626; font-weight: 700; cursor: pointer; padding: 0 3px;">&times;</button>';
+
+        grid.appendChild(pill);
+        if (existingLetters.length + 1 >= 4 && btn.parentElement) {
+            btn.parentElement.style.display = 'none';
+        }
+        recalculateReviewStats();
+    }
+
+    function removeStagingOption(btn, sIdx) {
+        var pill = btn ? btn.closest('.srev-opt-pill') : null;
+        var qBox = btn ? btn.closest('.srev-q-box') : null;
+        if (!pill || !qBox) return;
+        pill.remove();
+        var addBtn = qBox.querySelector('button[onclick^="addStagingOption"]');
+        if (addBtn && addBtn.parentElement) {
+            addBtn.parentElement.style.display = 'block';
+        }
+        recalculateReviewStats();
+    }
+
+    (function () {
+        var commitForm = document.getElementById('stagingCommitForm');
+        var payloadInput = document.getElementById('commit-payload-json');
+        if (!commitForm || !payloadInput) return;
+
+        commitForm.addEventListener('input', recalculateReviewStats);
+        commitForm.addEventListener('change', recalculateReviewStats);
+
+        commitForm.addEventListener('submit', function () {
+            var setsPayload = [];
+            var formPanes = commitForm.querySelectorAll('[id^="srev-form-pane-"]');
+
+            formPanes.forEach(function (formPane) {
+                var partEl = formPane.querySelector('select[name$="[part]"]');
+                var titleEl = formPane.querySelector('input[name$="[title]"]');
+                var stimEl = formPane.querySelector('textarea[name$="[stimulus]"]');
+                var transEl = formPane.querySelector('textarea[name$="[transcript]"]');
+                var mediaEl = formPane.querySelector('input[name$="[media_url]"]');
+                var audioEl = formPane.querySelector('input[name$="[audio_url]"]');
+
+                var questionsPayload = [];
+                var qBoxes = formPane.querySelectorAll('.srev-q-box');
+                qBoxes.forEach(function (box, idx) {
+                    var seqEl = box.querySelector('input[name$="[seq]"]');
+                    var diffEl = box.querySelector('input[name$="[difficulty]"]');
+                    var qMediaEl = box.querySelector('input[name$="[media_url]"]');
+                    var contentEl = box.querySelector('textarea[name$="[content]"]');
+                    var expEl = box.querySelector('textarea[name$="[explanation]"]');
+                    var checkedOpt = box.querySelector('input[name$="[correct]"]:checked');
+
+                    var optionsMap = {};
+                    ['A', 'B', 'C', 'D'].forEach(function (letter) {
+                        var optInput = box.querySelector('input[name$="[options][' + letter + ']"]');
+                        if (optInput) {
+                            optionsMap[letter] = optInput.value;
+                        }
+                    });
+
+                    questionsPayload.push({
+                        seq: seqEl ? seqEl.value : (idx + 1),
+                        difficulty: diffEl ? diffEl.value : 'UNSET',
+                        media_url: qMediaEl ? qMediaEl.value : '',
+                        content: contentEl ? contentEl.value : '',
+                        explanation: expEl ? expEl.value : '',
+                        correct: checkedOpt ? checkedOpt.value : 'A',
+                        options: optionsMap
+                    });
+                });
+
+                if (questionsPayload.length === 0) {
+                    return;
+                }
+
+                var setFileInput = formPane.querySelector('.srev-set-image-input');
+                if (setFileInput) {
+                    setFileInput.setAttribute('name', 'set_images[' + setsPayload.length + ']');
+                }
+
+                setsPayload.push({
+                    part: partEl ? partEl.value : 'PART5',
+                    title: titleEl ? titleEl.value : '',
+                    stimulus: stimEl ? stimEl.value : '',
+                    transcript: transEl ? transEl.value : '',
+                    media_url: mediaEl ? mediaEl.value : '',
+                    audio_url: audioEl ? audioEl.value : '',
+                    questions: questionsPayload
+                });
+            });
+
+            payloadInput.value = JSON.stringify(setsPayload);
+            commitForm.querySelectorAll('[name^="sets["]').forEach(function (el) {
+                el.disabled = true;
+            });
+        });
+    })();
 </script>
 @endpush
 @endsection

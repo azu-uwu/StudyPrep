@@ -75,7 +75,12 @@ class QuestionSet extends Model
             return $raw;
         }
 
-        return asset(ltrim($raw, '/'));
+        $clean = ltrim($raw, '/');
+        if (! str_starts_with($clean, 'storage/')) {
+            $clean = 'storage/'.$clean;
+        }
+
+        return asset($clean);
     }
 
     public function questions(): HasMany

@@ -18,6 +18,16 @@ class DocxToStandardXmlService
 
     public const CACHE_TTL_SECONDS = 7200;
 
+    /**
+     * Bộ khung Directions chuẩn ETS (dùng làm fallback khi file Word/PDF thiếu hoặc là trang scan).
+     */
+    public const DEFAULT_PART_DIRECTIONS = [
+        'PART1' => 'Directions: For each question in this part, you will hear four statements about a picture in your test book. When you hear the statements, you must select the one statement that best describes what you see in the picture. Then find the number of the question on your answer sheet and mark your answer. The statements will not be printed in your test book and will be spoken only one time.',
+        'PART2' => 'Directions: You will hear a question or statement and three responses spoken in English. They will not be printed in your test book and will be spoken only one time. Select the best response to the question or statement and mark the letter (A), (B), or (C) on your answer sheet.',
+        'PART3' => 'Directions: You will hear some conversations between two or more people. You will be asked to answer three questions about what the speakers say in each conversation. Select the best response to each question and mark the letter (A), (B), (C), or (D) on your answer sheet. The conversations will not be printed in your test book and will be spoken only one time.',
+        'PART4' => 'Directions: You will hear some talks given by a single speaker. You will be asked to answer three questions about what the speaker says in each talk. Select the best response to each question and mark the letter (A), (B), (C), or (D) on your answer sheet. The talks will not be printed in your test book and will be spoken only one time.',
+    ];
+
     public function __construct(
         protected WordQuestionImportService $wordParser
     ) {}
@@ -71,6 +81,8 @@ class DocxToStandardXmlService
         $sets = $this->buildStandardSets($parsedQuestions, $extracted['blocks']);
         $sets = $this->validateSets($sets);
         $summary = $this->summarizeSets($sets);
+        $partCodesInBatch = collect($sets)->pluck('part')->unique()->values()->all();
+        $partDirections = $this->extractPartDirectionsFromLines($cleanLines, $partCodesInBatch);
 
         $payload = [
             'batch_id' => $batchId,
@@ -82,6 +94,7 @@ class DocxToStandardXmlService
             'created_at' => now()->toIso8601String(),
             'expires_at' => now()->addSeconds(self::CACHE_TTL_SECONDS)->timestamp,
             'sets' => $sets,
+            'part_directions' => $partDirections,
             'summary' => $summary,
         ];
 
@@ -512,7 +525,162 @@ class DocxToStandardXmlService
             $sets[$i]['raw_source'] = implode("\n\n", array_filter($matchedChunks));
         }
 
-        return $sets;
+        return $this->deduplicateSetsBySeq($sets);
+    }
+
+    /**
+     * Khử trùng lặp câu hỏi theo số thứ tự seq trong cùng batch trước khi xuất XML/Staging.
+     *
+     * @param  list<array<string, mixed>>  $sets
+     * @return list<array<string, mixed>>
+     */
+    private function deduplicateSetsBySeq(array $sets): array
+    {
+        $seenByKey = [];
+
+        foreach ($sets as $sIdx => $set) {
+            $part = strtoupper((string) ($set['part'] ?? 'PART5'));
+            $keptQuestions = [];
+
+            foreach ($set['questions'] ?? [] as $q) {
+                $seq = (int) ($q['seq'] ?? 0);
+                if ($seq <= 0) {
+                    $keptQuestions[] = $q;
+
+                    continue;
+                }
+
+                $dedupKey = $part.'#'.$seq;
+                if (! isset($seenByKey[$dedupKey])) {
+                    $seenByKey[$dedupKey] = [
+                        'sIdx' => $sIdx,
+                        'qIdx' => count($keptQuestions),
+                    ];
+                    $keptQuestions[] = $q;
+
+                    continue;
+                }
+
+                // Hợp nhất vào câu đã tồn tại (giữ options đầy đủ hơn, giữ explanation/transcript từ bản có giải thích)
+                $targetLoc = $seenByKey[$dedupKey];
+                $targetSetIdx = $targetLoc['sIdx'];
+                $targetQIdx = $targetLoc['qIdx'];
+                $existingQ = $targetSetIdx === $sIdx
+                    ? $keptQuestions[$targetQIdx]
+                    : $sets[$targetSetIdx]['questions'][$targetQIdx];
+
+                $existingOpts = is_array($existingQ['options'] ?? null) ? $existingQ['options'] : [];
+                $newOpts = is_array($q['options'] ?? null) ? $q['options'] : [];
+                foreach ($newOpts as $letter => $optVal) {
+                    if (trim((string) ($existingOpts[$letter] ?? '')) === '' && trim((string) $optVal) !== '') {
+                        $existingOpts[$letter] = $optVal;
+                    }
+                }
+                $existingQ['options'] = $existingOpts;
+
+                if (trim((string) ($existingQ['content'] ?? '')) === '' && trim((string) ($q['content'] ?? '')) !== '') {
+                    $existingQ['content'] = $q['content'];
+                }
+                if (empty($existingQ['correct']) && ! empty($q['correct'])) {
+                    $existingQ['correct'] = $q['correct'];
+                }
+                if (empty($existingQ['media_url']) && ! empty($q['media_url'])) {
+                    $existingQ['media_url'] = $q['media_url'];
+                }
+
+                $oldExp = trim((string) ($existingQ['explanation'] ?? ''));
+                $newExp = trim((string) ($q['explanation'] ?? ''));
+                if ($newExp !== '') {
+                    if ($oldExp === '') {
+                        $existingQ['explanation'] = $newExp;
+                    } elseif (! str_contains($oldExp, $newExp)) {
+                        $existingQ['explanation'] = $oldExp."\n".$newExp;
+                    }
+                }
+
+                if ($targetSetIdx === $sIdx) {
+                    $keptQuestions[$targetQIdx] = $existingQ;
+                } else {
+                    $sets[$targetSetIdx]['questions'][$targetQIdx] = $existingQ;
+                    if (empty($sets[$targetSetIdx]['transcript']) && ! empty($set['transcript'])) {
+                        $sets[$targetSetIdx]['transcript'] = $set['transcript'];
+                    }
+                    if (empty($sets[$targetSetIdx]['media_url']) && ! empty($set['media_url'])) {
+                        $sets[$targetSetIdx]['media_url'] = $set['media_url'];
+                    }
+                }
+            }
+
+            $sets[$sIdx]['questions'] = $keptQuestions;
+        }
+
+        return array_values(array_filter($sets, static fn (array $s): bool => ! empty($s['questions'])));
+    }
+
+    /**
+     * Trích xuất đoạn Directions: đầu mỗi Part từ các dòng text gốc (Word hoặc PDF),
+     * tự động fallback về bộ Directions chuẩn ETS nếu file nguồn thiếu hoặc là trang scan.
+     *
+     * @param  list<string>  $lines
+     * @param  list<string>  $partCodes
+     * @return array<string, string>
+     */
+    public function extractPartDirectionsFromLines(array $lines, array $partCodes = []): array
+    {
+        $extracted = [];
+        $currentPart = null;
+        $capturingDir = false;
+        $buffer = [];
+
+        $flushDir = static function () use (&$extracted, &$currentPart, &$capturingDir, &$buffer): void {
+            if ($currentPart !== null && ! empty($buffer) && empty($extracted[$currentPart])) {
+                $extracted[$currentPart] = trim(implode(' ', $buffer));
+            }
+            $capturingDir = false;
+            $buffer = [];
+        };
+
+        foreach ($lines as $rawLine) {
+            $line = trim((string) preg_replace('/\s+/u', ' ', $rawLine));
+            if ($line === '') {
+                continue;
+            }
+
+            if (preg_match('/^(?:PART|Part)\s*([1-7])\b/u', $line, $pm)) {
+                $flushDir();
+                $currentPart = 'PART'.$pm[1];
+
+                continue;
+            }
+
+            // Dừng thu thập Directions ngay khi chạm câu hỏi đầu tiên hoặc Example
+            if (preg_match('/^(?:Question\s+\d+|Câu\s+\d+|Questions\s+\d+|\d{1,3}\s*[\.\):]|Example\s*:|Statement\s*\(C\))/iu', $line) === 1) {
+                $flushDir();
+
+                continue;
+            }
+
+            if ($currentPart !== null && preg_match('/^(?:Directions?|Hướng\s*dẫn)\s*[:\-]\s*(.+)$/iu', $line, $dm)) {
+                $capturingDir = true;
+                $buffer = ['Directions: '.trim($dm[1])];
+
+                continue;
+            }
+
+            if ($capturingDir) {
+                $buffer[] = $line;
+            }
+        }
+        $flushDir();
+
+        foreach ($partCodes as $code) {
+            $upper = strtoupper(trim((string) $code));
+            if ($upper !== '' && empty($extracted[$upper]) && isset(self::DEFAULT_PART_DIRECTIONS[$upper])) {
+                $extracted[$upper] = self::DEFAULT_PART_DIRECTIONS[$upper];
+            }
+        }
+
+        return $extracted;
     }
 
     /**
@@ -540,7 +708,8 @@ class DocxToStandardXmlService
             foreach ($set['questions'] as $qIdx => $q) {
                 $qErrors = [];
                 $hasPart6Stimulus = $part === 'PART6' && trim((string) ($set['stimulus'] ?? '')) !== '';
-                if (trim((string) ($q['content'] ?? '')) === '' && ! $hasPart6Stimulus) {
+                $isPart1 = $part === 'PART1';
+                if (trim((string) ($q['content'] ?? '')) === '' && ! $hasPart6Stimulus && ! $isPart1) {
                     $qErrors[] = 'Nội dung câu hỏi đang trống.';
                 }
 
@@ -557,8 +726,13 @@ class DocxToStandardXmlService
                     if ($filledCount < count($expectedLetters)) {
                         $qErrors[] = 'Thiếu phương án trả lời (cần đủ '.count($expectedLetters).' lựa chọn).';
                     }
-                    if (empty($q['correct']) || ! in_array(strtoupper((string) $q['correct']), $expectedLetters, true)) {
+                    if (empty($q['correct'])) {
                         $qErrors[] = 'Chưa xác định đáp án đúng.';
+                    } elseif (! in_array(strtoupper((string) $q['correct']), $expectedLetters, true)) {
+                        $badAns = strtoupper((string) $q['correct']);
+                        $qErrors[] = $part === 'PART2'
+                            ? "Đáp án gốc là {$badAns} nhưng Part 2 chỉ có A, B, C — vui lòng chọn lại đáp án đúng."
+                            : "Đáp án gốc là {$badAns} không hợp lệ — vui lòng chọn lại đáp án đúng.";
                     }
                 } else {
                     if (in_array($part, ['SPK_T2', 'WRITING_T1'], true) && empty($q['media_url']) && empty($set['media_url'])) {
@@ -624,6 +798,57 @@ class DocxToStandardXmlService
     }
 
     /**
+     * Dọn dẹp các thư mục staging/import_* đã quá hạn (mặc định 24 giờ) để tránh phình dung lượng ổ đĩa.
+     */
+    public function cleanupExpiredStagingDirectories(int $maxAgeHours = 24): int
+    {
+        $stagingRoot = storage_path('app/public/staging');
+        if (! File::isDirectory($stagingRoot)) {
+            return 0;
+        }
+
+        $cutoff = time() - (max(1, $maxAgeHours) * 3600);
+        $deleted = 0;
+
+        foreach (glob($stagingRoot.'/import_*', GLOB_ONLYDIR) ?: [] as $dir) {
+            $mtime = @filemtime($dir);
+            if ($mtime !== false && $mtime < $cutoff && File::deleteDirectory($dir)) {
+                $deleted++;
+            }
+        }
+
+        return $deleted;
+    }
+
+    /**
+     * Lọc ký tự điều khiển không hợp lệ trong XML 1.0 trước khi xuất.
+     */
+    private function sanitizeXmlText(string $text): string
+    {
+        $cleaned = preg_replace('/[^\x{0009}\x{000A}\x{000D}\x{0020}-\x{D7FF}\x{E000}-\x{FFFD}]+/u', '', $text);
+
+        return $cleaned ?? '';
+    }
+
+    /**
+     * Tạo XML element có nội dung text đã lọc control chars và escape XML 1.0 an toàn (&, <, >, ").
+     */
+    private function appendEscapedXmlElement(DOMDocument $dom, DOMElement $parent, string $tagName, string $text): DOMElement
+    {
+        $el = $dom->createElement($tagName);
+        $escaped = htmlspecialchars($this->sanitizeXmlText($text), ENT_XML1 | ENT_QUOTES, 'UTF-8');
+        $fragment = $dom->createDocumentFragment();
+        if ($escaped !== '' && @$fragment->appendXML($escaped)) {
+            $el->appendChild($fragment);
+        } else {
+            $el->appendChild($dom->createTextNode($this->sanitizeXmlText($text)));
+        }
+        $parent->appendChild($el);
+
+        return $el;
+    }
+
+    /**
      * Xuất tài liệu XML chuẩn StudyPrep từ danh sách QuestionSet.
      *
      * @param  list<array<string, mixed>>  $parsedSets
@@ -638,51 +863,41 @@ class DocxToStandardXmlService
 
         foreach ($parsedSets as $set) {
             $setEl = $dom->createElement('question_set');
-            $setEl->setAttribute('part', (string) ($set['part'] ?? 'PART5'));
+            $setEl->setAttribute('part', $this->sanitizeXmlText((string) ($set['part'] ?? 'PART5')));
             if (! empty($set['media_url'])) {
-                $setEl->setAttribute('media_url', (string) $set['media_url']);
+                $setEl->setAttribute('media_url', $this->sanitizeXmlText((string) $set['media_url']));
             }
             if (! empty($set['audio_url'])) {
-                $setEl->setAttribute('audio_url', (string) $set['audio_url']);
+                $setEl->setAttribute('audio_url', $this->sanitizeXmlText((string) $set['audio_url']));
             }
 
             if (trim((string) ($set['transcript'] ?? '')) !== '') {
-                $transEl = $dom->createElement('transcript');
-                $transEl->appendChild($dom->createCDATASection((string) $set['transcript']));
-                $setEl->appendChild($transEl);
+                $this->appendEscapedXmlElement($dom, $setEl, 'transcript', (string) $set['transcript']);
             }
 
             if (trim((string) ($set['stimulus'] ?? '')) !== '') {
-                $stimEl = $dom->createElement('stimulus');
-                $stimEl->appendChild($dom->createCDATASection((string) $set['stimulus']));
-                $setEl->appendChild($stimEl);
+                $this->appendEscapedXmlElement($dom, $setEl, 'stimulus', (string) $set['stimulus']);
             }
 
             foreach ($set['questions'] ?? [] as $q) {
                 $qEl = $dom->createElement('question');
-                $qEl->setAttribute('seq', (string) ($q['seq'] ?? 1));
+                $qEl->setAttribute('seq', $this->sanitizeXmlText((string) ($q['seq'] ?? 1)));
                 if (! empty($q['correct'])) {
-                    $qEl->setAttribute('correct', (string) $q['correct']);
+                    $qEl->setAttribute('correct', $this->sanitizeXmlText((string) $q['correct']));
                 }
 
-                $contentEl = $dom->createElement('content');
-                $contentEl->appendChild($dom->createCDATASection((string) ($q['content'] ?? '')));
-                $qEl->appendChild($contentEl);
+                $this->appendEscapedXmlElement($dom, $qEl, 'content', (string) ($q['content'] ?? ''));
 
                 foreach (($q['options'] ?? []) as $key => $optText) {
                     if ($optText === null || $optText === '') {
                         continue;
                     }
-                    $optEl = $dom->createElement('option');
-                    $optEl->setAttribute('key', (string) $key);
-                    $optEl->appendChild($dom->createTextNode((string) $optText));
-                    $qEl->appendChild($optEl);
+                    $optEl = $this->appendEscapedXmlElement($dom, $qEl, 'option', (string) $optText);
+                    $optEl->setAttribute('key', $this->sanitizeXmlText((string) $key));
                 }
 
                 if (trim((string) ($q['explanation'] ?? '')) !== '') {
-                    $expEl = $dom->createElement('explanation');
-                    $expEl->appendChild($dom->createCDATASection((string) $q['explanation']));
-                    $qEl->appendChild($expEl);
+                    $this->appendEscapedXmlElement($dom, $qEl, 'explanation', (string) $q['explanation']);
                 }
 
                 $setEl->appendChild($qEl);
@@ -706,13 +921,25 @@ class DocxToStandardXmlService
         $clean = ltrim(str_replace('\\', '/', trim($mediaUrl)), '/');
         $stagingPrefix = 'storage/staging/import_'.$batchId.'/';
         if (! str_starts_with($clean, $stagingPrefix)) {
-            return $clean;
+            if (preg_match('/^(?:https?:\/\/|data:|\/storage\/)/i', trim($mediaUrl)) === 1) {
+                return trim($mediaUrl);
+            }
+            if (str_starts_with($clean, 'storage/')) {
+                return '/'.$clean;
+            }
+
+            return '/storage/'.$clean;
         }
 
+        $relativeInBatch = substr($clean, strlen($stagingPrefix));
         $fileName = basename($clean);
-        $sourcePath = storage_path('app/public/staging/import_'.$batchId.'/'.$fileName);
+        $sourcePath = storage_path('app/public/staging/import_'.$batchId.'/'.$relativeInBatch);
         if (! File::isFile($sourcePath)) {
-            return $clean;
+            $fallbackPath = storage_path('app/public/staging/import_'.$batchId.'/'.$fileName);
+            if (! File::isFile($fallbackPath)) {
+                return '/'.$clean;
+            }
+            $sourcePath = $fallbackPath;
         }
 
         $targetDir = storage_path('app/public/questions/images');
@@ -724,7 +951,7 @@ class DocxToStandardXmlService
         $targetPath = $targetDir.DIRECTORY_SEPARATOR.$newFileName;
         File::move($sourcePath, $targetPath);
 
-        return 'storage/questions/images/'.$newFileName;
+        return '/storage/questions/images/'.$newFileName;
     }
 
     /**

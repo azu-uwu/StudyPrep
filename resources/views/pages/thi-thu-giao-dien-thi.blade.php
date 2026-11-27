@@ -35,10 +35,68 @@
 <header class="topbar">
   <button class="close" id="exitBtn" title="Thoát" aria-label="Thoát">×</button>
   <span class="top-sep"></span>
-  <span class="question-count" id="questionCount">Q 101/164</span>
+  @if (! empty($examTestForm))
+    <strong style="font-size: 11px; color: #171a35;">{{ $examTestForm->title }}</strong>
+    <span class="top-sep"></span>
+    <span class="question-count" id="questionCount">Q 1/{{ count($examQuestions ?? []) }}</span>
+  @else
+    <span class="question-count" id="questionCount">Q 101/164</span>
+  @endif
   <span class="timer" id="timer">◷ 01:58:53</span>
 </header>
 
+@if (! empty($examTestForm))
+<main class="workspace">
+  <section class="panel left-panel">
+    @php $prevExamPartCode = null; @endphp
+    @forelse ($examQuestions as $qItem)
+      @if ($qItem['part_code'] !== $prevExamPartCode && ! empty($qItem['part_directions_text']))
+        <div class="prompt-box" style="margin-bottom: 12px; background: #f0f9ff; border: 1px solid #bae6fd;">
+          <strong style="display: block; margin-bottom: 4px; color: #0369a1;">{{ $qItem['part_code'] }} — Directions</strong>
+          <p style="margin: 0 0 8px 0;">{{ $qItem['part_directions_text'] }}</p>
+          @if (! empty($qItem['part_directions_audio_url']))
+            <audio controls preload="none" src="{{ $qItem['part_directions_audio_url'] }}" style="width: 100%; height: 34px;"></audio>
+          @endif
+        </div>
+      @endif
+      @php $prevExamPartCode = $qItem['part_code']; @endphp
+      <article class="question-item" style="margin-bottom: 12px;">
+        <h2 class="panel-title">Câu {{ $qItem['sequence_no'] }} ({{ $qItem['part_code'] }})</h2>
+        @if (! empty($qItem['stimulus_text']))
+          <div class="prompt-box" style="margin-bottom: 8px;">{{ $qItem['stimulus_text'] }}</div>
+        @endif
+        <div class="prompt-box"><p>{{ $qItem['content'] }}</p></div>
+        @if (! empty($qItem['options']))
+          <div class="left-choices">
+            @foreach ($qItem['options'] as $lbl => $optContent)
+              <div data-answer="{{ $lbl }}">{{ $lbl }}. {{ $optContent }}</div>
+            @endforeach
+          </div>
+        @endif
+      </article>
+    @empty
+      <div class="prompt-box"><p>Đề thi này hiện chưa có câu hỏi trạng thái ACTIVE.</p></div>
+    @endforelse
+  </section>
+  <section class="panel right-panel">
+    <div class="right-content">
+      <h2 class="answer-heading">Phiếu trả lời ({{ count($examQuestions) }} câu)</h2>
+      <div class="question-list">
+        @foreach ($examQuestions as $qItem)
+          <div class="question-item">
+            <p><strong>Câu {{ $qItem['sequence_no'] }}</strong></p>
+            <div class="mini-answers">
+              @foreach (array_keys($qItem['options']) as $lbl)
+                <button type="button" class="mini-answer" data-q="{{ $qItem['id'] }}" data-answer="{{ $lbl }}">{{ $lbl }}</button>
+              @endforeach
+            </div>
+          </div>
+        @endforeach
+      </div>
+    </div>
+  </section>
+</main>
+@else
 <!-- đề reading -->
 <main class="workspace">
     <!--cụm đề -->
@@ -321,6 +379,7 @@
 
   </section>
 </main>
+@endif
 
 <div class="footer-actions">
     <button type="button" class="secondary" id="prevBtn">← Câu trước</button>

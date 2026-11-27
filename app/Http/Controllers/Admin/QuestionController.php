@@ -6,14 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\AnswerOption;
 use App\Models\ExamSection;
 use App\Models\Feedback;
+use App\Models\PdfImportSession;
 use App\Models\Question;
 use App\Models\QuestionSet;
 use App\Models\QuestionType;
 use App\Models\Skill;
 use App\Models\TestForm;
-use App\Services\AiToeicService;
 use App\Services\DocxToStandardXmlService;
 use App\Services\ExamSampleDataService;
+use App\Services\PdfImport\PdfExamImportService;
 use App\Services\TestFormService;
 use App\Services\TextToSpeechService;
 use App\Services\WordQuestionImportService;
@@ -23,6 +24,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -66,6 +68,12 @@ class QuestionController extends Controller
         $totalDb = Question::count();
         $totalReportedDb = Question::where('status', 'REPORTED')->count();
         $totalPendingDb = Question::where('status', 'PENDING')->count();
+        $listeningCount = Question::query()
+            ->whereHas('section', fn ($q) => $q->whereIn('code', ['PART1', 'PART2', 'PART3', 'PART4']))
+            ->count();
+        $readingCount = Question::query()
+            ->whereHas('section', fn ($q) => $q->whereIn('code', ['PART5', 'PART6', 'PART7']))
+            ->count();
         $speakingCount = Question::query()
             ->whereHas('section', fn ($q) => $q->where('code', 'like', 'SPK_%'))
             ->count();
@@ -79,9 +87,9 @@ class QuestionController extends Controller
 
         $stats = [
             'total' => $totalDb,
-            'lc_rc' => Question::query()
-                ->whereHas('section', fn ($q) => $q->whereIn('code', ['PART1', 'PART2', 'PART3', 'PART4', 'PART5', 'PART6', 'PART7']))
-                ->count(),
+            'lc_rc' => $listeningCount + $readingCount,
+            'listening' => $listeningCount,
+            'reading' => $readingCount,
             'sw' => $speakingCount + $writingCount,
             'speaking' => $speakingCount,
             'writing' => $writingCount,
@@ -114,6 +122,8 @@ class QuestionController extends Controller
         return view('admin.questions.index', [
             'questions' => $questions,
             'stats' => $stats,
+            'listeningCount' => $listeningCount,
+            'readingCount' => $readingCount,
             'skills' => $skills,
             'sections' => $sections,
             'questionTypes' => $questionTypes,
@@ -160,7 +170,10 @@ class QuestionController extends Controller
             ? $rawStatus
             : 'all';
 
-        $rawTag = trim((string) $request->input($prefix.'tag', 'all'));
+        $rawTag = trim((string) $request->input($prefix.'tag', ''));
+        if ($rawTag === '' && $prefix === '') {
+            $rawTag = trim((string) ($request->input('test_form_id') ?? $request->input('test_id') ?? 'all'));
+        }
         $tag = ($rawTag === '' || strcasecmp($rawTag, 'all') === 0) ? 'all' : $rawTag;
 
         return [
@@ -399,7 +412,7 @@ class QuestionController extends Controller
         if (empty($difficulty) || $difficulty === 'UNSET') {
             $sectionModel = ExamSection::query()->with('skill')->find((int) $validated['section_id']);
             $skillName = $sectionModel?->skill?->name ?? '';
-            $difficulty = AiToeicService::assessToeicDifficulty(
+            $difficulty = WordQuestionImportService::assessToeicDifficulty(
                 $skillName,
                 $partCode,
                 $validated['content'] ?? '',
@@ -1092,6 +1105,8 @@ class QuestionController extends Controller
      */
     public function previewStagingImport(Request $request, DocxToStandardXmlService $docxService): RedirectResponse
     {
+        $docxService->cleanupExpiredStagingDirectories(24);
+
         $request->validate([
             'import_file' => 'required|file|mimes:docx|max:15360',
         ], [
@@ -1120,6 +1135,53 @@ class QuestionController extends Controller
 
         return redirect()->route('admin.questions.import.review', ['batchId' => $staging['batch_id']])
             ->with('success', "Đã phân tích tệp \"{$staging['file_name']}\" thành {$staging['summary']['total_questions']} câu hỏi. Vui lòng đối chiếu và duyệt lưu bên dưới.");
+    }
+
+    /**
+     * Bước 1 quy trình Staging PDF: Upload 1 hoặc 2 file PDF (Đề + Đáp án/Script),
+     * trích xuất layout qua PyMuPDF + pdfplumber, merge theo question_number và đưa vào Staging.
+     */
+    public function previewPdfStagingImport(
+        Request $request,
+        PdfExamImportService $pdfImportService
+    ): RedirectResponse {
+        $request->validate([
+            'question_pdf' => 'required|file|mimes:pdf|max:30720',
+            'answer_pdf' => 'nullable|file|mimes:pdf|max:30720',
+            'import_scope' => 'nullable|in:FULL_LR,LISTENING,READING',
+            'publish_status' => 'nullable|in:live,draft,ACTIVE,DRAFT',
+        ], [
+            'question_pdf.required' => 'Vui lòng chọn file PDF Đề thi (Question Booklet).',
+            'question_pdf.mimes' => 'File đề thi phải có định dạng .pdf.',
+            'answer_pdf.mimes' => 'File đáp án/transcript phải có định dạng .pdf.',
+        ]);
+
+        $importScope = strtoupper(trim((string) $request->input('import_scope', 'FULL_LR')));
+        $targetTestId = $request->filled('target_test_id') ? (int) $request->input('target_test_id') : null;
+        $rawStatus = strtolower((string) $request->input('publish_status', 'live'));
+        $publishStatus = $rawStatus === 'draft' ? 'DRAFT' : 'ACTIVE';
+
+        try {
+            $result = $pdfImportService->importToStaging(
+                $request->file('question_pdf'),
+                $request->file('answer_pdf'),
+                $importScope,
+                $targetTestId && $targetTestId > 0 ? $targetTestId : null,
+                $publishStatus,
+                auth()->id()
+            );
+        } catch (\Throwable $e) {
+            return redirect()->route('admin.questions.bulk-import')
+                ->withErrors(['question_pdf' => 'Không thể phân tích file PDF: '.$e->getMessage()]);
+        }
+
+        if (empty($result['sets'])) {
+            return redirect()->route('admin.questions.bulk-import')
+                ->withErrors(['question_pdf' => 'Không nhận diện được câu hỏi TOEIC nào trong file PDF vừa tải lên.']);
+        }
+
+        return redirect()->route('admin.questions.import.review', ['batchId' => $result['batch_id']])
+            ->with('success', "Đã phân tích PDF thành {$result['summary']['total_questions']} câu hỏi (Hợp lệ: {$result['summary']['valid_questions']}, Cần rà soát: {$result['summary']['needs_review_questions']}, Lỗi: {$result['summary']['error_questions']}).");
     }
 
     /**
@@ -1183,10 +1245,19 @@ class QuestionController extends Controller
                 ->withErrors(['import_file' => 'Phiên đối chiếu đã hết hạn hoặc đã được lưu trước đó.']);
         }
 
-        $submittedSets = $request->input('sets', []);
-        $sets = is_array($submittedSets) && ! empty($submittedSets)
-            ? array_values($submittedSets)
-            : ($staging['sets'] ?? []);
+        $sets = [];
+        $payloadJson = trim((string) $request->input('payload_json', ''));
+        if ($payloadJson !== '') {
+            $decoded = json_decode($payloadJson, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $sets = array_values($decoded);
+            }
+        } else {
+            $submittedSets = $request->input('sets', []);
+            $sets = is_array($submittedSets) && ! empty($submittedSets)
+                ? array_values($submittedSets)
+                : ($staging['sets'] ?? []);
+        }
 
         $publishStatus = strtoupper((string) $request->input('publish_status', $staging['publish_status'] ?? 'ACTIVE'));
         if (! in_array($publishStatus, ['ACTIVE', 'DRAFT'], true)) {
@@ -1198,6 +1269,72 @@ class QuestionController extends Controller
             : ($staging['target_test_id'] ? (int) $staging['target_test_id'] : null);
         $autoGenerateTts = $request->boolean('auto_generate_tts', true);
 
+        // Chặn Commit nếu là phiên PDF Import nhưng thiếu > 5 câu hoặc còn câu lỗi (ERROR)
+        $isPdfImport = ($staging['source_type'] ?? '') === 'PDF';
+        if ($isPdfImport) {
+            $importScope = strtoupper((string) ($staging['import_scope'] ?? 'FULL_LR'));
+            $expectedTotal = in_array($importScope, ['LISTENING', 'READING'], true) ? 100 : 200;
+            $submittedQuestionCount = 0;
+            foreach ($sets as $s) {
+                if (is_array($s) && ! empty($s['questions'])) {
+                    $submittedQuestionCount += count($s['questions']);
+                }
+            }
+            $missingCount = max(0, $expectedTotal - $submittedQuestionCount);
+            if ($missingCount > 5) {
+                return redirect()->route('admin.questions.import.review', ['batchId' => $batchId])
+                    ->withErrors([
+                        'commit' => "Không thể lưu vào DB: đề thi đang thiếu {$missingCount} câu (vượt ngưỡng tối đa 5 câu) so với chuẩn {$importScope}.",
+                    ]);
+            }
+
+            // Chỉ chặn các lỗi ERROR thật sự (thiếu options bắt buộc hoặc rỗng nội dung ở Part 3/4/5/7).
+            // Không chặn các câu NEEDS_REVIEW (ví dụ: thiếu đáp án khi chỉ upload 1 file PDF đề).
+            $errorQuestionCount = 0;
+            foreach ($sets as $rSet) {
+                $rPart = strtoupper(trim((string) ($rSet['part'] ?? 'PART5')));
+                $expectedLetters = $rPart === 'PART2' ? ['A', 'B', 'C'] : ['A', 'B', 'C', 'D'];
+                foreach ($rSet['questions'] ?? [] as $rQ) {
+                    if (! is_array($rQ)) {
+                        continue;
+                    }
+                    $rOpts = is_array($rQ['options'] ?? null) ? $rQ['options'] : [];
+                    $filledOpts = 0;
+                    foreach ($expectedLetters as $letter) {
+                        if (trim((string) ($rOpts[$letter] ?? '')) !== '') {
+                            $filledOpts++;
+                        }
+                    }
+                    $rContent = trim((string) ($rQ['content'] ?? ''));
+                    $allowsEmptyContent = in_array($rPart, ['PART1', 'PART2', 'PART6'], true);
+                    if ($filledOpts < count($expectedLetters) || ($rContent === '' && ! $allowsEmptyContent)) {
+                        $errorQuestionCount++;
+                    }
+                }
+            }
+            if ($errorQuestionCount > 0) {
+                return redirect()->route('admin.questions.import.review', ['batchId' => $batchId])
+                    ->withErrors([
+                        'commit' => "Không thể lưu vào DB: còn {$errorQuestionCount} câu hỏi đang ở trạng thái LỖI (thiếu phương án A/B/C/D hoặc thiếu nội dung bắt buộc). Vui lòng sửa trên màn hình đối chiếu trước khi lưu.",
+                    ]);
+            }
+        }
+
+        $beforeCommitTotalSets = count($sets);
+        $beforeCommitTotalQuestions = 0;
+        foreach ($sets as $sItem) {
+            if (is_array($sItem) && ! empty($sItem['questions'])) {
+                $beforeCommitTotalQuestions += count($sItem['questions']);
+            }
+        }
+        $skippedErrorQuestions = [];
+
+        Log::info('PDF/Staging Commit Audit - Before', [
+            'batch_id' => $batchId,
+            'before_commit_total_sets' => $beforeCommitTotalSets,
+            'before_commit_total_questions' => $beforeCommitTotalQuestions,
+        ]);
+
         $sectionsByCode = ExamSection::query()->pluck('section_id', 'code');
         $promotedImageCache = [];
         $ttsAudioCount = 0;
@@ -1205,7 +1342,7 @@ class QuestionController extends Controller
 
         // Chuẩn bị file ảnh & Audio TTS trước khi mở DB transaction
         $preparedSets = [];
-        foreach ($sets as $setData) {
+        foreach ($sets as $setIdx => $setData) {
             if (! is_array($setData) || empty($setData['questions'])) {
                 continue;
             }
@@ -1213,11 +1350,17 @@ class QuestionController extends Controller
             $partCode = strtoupper(trim((string) ($setData['part'] ?? 'PART5')));
             $rawSetMedia = trim((string) ($setData['media_url'] ?? ''));
             $promotedSetMedia = null;
-            if ($rawSetMedia !== '') {
+
+            $uploadedSetImage = $request->file("set_images.{$setIdx}");
+            if ($uploadedSetImage !== null && $uploadedSetImage->isValid()) {
+                $storedPath = $uploadedSetImage->store('questions/images', 'public');
+                $promotedSetMedia = '/storage/'.ltrim((string) $storedPath, '/');
+                $promotedImageCount++;
+            } elseif ($rawSetMedia !== '' && ! str_starts_with($rawSetMedia, '__PENDING_UPLOAD__:')) {
                 if (! array_key_exists($rawSetMedia, $promotedImageCache)) {
                     $moved = $docxService->promoteStagingImage($rawSetMedia, $batchId);
                     $promotedImageCache[$rawSetMedia] = $moved;
-                    if ($moved !== null && str_starts_with($moved, 'storage/questions/images/')) {
+                    if ($moved !== null && str_contains($moved, 'questions/images/')) {
                         $promotedImageCount++;
                     }
                 }
@@ -1226,24 +1369,6 @@ class QuestionController extends Controller
 
             $transcript = trim((string) ($setData['transcript'] ?? ''));
             $audioUrl = trim((string) ($setData['audio_url'] ?? ''));
-            $needsTts = $autoGenerateTts
-                && $audioUrl === ''
-                && $transcript !== ''
-                && in_array($partCode, ['PART1', 'PART2', 'PART3', 'PART4', 'SPK_T3', 'SPK_T4'], true);
-
-            if ($needsTts) {
-                $partNum = (int) preg_replace('/[^0-9]/', '', $partCode);
-                if ($partNum < 1 || $partNum > 4) {
-                    $partNum = 1;
-                }
-                try {
-                    $ttsResult = $ttsService->synthesize($transcript, $partNum);
-                    $audioUrl = $ttsResult['relative_path'];
-                    $ttsAudioCount++;
-                } catch (\Throwable $e) {
-                    // Không làm gián đoạn quá trình lưu câu hỏi nếu mạng/TTS tạm thời lỗi
-                }
-            }
 
             $preparedQuestions = [];
             foreach ($setData['questions'] as $qIdx => $qItem) {
@@ -1253,23 +1378,43 @@ class QuestionController extends Controller
                 $qContentTrimmed = trim((string) ($qItem['content'] ?? ''));
                 if ($qContentTrimmed === '') {
                     $hasPart6Context = $partCode === 'PART6' && (trim((string) ($setData['stimulus'] ?? '')) !== '' || ! empty($qItem['options']));
-                    if (! $hasPart6Context) {
+                    $hasPart1Context = $partCode === 'PART1' && ($rawSetMedia !== '' || trim((string) ($qItem['media_url'] ?? '')) !== '' || ! empty($qItem['options']));
+                    $hasPart2Context = $partCode === 'PART2' && (! empty($qItem['options']) || $transcript !== '');
+                    if (! $hasPart6Context && ! $hasPart1Context && ! $hasPart2Context) {
+                        $skippedErrorQuestions[] = [
+                            'seq' => $qItem['seq'] ?? ($qIdx + 1),
+                            'part' => $partCode,
+                            'reason' => 'Rỗng cả nội dung lẫn phương án trả lời',
+                        ];
+
                         continue;
                     }
-                    $seq = (int) ($qItem['seq'] ?? (131 + $qIdx));
-                    $qItem['content'] = "Blank {$seq} (Complete the text)";
+                    if ($hasPart6Context) {
+                        $seq = (int) ($qItem['seq'] ?? (131 + $qIdx));
+                        $qItem['content'] = "Blank {$seq} (Complete the text)";
+                    } else {
+                        $qItem['content'] = '';
+                    }
                 }
                 $qRawMedia = trim((string) ($qItem['media_url'] ?? ''));
                 $qPromotedMedia = null;
-                if ($qRawMedia !== '') {
-                    if (! array_key_exists($qRawMedia, $promotedImageCache)) {
-                        $movedQ = $docxService->promoteStagingImage($qRawMedia, $batchId);
-                        $promotedImageCache[$qRawMedia] = $movedQ;
-                        if ($movedQ !== null && str_starts_with($movedQ, 'storage/questions/images/')) {
-                            $promotedImageCount++;
+                if ($uploadedSetImage !== null && $uploadedSetImage->isValid()) {
+                    // Nếu Admin vừa upload ảnh thay thế ở cấp cụm, dùng ảnh mới cho câu hỏi luôn
+                    $qPromotedMedia = $promotedSetMedia;
+                } elseif ($qRawMedia !== '' && ! str_starts_with($qRawMedia, '__PENDING_UPLOAD__:')) {
+                    if ($rawSetMedia === '') {
+                        // Admin đã bấm Xóa ảnh cụm
+                        $qPromotedMedia = null;
+                    } else {
+                        if (! array_key_exists($qRawMedia, $promotedImageCache)) {
+                            $movedQ = $docxService->promoteStagingImage($qRawMedia, $batchId);
+                            $promotedImageCache[$qRawMedia] = $movedQ;
+                            if ($movedQ !== null && str_starts_with($movedQ, 'storage/questions/images/')) {
+                                $promotedImageCount++;
+                            }
                         }
+                        $qPromotedMedia = $promotedImageCache[$qRawMedia];
                     }
-                    $qPromotedMedia = $promotedImageCache[$qRawMedia];
                 }
                 $qItem['media_url'] = $qPromotedMedia;
                 $preparedQuestions[] = $qItem;
@@ -1388,9 +1533,48 @@ class QuestionController extends Controller
         });
 
         $docxService->forgetStagingPayload($batchId);
+        if (Schema::hasTable('pdf_import_sessions')) {
+            PdfImportSession::query()
+                ->where('import_session_id', $batchId)
+                ->update([
+                    'status' => PdfImportSession::STATUS_COMMITTED,
+                    'committed_at' => now(),
+                ]);
+        }
+
+        // Lưu Directions đầu mỗi Part vào exam_section (không tạo thêm bản ghi trong questions)
+        $partDirectionsInput = $request->input('part_directions', $staging['part_directions'] ?? []);
+        if (is_array($partDirectionsInput) && Schema::hasColumn('exam_section', 'directions_text')) {
+            foreach ($partDirectionsInput as $dirPartCode => $dirText) {
+                $cleanDirText = trim((string) $dirText);
+                $upperDirCode = strtoupper(trim((string) $dirPartCode));
+                if ($cleanDirText === '' || $upperDirCode === '') {
+                    continue;
+                }
+
+                $sectionRow = ExamSection::query()->where('code', $upperDirCode)->first();
+                if ($sectionRow === null) {
+                    continue;
+                }
+
+                $sectionRow->directions_text = $cleanDirText;
+                $sectionRow->save();
+            }
+        }
 
         $savedCount = count($savedQuestionIds);
-        $msg = "Đã duyệt và lưu thành công {$savedCount} câu hỏi vào Ngân hàng đề";
+        $attachedCount = $attachResult !== null ? (int) ($attachResult['attached'] ?? 0) : 0;
+
+        Log::info('PDF/Staging Commit Audit - After', [
+            'batch_id' => $batchId,
+            'before_commit_total_sets' => $beforeCommitTotalSets,
+            'before_commit_total_questions' => $beforeCommitTotalQuestions,
+            'skipped_error_questions' => $skippedErrorQuestions,
+            'after_commit_inserted_questions' => $savedCount,
+            'after_commit_attached_to_test' => $attachedCount,
+        ]);
+
+        $msg = "Đã duyệt và lưu thành công {$savedCount}/{$beforeCommitTotalQuestions} câu hỏi vào Ngân hàng đề";
         $details = [];
         if ($promotedImageCount > 0) {
             $details[] = "{$promotedImageCount} ảnh minh họa";
@@ -1407,6 +1591,12 @@ class QuestionController extends Controller
         $msg .= '!';
 
         if ($targetTestId !== null && $targetTestId > 0 && $attachResult !== null) {
+            if ($autoGenerateTts) {
+                return redirect()->route('admin.tests.show', ['id' => $targetTestId, 'auto_start_tts' => 1])
+                    ->with('success', $msg)
+                    ->with('auto_start_tts', true);
+            }
+
             return redirect()->route('admin.tests.show', $targetTestId)->with('success', $msg);
         }
 
@@ -1556,7 +1746,7 @@ class QuestionController extends Controller
         foreach ($subQuestions as $idx => $qData) {
             $subDifficulty = $qData['difficulty'] ?? null;
             if (empty($subDifficulty) || $subDifficulty === 'UNSET') {
-                $subDifficulty = AiToeicService::assessToeicDifficulty(
+                $subDifficulty = WordQuestionImportService::assessToeicDifficulty(
                     $sectionForGroup?->skill?->name ?? 'reading',
                     (string) ($sectionForGroup?->code ?? 'PART7'),
                     $qData['content'] ?? '',
@@ -1676,6 +1866,28 @@ class QuestionController extends Controller
         ]);
 
         $summary = $ttsService->generateBatchForQuestions($validated['question_ids'], 5);
+
+        if (Schema::hasColumn('exam_section', 'directions_audio_url')) {
+            $missingDirSections = ExamSection::query()
+                ->whereIn('code', ['PART1', 'PART2', 'PART3', 'PART4'])
+                ->whereNotNull('directions_text')
+                ->where('directions_text', '!=', '')
+                ->where(function ($q): void {
+                    $q->whereNull('directions_audio_url')->orWhere('directions_audio_url', '');
+                })
+                ->get();
+
+            foreach ($missingDirSections as $dirSection) {
+                $dirPartNum = (int) preg_replace('/[^0-9]/', '', (string) $dirSection->code) ?: 1;
+                try {
+                    $dirTts = $ttsService->synthesize((string) $dirSection->directions_text, $dirPartNum);
+                    $dirSection->directions_audio_url = '/'.ltrim((string) $dirTts['relative_path'], '/');
+                    $dirSection->save();
+                } catch (\Throwable $e) {
+                    // Bỏ qua nếu TTS tạm thời lỗi
+                }
+            }
+        }
 
         return response()->json([
             'success' => $summary['failed'] === 0 || $summary['succeeded'] > 0,
