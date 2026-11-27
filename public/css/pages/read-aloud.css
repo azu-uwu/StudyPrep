@@ -3,16 +3,120 @@
  * Bám sát 100% hình ảnh tham chiếu, chuẩn hóa responsive với Sidebar chung của StudyPrep.
  */
 
+/* ===== READ ALOUD PAGE LAYOUT (2 COLUMNS: MAIN CARD + PROMO SIDEBAR) ===== */
+.ra-page-layout {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 24px;
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 6px 0 40px;
+    box-sizing: border-box;
+}
+
 /* ===== READ ALOUD CARD WRAPPER ===== */
 .ra-card-container {
-    max-width: 860px;
-    margin: 0 auto;
+    flex: 1;
+    min-width: 0;
+    max-width: 780px;
     background: #FFFFFF;
     border: 1px solid var(--sp-border, #EEF1F7);
     border-radius: 24px;
     box-shadow: 0 4px 24px rgba(17, 28, 45, 0.04);
     padding: 30px 36px 40px;
     box-sizing: border-box;
+}
+
+/* ===== PROMO SIDEBAR (HỌC TRÊN ĐIỆN THOẠI DI ĐỘNG) ===== */
+.ra-sidebar-promo {
+    width: 270px;
+    flex: none;
+    background: #FFFFFF;
+    border: 1px solid #EEF1F7;
+    border-radius: 20px;
+    padding: 24px 20px 22px;
+    box-shadow: 0 4px 20px rgba(17, 28, 45, 0.03);
+    position: sticky;
+    top: 84px;
+    box-sizing: border-box;
+}
+
+.ra-promo-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: #111C2D;
+    margin: 0 0 16px;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+}
+
+.ra-promo-mockup-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 0 18px;
+}
+
+.ra-promo-mockup-wrap svg {
+    max-width: 140px;
+    height: auto;
+    display: block;
+}
+
+.ra-promo-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ra-promo-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 14px;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    color: #1E293B;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    cursor: pointer;
+}
+
+.ra-promo-btn:hover {
+    border-color: #0076FE;
+    background: #F8FAFC;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 118, 254, 0.08);
+}
+
+.ra-promo-btn svg {
+    width: 20px;
+    height: 20px;
+    flex: none;
+    fill: currentColor;
+}
+
+.ra-promo-btn-content {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.ra-promo-btn-sub {
+    font-size: 10px;
+    font-weight: 600;
+    color: #64748B;
+    line-height: 1.1;
+    text-transform: uppercase;
+}
+
+.ra-promo-btn-main {
+    font-size: 13px;
+    font-weight: 800;
+    color: #1E293B;
+    line-height: 1.25;
 }
 
 /* ===== HEADER ROW ===== */
@@ -314,17 +418,45 @@
     color: #DC2626;
 }
 
-/* Score tag & bookmark icon (Đọc đoạn văn) */
+/* Score tag & bookmark icon */
 .ra-score-tag {
     font-size: 13px;
     font-weight: 700;
     color: #94A3B8;
 }
 
+.ra-bookmark-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: #94A3B8;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.15s ease;
+}
+
+.ra-bookmark-btn:hover {
+    color: #0076FE;
+    background: #EFF6FF;
+}
+
+.ra-bookmark-btn.is-bookmarked {
+    color: #0076FE;
+}
+
+.ra-bookmark-btn.is-bookmarked svg {
+    fill: #0076FE;
+}
+
 .ra-bookmark-icon {
     width: 16px;
     height: 16px;
-    color: #94A3B8;
+    color: currentColor;
     flex: none;
 }
 
@@ -339,6 +471,39 @@
 .ra-item-row:hover .ra-chevron-icon {
     color: var(--sp-primary, #0076FE);
     transform: translateX(3px);
+}
+
+/* ===== EMPTY STATE ===== */
+.ra-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 56px 20px 48px;
+    text-align: center;
+}
+
+.ra-empty-icon {
+    width: 60px;
+    height: 60px;
+    color: #94A3B8;
+    margin-bottom: 16px;
+    stroke-width: 1.5;
+}
+
+.ra-empty-title {
+    font-size: 17px;
+    font-weight: 800;
+    color: #1E293B;
+    margin: 0 0 8px;
+}
+
+.ra-empty-desc {
+    font-size: 14px;
+    color: #64748B;
+    max-width: 380px;
+    margin: 0;
+    line-height: 1.5;
 }
 
 /* ===== INTERACTIVE READING MODAL ===== */
@@ -378,6 +543,7 @@
         opacity: 0;
         transform: scale(0.95);
     }
+
     to {
         opacity: 1;
         transform: scale(1);
@@ -476,8 +642,15 @@
 }
 
 @keyframes raPulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.02); }
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.02);
+    }
 }
 
 .ra-result-card {
@@ -491,8 +664,15 @@
 }
 
 @keyframes spFadeUp {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* ==========================================================================
@@ -501,6 +681,18 @@
 
 /* ===== TABLET (768px <= width <= 1023px) ===== */
 @media (max-width: 1023.98px) {
+    .ra-page-layout {
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .ra-sidebar-promo {
+        width: 100%;
+        max-width: 780px;
+        position: static;
+    }
+
     .ra-card-container {
         padding: 24px 24px 32px;
         border-radius: 20px;

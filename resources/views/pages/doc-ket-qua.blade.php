@@ -6,12 +6,9 @@
 
 <div class="sp-kq-container">
 
-    {{-- Thanh trên cùng: Logo & Nút X đóng --}}
+    {{-- Thanh trên cùng: Nút X đóng --}}
     <div class="sp-kq-topbar">
-        <a href="{{ url('/luyen-tap/doc') }}" class="sp-kq-logo-link" title="StudyPrep">
-            <img class="sp-sidebar__logo sp-kq-logo-img" src="{{ asset('images/logo.svg') }}" alt="StudyPrep">
-        </a>
-        <a href="{{ url('/luyen-tap/doc') }}" class="sp-kq-close-btn" title="Đóng và quay lại danh sách bài luyện Đọc" aria-label="Đóng">
+        <a href="{{ $backUrl ?? url('/luyen-tap/doc') }}" class="sp-kq-close-btn" title="Đóng và quay lại" aria-label="Đóng">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -24,7 +21,7 @@
         <div class="sp-kq-super-title">KẾT QUẢ BÀI LUYỆN</div>
         <h1 class="sp-kq-main-title">{{ $result['part_name'] ?? 'Part 5 — Đọc' }}</h1>
         <div class="sp-kq-meta-info">
-            {{ $result['total'] }} câu · {{ $result['time_spent_text'] ?? '1 phút' }}
+            {{ $result['total'] }} câu
         </div>
     </div>
 
@@ -106,11 +103,11 @@
         {{-- 2 Nút bấm hành động + Nút Tiếp tục --}}
         <div class="sp-kq-bottom-actions">
             @if($result['incorrect_count'] > 0)
-                <a href="{{ route('luyen-tap.doc.hoan-thanh-cau', ['retry_wrong' => 1]) }}" class="sp-kq-btn sp-kq-btn--purple">
+                <a href="{{ route('luyen-tap.doc.hoan-thanh-cau', array_filter(['part' => $result['part'] ?? 5, 'retry_wrong' => 1, 'attempt_id' => $result['attempt_id'] ?? null])) }}" class="sp-kq-btn sp-kq-btn--purple">
                     Luyện lại câu sai
                 </a>
             @else
-                <a href="{{ route('luyen-tap.doc.hoan-thanh-cau') }}" class="sp-kq-btn sp-kq-btn--purple">
+                <a href="{{ route('luyen-tap.doc.hoan-thanh-cau', ['part' => $result['part'] ?? 5]) }}" class="sp-kq-btn sp-kq-btn--purple">
                     Luyện tập lại
                 </a>
             @endif
@@ -120,8 +117,8 @@
             </button>
         </div>
 
-        <a href="{{ url('/luyen-tap/doc') }}" class="sp-kq-continue-link">
-            Tiếp tục
+        <a href="{{ $backUrl ?? url('/luyen-tap/doc') }}" class="sp-kq-continue-link">
+            Quay lại
         </a>
 
     </div>
@@ -175,11 +172,11 @@
             </button>
         </div>
 
-        {{-- Card Accordion Part 5: Hoàn thành câu --}}
+        {{-- Card Accordion Part: Hoàn thành câu / đoạn văn --}}
         <div class="sp-part-card">
             {{-- Header của Part --}}
             <div class="sp-part-header" onclick="togglePartAccordion('partBody')">
-                <h3 class="sp-part-title">Part 5: Hoàn thành câu</h3>
+                <h3 class="sp-part-title">{{ $result['part_name'] ?? 'Part 5: Hoàn thành câu' }}</h3>
                 <div class="sp-part-header-right">
                     <span class="sp-part-pct-pill">{{ $scorePercent }}%</span>
                     <span class="sp-part-score-text">{{ $result['correct_count'] }}/{{ $result['total'] }} Câu đúng</span>
@@ -301,11 +298,11 @@
         {{-- 2 Nút hành động ở đáy View 2 --}}
         <div class="sp-kq-bottom-actions">
             @if($result['incorrect_count'] > 0)
-                <a href="{{ route('luyen-tap.doc.hoan-thanh-cau', ['retry_wrong' => 1]) }}" class="sp-kq-btn sp-kq-btn--purple">
+                <a href="{{ route('luyen-tap.doc.hoan-thanh-cau', array_filter(['part' => $result['part'] ?? 5, 'retry_wrong' => 1, 'attempt_id' => $result['attempt_id'] ?? null])) }}" class="sp-kq-btn sp-kq-btn--purple">
                     Luyện lại câu sai
                 </a>
             @else
-                <a href="{{ route('luyen-tap.doc.hoan-thanh-cau') }}" class="sp-kq-btn sp-kq-btn--purple">
+                <a href="{{ route('luyen-tap.doc.hoan-thanh-cau', ['part' => $result['part'] ?? 5]) }}" class="sp-kq-btn sp-kq-btn--purple">
                     Luyện tập lại
                 </a>
             @endif

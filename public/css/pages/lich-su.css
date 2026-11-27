@@ -1,10 +1,23 @@
 /**
  * StudyPrep - Styles for Lịch sử làm bài (History & Test Review)
- * Bám sát 100% hình ảnh tham chiếu thiết kế, chuẩn hóa responsive đa thiết bị.
+ * Đồng bộ chuẩn Design System StudyPrep (kế thừa từ Luyện tập & Từ vựng).
  */
 
-/* ===== TOP BREADCRUMB & TOOLBAR ROW ===== */
-.ls-top-toolbar {
+/* ===== TYPOGRAPHY & FONT NUNITO ===== */
+.ls-header-toolbar,
+.ls-stats-grid,
+.ls-filter-sort-row,
+.ls-activity-card,
+.ls-modal,
+.ls-pill-item,
+.ls-date-btn,
+.ls-search-input,
+.ls-filter-select-pill {
+    font-family: var(--sp-font-family, 'Nunito', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif);
+}
+
+/* ===== 1. TIÊU ĐỀ TRANG & THANH CÔNG CỤ (HEADER TOOLBAR) ===== */
+.ls-header-toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -13,32 +26,13 @@
     margin-bottom: 24px;
 }
 
-.ls-breadcrumb {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13.5px;
-    font-weight: 600;
-}
-
-.ls-breadcrumb a {
-    color: #94A3B8;
-    text-decoration: none;
-    transition: color 0.15s ease;
-}
-
-.ls-breadcrumb a:hover {
-    color: #0076FE;
-}
-
-.ls-breadcrumb-sep {
-    color: #CBD5E1;
-    font-size: 14px;
-}
-
-.ls-breadcrumb-current {
-    color: #1E293B;
-    font-weight: 700;
+.ls-page-title {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--sp-text-main, #111C2D);
+    margin: 0;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
 }
 
 .ls-top-actions {
@@ -54,22 +48,24 @@
     align-items: center;
     gap: 8px;
     background: #FFFFFF;
-    border: 1px solid #E2E8F0;
+    border: 1px solid var(--sp-border, #E2E8F0);
     border-radius: 10px;
-    padding: 7px 14px;
+    padding: 0 14px;
+    height: 36px;
     min-width: 240px;
+    box-sizing: border-box;
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .ls-search-wrap:focus-within {
-    border-color: #0076FE;
+    border-color: var(--sp-primary, #0076FE);
     box-shadow: 0 0 0 3px rgba(0, 118, 254, 0.12);
 }
 
 .ls-search-wrap svg {
     width: 16px;
     height: 16px;
-    color: #94A3B8;
+    color: var(--sp-text-light, #94A3B8);
     flex: none;
 }
 
@@ -79,12 +75,13 @@
     outline: none;
     font-size: 13.5px;
     font-family: inherit;
-    color: #111C2D;
+    color: var(--sp-text-main, #111C2D);
     width: 100%;
+    height: 100%;
 }
 
 .ls-search-input::placeholder {
-    color: #94A3B8;
+    color: var(--sp-text-light, #94A3B8);
 }
 
 /* Date filter button */
@@ -93,21 +90,23 @@
     align-items: center;
     gap: 8px;
     background: #FFFFFF;
-    border: 1px solid #E2E8F0;
+    border: 1px solid var(--sp-border, #E2E8F0);
     border-radius: 10px;
-    padding: 7px 14px;
+    padding: 0 14px;
+    height: 36px;
     font-size: 13.5px;
     font-weight: 700;
     color: #475569;
     cursor: pointer;
     font-family: inherit;
+    box-sizing: border-box;
     transition: all 0.15s ease;
 }
 
 .ls-date-btn:hover {
     border-color: #CBD5E1;
     background: #F8FAFC;
-    color: #1E293B;
+    color: var(--sp-primary, #0076FE);
 }
 
 .ls-date-btn svg {
@@ -117,75 +116,7 @@
     flex: none;
 }
 
-/* Export button */
-.ls-export-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: #4F46E5;
-    border: none;
-    border-radius: 10px;
-    padding: 7px 16px;
-    font-size: 13.5px;
-    font-weight: 700;
-    color: #FFFFFF;
-    cursor: pointer;
-    font-family: inherit;
-    transition: all 0.15s ease;
-    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
-}
-
-.ls-export-btn:hover {
-    background: #4338CA;
-    transform: translateY(-1px);
-}
-
-.ls-export-btn svg {
-    width: 15px;
-    height: 15px;
-    stroke: currentColor;
-    stroke-width: 2.2;
-    fill: none;
-}
-
-/* ===== PAGE TITLE ===== */
-.ls-title-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 24px;
-}
-
-.ls-title-icon-badge {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: #0076FE;
-    color: #FFFFFF;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: none;
-    box-shadow: 0 3px 10px rgba(0, 118, 254, 0.3);
-}
-
-.ls-title-icon-badge svg {
-    width: 20px;
-    height: 20px;
-    stroke: currentColor;
-    stroke-width: 2.2;
-    fill: none;
-}
-
-.ls-page-title {
-    font-size: 26px;
-    font-weight: 800;
-    color: #111C2D;
-    margin: 0;
-    letter-spacing: -0.02em;
-}
-
-/* ===== 4 SUMMARY STATS CARDS ===== */
+/* ===== 2. BỐN THẺ SỐ LIỆU TỔNG HỢP ===== */
 .ls-stats-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -195,24 +126,24 @@
 
 .ls-stat-card {
     background: #FFFFFF;
-    border: 1px solid #EEF1F7;
-    border-radius: 18px;
+    border: 1px solid var(--sp-border, #EEF1F7);
+    border-radius: var(--sp-radius-xl, 20px);
     padding: 20px 22px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    box-shadow: 0 2px 10px rgba(17, 28, 45, 0.02);
+    box-shadow: var(--sp-shadow-xs, 0 2px 10px rgba(17, 28, 45, 0.02));
     transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .ls-stat-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(17, 28, 45, 0.05);
+    box-shadow: var(--sp-shadow-md, 0 6px 18px rgba(17, 28, 45, 0.05));
 }
 
 .ls-stat-card--danger {
     background: #FFFDFD;
-    border-color: #FEE2E2;
+    border-color: var(--sp-danger-border, #FEE2E2);
 }
 
 .ls-stat-content {
@@ -223,7 +154,7 @@
 .ls-stat-label {
     font-size: 13.5px;
     font-weight: 700;
-    color: #64748B;
+    color: var(--sp-text-muted, #64748B);
     margin: 0 0 8px;
 }
 
@@ -241,27 +172,27 @@
 .ls-stat-number {
     font-size: 26px;
     font-weight: 800;
-    color: #111C2D;
+    color: var(--sp-text-main, #111C2D);
     line-height: 1.1;
     letter-spacing: -0.02em;
 }
 
 .ls-stat-number--primary {
-    color: #4F46E5;
+    color: var(--sp-primary, #0076FE);
 }
 
 .ls-stat-number--danger {
-    color: #DC2626;
+    color: var(--sp-danger, #DC2626);
 }
 
 .ls-stat-unit {
     font-size: 13.5px;
     font-weight: 600;
-    color: #64748B;
+    color: var(--sp-text-muted, #64748B);
 }
 
 .ls-stat-card--danger .ls-stat-unit {
-    color: #DC2626;
+    color: var(--sp-danger, #DC2626);
     font-weight: 700;
 }
 
@@ -286,14 +217,10 @@
     flex: none;
 }
 
-.ls-stat-icon-wrap--blue {
-    background: #E0F2FE;
-    color: #0284C7;
-}
-
-.ls-stat-icon-wrap--purple {
-    background: #EEF2FF;
-    color: #6366F1;
+.ls-stat-icon-wrap--blue,
+.ls-stat-icon-wrap--primary {
+    background: var(--sp-primary-light, #EBF4FF);
+    color: var(--sp-primary, #0076FE);
 }
 
 .ls-stat-icon-wrap--amber {
@@ -309,30 +236,7 @@
     fill: none;
 }
 
-.ls-review-now-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 18px;
-    border-radius: 9999px;
-    background: #E11D48;
-    color: #FFFFFF;
-    font-size: 13.5px;
-    font-weight: 700;
-    border: none;
-    cursor: pointer;
-    text-decoration: none;
-    transition: background-color 0.15s ease, transform 0.1s ease;
-    box-shadow: 0 3px 10px rgba(225, 29, 72, 0.25);
-    flex: none;
-}
-
-.ls-review-now-btn:hover {
-    background: #BE123C;
-    transform: scale(1.03);
-}
-
-/* ===== FILTER TABS & SORT ROW ===== */
+/* ===== 3. BỘ LỌC TABS & SẮP XẾP ===== */
 .ls-filter-sort-row {
     display: flex;
     align-items: center;
@@ -358,7 +262,7 @@
     font-size: 13.5px;
     font-weight: 700;
     font-family: inherit;
-    border: 1px solid #E2E8F0;
+    border: 1px solid var(--sp-border, #E2E8F0);
     background: #FFFFFF;
     color: #475569;
     cursor: pointer;
@@ -369,14 +273,14 @@
 .ls-pill-item:hover {
     border-color: #CBD5E1;
     background: #F8FAFC;
-    color: #1E293B;
+    color: var(--sp-primary, #0076FE);
 }
 
 .ls-pill-item.is-active {
-    background: #4F46E5;
+    background: var(--sp-primary, #0076FE);
     color: #FFFFFF;
-    border-color: #4F46E5;
-    box-shadow: 0 3px 10px rgba(79, 70, 229, 0.25);
+    border-color: var(--sp-primary, #0076FE);
+    box-shadow: 0 3px 10px rgba(0, 118, 254, 0.25);
 }
 
 .ls-pill-badge {
@@ -395,7 +299,7 @@
 
 .ls-pill-item:not(.is-active) .ls-pill-badge {
     background: #F1F5F9;
-    color: #64748B;
+    color: var(--sp-text-muted, #64748B);
 }
 
 .ls-filter-select-pill {
@@ -407,47 +311,27 @@
     font-size: 13.5px;
     font-weight: 700;
     font-family: inherit;
-    border: 1px solid #E2E8F0;
+    border: 1px solid var(--sp-border, #E2E8F0);
     background: #FFFFFF;
     color: #475569;
     cursor: pointer;
     outline: none;
-    transition: border-color 0.15s ease;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .ls-filter-select-pill:focus {
-    border-color: #4F46E5;
-}
-
-.ls-sort-dropdown {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13.5px;
-    font-weight: 700;
-    color: #475569;
-    cursor: pointer;
-    background: transparent;
-    border: none;
-    padding: 4px;
-    font-family: inherit;
-}
-
-.ls-sort-dropdown svg {
-    width: 14px;
-    height: 14px;
-    stroke: currentColor;
-    stroke-width: 2.2;
+    border-color: var(--sp-primary, #0076FE);
+    box-shadow: 0 0 0 3px rgba(0, 118, 254, 0.12);
 }
 
 .ls-count-subtitle {
     font-size: 13px;
-    color: #94A3B8;
+    color: var(--sp-text-light, #94A3B8);
     margin: 0 0 24px;
     font-weight: 500;
 }
 
-/* ===== TIMELINE ACTIVITY GROUPS ===== */
+/* ===== 4. TIMELINE ACTIVITY GROUPS ===== */
 .ls-timeline-group {
     margin-bottom: 28px;
 }
@@ -463,14 +347,14 @@
 .ls-group-icon {
     width: 16px;
     height: 16px;
-    color: #64748B;
+    color: var(--sp-text-muted, #64748B);
     flex: none;
 }
 
 .ls-group-title {
     font-size: 12.5px;
     font-weight: 800;
-    color: #64748B;
+    color: var(--sp-text-muted, #64748B);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     white-space: nowrap;
@@ -479,28 +363,28 @@
 .ls-group-line {
     flex: 1;
     height: 1px;
-    background: #EEF1F7;
+    background: var(--sp-border, #EEF1F7);
     margin-left: 8px;
 }
 
-/* ===== ACTIVITY CARD (Khớp 100% ảnh thiết kế) ===== */
+/* ===== 5. ACTIVITY CARD ===== */
 .ls-activity-card {
     background: #FFFFFF;
-    border: 1px solid #EEF1F7;
-    border-radius: 20px;
+    border: 1px solid var(--sp-border, #EEF1F7);
+    border-radius: var(--sp-radius-xl, 20px);
     padding: 22px 28px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 20px;
-    box-shadow: 0 3px 14px rgba(17, 28, 45, 0.03);
+    box-shadow: var(--sp-shadow-xs, 0 3px 14px rgba(17, 28, 45, 0.03));
     transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
     margin-bottom: 14px;
 }
 
 .ls-activity-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(17, 28, 45, 0.06);
+    box-shadow: var(--sp-shadow-md, 0 8px 24px rgba(17, 28, 45, 0.06));
     border-color: #E2E8F0;
 }
 
@@ -512,7 +396,7 @@
     min-width: 0;
 }
 
-/* Biểu tượng đại diện từng Part/kỹ năng */
+/* Biểu tượng từng Part */
 .ls-activity-icon {
     width: 52px;
     height: 52px;
@@ -534,8 +418,8 @@
 }
 
 .ls-activity-icon--part3 {
-    background: #EDE9FE;
-    color: #7C3AED;
+    background: var(--sp-primary-light, #EBF4FF);
+    color: var(--sp-primary, #0076FE);
 }
 
 .ls-activity-icon--flashcard {
@@ -565,7 +449,7 @@
 .ls-activity-title {
     font-size: 16px;
     font-weight: 800;
-    color: #111C2D;
+    color: var(--sp-text-main, #111C2D);
     margin: 0;
     line-height: 1.35;
     white-space: nowrap;
@@ -582,7 +466,7 @@
     font-size: 12px;
     font-weight: 700;
     background: #FEE2E2;
-    color: #DC2626;
+    color: var(--sp-danger, #DC2626);
     white-space: nowrap;
 }
 
@@ -600,7 +484,7 @@
 
 .ls-activity-submeta {
     font-size: 13.5px;
-    color: #64748B;
+    color: var(--sp-text-muted, #64748B);
     margin: 0;
     font-weight: 500;
 }
@@ -610,7 +494,7 @@
     align-items: center;
     gap: 8px;
     font-size: 13px;
-    color: #64748B;
+    color: var(--sp-text-muted, #64748B);
     margin: 0;
 }
 
@@ -625,7 +509,7 @@
 }
 
 .ls-delta--neutral {
-    color: #64748B;
+    color: var(--sp-text-muted, #64748B);
     font-weight: 500;
 }
 
@@ -633,7 +517,7 @@
 .ls-activity-right {
     display: flex;
     align-items: center;
-    gap: 32px;
+    gap: 28px;
     flex: none;
 }
 
@@ -647,7 +531,7 @@
 .ls-rate-label {
     font-size: 11px;
     font-weight: 800;
-    color: #94A3B8;
+    color: var(--sp-text-light, #94A3B8);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-bottom: 2px;
@@ -656,64 +540,22 @@
 .ls-rate-value {
     font-size: 26px;
     font-weight: 800;
-    color: #4338CA;
+    color: var(--sp-primary, #0076FE);
     line-height: 1.1;
     letter-spacing: -0.02em;
 }
 
 .ls-rate-value--green {
-    color: #059669;
+    color: var(--sp-success, #059669);
 }
 
 .ls-action-buttons {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 10px;
 }
 
-.ls-btn-text {
-    background: transparent;
-    border: none;
-    color: #1E293B;
-    font-size: 14px;
-    font-weight: 700;
-    font-family: inherit;
-    cursor: pointer;
-    padding: 6px 4px;
-    transition: color 0.15s ease;
-    white-space: nowrap;
-}
-
-.ls-btn-text:hover {
-    color: #0076FE;
-    text-decoration: underline;
-}
-
-.ls-btn-outline {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 7px 20px;
-    border-radius: 10px;
-    background: #FFFFFF;
-    border: 1.5px solid #CBD5E1;
-    color: #1E293B;
-    font-size: 13.5px;
-    font-weight: 700;
-    font-family: inherit;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    white-space: nowrap;
-}
-
-.ls-btn-outline:hover {
-    border-color: #0076FE;
-    background: #F8FAFC;
-    color: #0076FE;
-    transform: translateY(-1px);
-}
-
-/* ===== MODAL XEM CHI TIẾT KẾT QUẢ ===== */
+/* ===== 6. MODAL XEM CHI TIẾT KẾT QUẢ ===== */
 .ls-modal-backdrop {
     position: fixed;
     inset: 0;
@@ -758,7 +600,7 @@
 
 .ls-modal__header {
     padding: 20px 28px;
-    border-bottom: 1px solid #EEF1F7;
+    border-bottom: 1px solid var(--sp-border, #EEF1F7);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -767,7 +609,7 @@
 .ls-modal__title {
     font-size: 18px;
     font-weight: 800;
-    color: #111C2D;
+    color: var(--sp-text-main, #111C2D);
     margin: 0;
 }
 
@@ -787,7 +629,7 @@
 
 .ls-modal__close:hover {
     background: #E2E8F0;
-    color: #111C2D;
+    color: var(--sp-text-main, #111C2D);
 }
 
 .ls-modal__body {
@@ -817,9 +659,11 @@
 
 /* ===== MOBILE (width < 768px) ===== */
 @media (max-width: 767.98px) {
-    .ls-top-toolbar {
+    .ls-header-toolbar {
         flex-direction: column;
         align-items: stretch;
+        gap: 16px;
+        margin-bottom: 20px;
     }
 
     .ls-top-actions {
@@ -877,11 +721,25 @@
 /* ===== SMALL MOBILE (width < 480px) ===== */
 @media (max-width: 479.98px) {
     .ls-page-title {
-        font-size: 22px;
+        font-size: 24px;
     }
 
     .ls-stat-number {
         font-size: 22px;
+    }
+
+    .ls-top-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .ls-date-btn {
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .ls-top-actions .sp-btn {
+        width: 100%;
     }
 
     .ls-filter-pills {
@@ -893,8 +751,192 @@
         font-size: 12.5px;
     }
 
-    .ls-btn-outline {
-        padding: 6px 14px;
-        font-size: 12.5px;
+    .ls-activity-right {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
     }
+
+    .ls-action-buttons {
+        width: 100%;
+    }
+
+    .ls-action-buttons .sp-btn {
+        flex: 1;
+    }
+}
+
+/* ===== PHẦN MỞ RỘNG: BADGES, ICONS, EMPTY STATE, DROPDOWN & PAGINATION ===== */
+.ls-stat-card--no-action .ls-stat-content {
+    width: 100%;
+}
+
+.ls-stat-badge--down {
+    background: #FEE2E2 !important;
+    color: #DC2626 !important;
+}
+
+.ls-activity-icon--part6 {
+    background: #DCFCE7;
+    color: #16A34A;
+}
+
+.ls-activity-icon--part7 {
+    background: #EDE9FE;
+    color: #7C3AED;
+}
+
+.ls-activity-icon--part1 {
+    background: #E0F2FE;
+    color: #0284C7;
+}
+
+.ls-activity-icon--part2 {
+    background: #E0E7FF;
+    color: #4F46E5;
+}
+
+.ls-activity-icon--exam {
+    background: #FFE4E6;
+    color: #E11D48;
+}
+
+.ls-activity-icon--spk {
+    background: #FEF3C7;
+    color: #D97706;
+}
+
+.ls-activity-icon--wrt {
+    background: #CCFBF1;
+    color: #0D9488;
+}
+
+/* Empty State đồng bộ trang Cải thiện */
+.ls-empty-state-box {
+    border: 2px dashed #CBD5E1;
+    border-radius: var(--sp-radius-xl, 20px);
+    padding: 56px 24px;
+    text-align: center;
+    background: #FFFFFF;
+    margin-top: 16px;
+    margin-bottom: 24px;
+}
+
+.ls-empty-state-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #F1F5F9;
+    color: var(--sp-text-muted, #64748B);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+}
+
+.ls-empty-state-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--sp-text-main, #111C2D);
+    margin: 0 0 8px;
+}
+
+.ls-empty-state-desc {
+    font-size: 14px;
+    color: var(--sp-text-muted, #64748B);
+    max-width: 480px;
+    margin: 0 auto 24px;
+    line-height: 1.6;
+}
+
+.ls-empty-state-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* Date filter dropdown */
+.ls-date-dropdown-wrap {
+    position: relative;
+    display: inline-block;
+}
+
+.ls-date-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: #FFFFFF;
+    border: 1px solid var(--sp-border, #E2E8F0);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    padding: 6px;
+    min-width: 170px;
+    z-index: 100;
+}
+
+.ls-date-option {
+    display: block;
+    padding: 8px 14px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #334155;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.ls-date-option:hover {
+    background: #F1F5F9;
+    color: var(--sp-primary, #0076FE);
+}
+
+.ls-date-option.is-selected {
+    background: var(--sp-primary-light, #EBF4FF);
+    color: var(--sp-primary, #0076FE);
+    font-weight: 700;
+}
+
+/* Pagination controls */
+.ls-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 32px 0 24px;
+}
+
+.ls-page-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    border-radius: 8px;
+    border: 1px solid var(--sp-border, #E2E8F0);
+    background: #FFFFFF;
+    color: #334155;
+    font-size: 13.5px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.ls-page-btn:hover:not(.is-disabled):not(.is-active) {
+    border-color: var(--sp-primary, #0076FE);
+    color: var(--sp-primary, #0076FE);
+}
+
+.ls-page-btn.is-active {
+    background: var(--sp-primary, #0076FE);
+    border-color: var(--sp-primary, #0076FE);
+    color: #FFFFFF;
+}
+
+.ls-page-btn.is-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    color: #94A3B8;
 }

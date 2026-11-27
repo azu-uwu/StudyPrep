@@ -392,7 +392,38 @@
             .exam-detail-page .section-heading { align-items: flex-start; }
         }
 
-        .exam-detail-page .part-selection-panel[hidden] { display: none !important; }
+        .exam-detail-page .part-selection-panel[hidden],
+        .exam-detail-page .skill-selection-panel[hidden] { display: none !important; }
+        .exam-detail-page .skill-selection-panel {
+            display: grid;
+            gap: 10px;
+            margin-top: 12px;
+            padding: 14px;
+            border: 1px solid #e0e7ff;
+            border-radius: 12px;
+            background: #f5f7ff;
+        }
+        .exam-detail-page .skill-option {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 11px 14px;
+            border: 1px solid #dbeafe;
+            border-radius: 10px;
+            background: #ffffff;
+            cursor: pointer;
+            transition: all .15s ease;
+        }
+        .exam-detail-page .skill-option:hover {
+            border-color: #6366f1;
+            background: #faf5ff;
+        }
+        .exam-detail-page .skill-option.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
         .exam-confirm-overlay[hidden] { display: none !important; }
         .exam-confirm-overlay {
             position: fixed; inset: 0; z-index: 99999; display: flex;
@@ -430,60 +461,45 @@
     </style>
     @endpush
 
-    @php
-        /*
-         * Dữ liệu dưới đây là dữ liệu minh họa để hoàn thiện giao diện.
-         * Khi tích hợp backend, thay bằng thông tin đề thi và lịch sử của người dùng.
-         */
-        $exam = [
-            'code' => 'TOEIC-LR-01',
-            'category' => 'TOEIC LISTENING & READING',
-            'title' => 'TOEIC Listening & Reading Full Test #01',
-            'description' => 'Bài thi mô phỏng TOEIC Listening & Reading giúp bạn đánh giá năng lực nghe và đọc tiếng Anh trong điều kiện gần với bài thi thực tế. Bạn có thể làm toàn bộ đề trong một lượt hoặc chọn riêng từng phần để luyện tập có mục tiêu.',
-            'questions' => 200,
-            'duration' => 120,
-            'level' => 'Trung cấp – Nâng cao',
-            'attempts' => 3,
-        ];
-        $examHistory = [
-            ['date' => '18/10/2026 20:15', 'mode' => 'Full Test', 'duration' => '112 phút', 'score' => '785/990', 'status' => 'Đã hoàn thành'],
-            ['date' => '12/10/2026 19:40', 'mode' => 'Part 5 – 6', 'duration' => '24 phút', 'score' => '82%', 'status' => 'Đã hoàn thành'],
-            ['date' => '05/10/2026 21:05', 'mode' => 'Full Test', 'duration' => '120 phút', 'score' => '710/990', 'status' => 'Đã hoàn thành'],
-        ];
-    @endphp
-
     <main class="exam-detail-page">
         <a class="back-link" href="{{ url('/thi-thu') }}">← Quay lại danh sách đề thi</a>
 
+        @if(session('error'))
+            <div style="margin-bottom: 20px; padding: 14px 18px; border-radius: 12px; background: #fef2f2; border: 1px solid #fee2e2; color: #b91c1c; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 18px;">⚠️</span>
+                <span>{{ session('error') }}</span>
+            </div>
+        @endif
+
         <section class="exam-hero">
             <div class="exam-hero-main">
-                <div class="exam-eyebrow"><span aria-hidden="true">●</span> {{ $exam['category'] }}</div>
-                <h1 class="exam-title">{{ $exam['title'] }}</h1>
-                <p class="exam-summary">{{ $exam['description'] }}</p>
+                <div class="exam-eyebrow"><span aria-hidden="true">●</span> {{ $definition['name'] ?? $examType }}</div>
+                <h1 class="exam-title">{{ $test->title }}</h1>
+                <p class="exam-summary">{{ $definition['description'] ?? 'Bài thi mô phỏng TOEIC giúp bạn đánh giá năng lực và chuẩn bị tốt nhất trước kỳ thi thật.' }}</p>
             </div>
             <div class="hero-score">
                 <div class="hero-score-label">Điểm cao nhất của bạn</div>
-                <div class="hero-score-value">785<span style="font-size: 13px; color: #8a94a9; font-weight: 700;"> / 990</span></div>
-                <div class="hero-score-note">Dựa trên lịch sử làm đề minh họa</div>
+                <div class="hero-score-value">{{ $highestScore !== null ? $highestScore : '--' }}<span style="font-size: 13px; color: #8a94a9; font-weight: 700;"> {{ $highestScore !== null ? '/ 990' : 'điểm' }}</span></div>
+                <div class="hero-score-note">{{ $highestScore !== null ? 'Dựa trên kết quả các lần thi trước' : 'Chưa có lượt thi hoàn thành' }}</div>
             </div>
         </section>
 
         <section class="stat-grid" aria-label="Thông tin đề thi">
             <div class="stat-card">
                 <div class="stat-icon" aria-hidden="true">☷</div>
-                <div><div class="stat-label">Số câu hỏi</div><div class="stat-value">{{ $exam['questions'] }} câu</div></div>
+                <div><div class="stat-label">Số câu hỏi có sẵn</div><div class="stat-value">{{ $totalQuestionsInTest }} câu</div></div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon" aria-hidden="true">◷</div>
-                <div><div class="stat-label">Thời gian</div><div class="stat-value">{{ $exam['duration'] }} phút</div></div>
+                <div><div class="stat-label">Thời gian Full Test</div><div class="stat-value">{{ $totalDuration }} phút</div></div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon" aria-hidden="true">◎</div>
-                <div><div class="stat-label">Độ khó</div><div class="stat-value">{{ $exam['level'] }}</div></div>
+                <div><div class="stat-label">Độ khó</div><div class="stat-value">Chuẩn đề ETS</div></div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon" aria-hidden="true">↻</div>
-                <div><div class="stat-label">Lượt đã thi</div><div class="stat-value">{{ $exam['attempts'] }} lần</div></div>
+                <div><div class="stat-label">Lượt đã thi</div><div class="stat-value">{{ count($examHistory) }} lần</div></div>
             </div>
         </section>
 
@@ -492,11 +508,11 @@
                 <section class="detail-card">
                     <h2 class="section-heading">Thông tin đề thi</h2>
                     <p class="section-subtitle">Nắm rõ cấu trúc và mục tiêu trước khi bắt đầu.</p>
-                    <p class="description-text">{{ $exam['description'] }}</p>
+                    <p class="description-text">{{ $definition['description'] ?? 'Đề thi thực tế được lấy từ hệ thống ngân hàng đề thi StudyPrep.' }}</p>
                     <ul class="feature-list">
-                        <li><span class="check-dot">✓</span><span>Gồm hai kỹ năng Listening và Reading theo cấu trúc TOEIC.</span></li>
-                        <li><span class="check-dot">✓</span><span>Có thể làm toàn bộ đề hoặc chọn riêng từng phần phù hợp mục tiêu luyện tập.</span></li>
-                        <li><span class="check-dot">✓</span><span>Lịch sử điểm số giúp bạn theo dõi tiến bộ qua từng lần thi.</span></li>
+                        <li><span class="check-dot">✓</span><span>Cấu trúc chuẩn theo đề thi TOEIC ETS hiện hành.</span></li>
+                        <li><span class="check-dot">✓</span><span>Có thể làm toàn bộ đề (Full Test) hoặc chọn riêng từng Part để luyện tập có trọng tâm.</span></li>
+                        <li><span class="check-dot">✓</span><span>Hệ thống chấm điểm Server-side chính xác, lưu lịch sử và phân tích tỉ lệ đúng theo từng Part.</span></li>
                     </ul>
                 </section>
 
@@ -506,10 +522,10 @@
                         <select class="history-filter" id="historyFilter" aria-label="Lọc lịch sử thi">
                             <option value="all">Tất cả lần thi</option>
                             <option value="Full Test">Full Test</option>
-                            <option value="Part">Luyện từng phần</option>
+                            <option value="Luyện từng phần">Luyện từng phần</option>
                         </select>
                     </div>
-                    <p class="section-subtitle">Các lần làm đề trước đây của bạn.</p>
+                    <p class="section-subtitle">Các lần làm đề này của bạn.</p>
 
                     <div class="history-table-wrap">
                         <table class="history-table">
@@ -523,21 +539,29 @@
                                 </tr>
                             </thead>
                             <tbody id="historyTableBody">
-                                @foreach ($examHistory as $attempt)
+                                @forelse ($examHistory as $attempt)
                                     <tr data-mode="{{ $attempt['mode'] }}">
                                         <td>{{ $attempt['date'] }}</td>
                                         <td>{{ $attempt['mode'] }}</td>
                                         <td>{{ $attempt['duration'] }}</td>
-                                        <td><span class="score-pill">{{ $attempt['score'] }}</span></td>
+                                        <td>
+                                            @if($attempt['status'] === 'Đã hoàn thành')
+                                                <a href="{{ route('thi-thu.ket-qua', $attempt['id']) }}" class="score-pill" style="text-decoration:none;">{{ $attempt['score'] }}</a>
+                                            @else
+                                                <a href="{{ route('thi-thu.giao-dien-thi', $attempt['id']) }}" class="score-pill" style="background:#fff7ed; color:#c2410c; text-decoration:none;">Tiếp tục làm</a>
+                                            @endif
+                                        </td>
                                         <td>{{ $attempt['status'] }}</td>
                                     </tr>
-                                @endforeach
+                                @empty
+                                    <tr>
+                                        <td colspan="5" style="text-align:center; padding: 20px; color: #8a94a9;">
+                                            Bạn chưa làm đề thi này lần nào. Hãy bấm "Bắt đầu thi" để thử sức!
+                                        </td>
+                                    </tr>
+                                @endforelse
                             </tbody>
                         </table>
-                    </div>
-                    <div class="history-empty" id="historyEmpty" hidden>
-                        <div class="empty-icon">◷</div>
-                        Chưa có lịch sử thi phù hợp với bộ lọc.
                     </div>
                 </section>
             </div>
@@ -545,185 +569,95 @@
             <aside class="content-column">
                 <section class="detail-card">
                     <h2 class="section-heading">Bắt đầu thi mới</h2>
-                    <p class="section-subtitle">Chọn thi toàn bộ đề hoặc một phần cụ thể.</p>
+                    <p class="section-subtitle">Chọn thi toàn bộ đề hoặc từng Part cụ thể.</p>
 
-                    <form id="startExamForm">
+                    <form id="startExamForm" method="POST" action="{{ route('thi-thu.bat-dau', $test->test_form_id) }}">
+                        @csrf
                         <div class="part-list">
+                            <!-- Hình thức 1: Làm Full Test -->
                             <label class="mode-option">
                                 <input type="radio" name="exam_mode" value="fulltest" checked>
                                 <span class="mode-option-copy">
-                                    <span class="mode-option-title">Làm Full Test</span>
+                                    <span class="mode-option-title">1. Làm Full Test</span>
                                     <span class="mode-option-desc">Thi toàn bộ đề theo cấu trúc và thời gian quy định.</span>
                                 </span>
-                                <span class="part-meta">200 câu<br>120 phút</span>
+                                <span class="part-meta">{{ $totalQuestionsInTest }} câu<br>{{ $totalDuration }} phút</span>
                             </label>
 
+                            <!-- Hình thức 2: Làm từng phần (Kỹ năng) -->
+                            <label class="mode-option">
+                                <input type="radio" name="exam_mode" value="skill">
+                                <span class="mode-option-copy">
+                                    <span class="mode-option-title">2. Làm theo kỹ năng</span>
+                                    <span class="mode-option-desc">Chọn toàn bộ phần Listening (Part 1–4) hoặc Reading (Part 5–7).</span>
+                                </span>
+                                <span class="part-meta">Kỹ năng</span>
+                            </label>
+
+                            <!-- Hình thức 3: Luyện riêng từng Part -->
                             <label class="mode-option">
                                 <input type="radio" name="exam_mode" value="selected_parts">
                                 <span class="mode-option-copy">
-                                    <span class="mode-option-title">Chọn từng phần để thi</span>
-                                    <span class="mode-option-desc">Tích chọn một hoặc nhiều phần bạn muốn luyện tập.</span>
+                                    <span class="mode-option-title">3. Luyện riêng từng Part</span>
+                                    <span class="mode-option-desc">Tích chọn một hoặc nhiều Part cụ thể bạn muốn làm.</span>
                                 </span>
                                 <span class="part-meta">Tùy chọn</span>
                             </label>
                         </div>
 
-                        <!-- đối với đề listening và reading -->
-                        <div class="part-selection-panel" id="partSelectionPanel" >
-                            <div class="selection-tools">
-                                <span class="part-selection-heading">Chọn phần thi listening reading</span>
-                                <button class="text-action" type="button" id="toggleAllParts">Chọn tất cả</button>
-                            </div>
-
-                            <label class="part-checkbox">
-                                <input type="checkbox" name="exam_parts[]" value="part1">
-                                <span class="part-checkbox-copy">
-                                    <span class="part-checkbox-title">Part 1 — Photographs</span>
-                                    <span class="part-checkbox-desc">Mô tả hình ảnh</span>
+                        <!-- Khung chọn kỹ năng (Hình thức 2) -->
+                        <div class="skill-selection-panel" id="skillSelectionPanel" hidden>
+                            <span class="part-selection-heading" style="font-size: 11px; font-weight: 800; color: #1e293b;">Chọn một kỹ năng:</span>
+                            
+                            <label class="skill-option {{ $listeningQuestions === 0 ? 'disabled' : '' }}">
+                                <span style="display: flex; align-items: center; gap: 8px;">
+                                    <input type="radio" name="selected_skill" value="listening" {{ $listeningQuestions > 0 ? 'checked' : '' }} {{ $listeningQuestions === 0 ? 'disabled' : '' }}>
+                                    <span style="font-weight: 750; color: #1e293b;">Listening (Part 1 – Part 4)</span>
                                 </span>
-                                <span class="part-checkbox-meta">6 câu</span>
+                                <span style="font-size: 10px; color: #64748b; font-weight: 700;">
+                                    {{ $listeningQuestions }} câu · 45 phút
+                                </span>
                             </label>
 
-                            <label class="part-checkbox">
-                                <input type="checkbox" name="exam_parts[]" value="part2">
-                                <span class="part-checkbox-copy">
-                                    <span class="part-checkbox-title">Part 2 — Question–Response</span>
-                                    <span class="part-checkbox-desc">Nghe câu hỏi và chọn phản hồi phù hợp</span>
+                            <label class="skill-option {{ $readingQuestions === 0 ? 'disabled' : '' }}">
+                                <span style="display: flex; align-items: center; gap: 8px;">
+                                    <input type="radio" name="selected_skill" value="reading" {{ $listeningQuestions === 0 && $readingQuestions > 0 ? 'checked' : '' }} {{ $readingQuestions === 0 ? 'disabled' : '' }}>
+                                    <span style="font-weight: 750; color: #1e293b;">Reading (Part 5 – Part 7)</span>
                                 </span>
-                                <span class="part-checkbox-meta">25 câu</span>
-                            </label>
-
-                            <label class="part-checkbox">
-                                <input type="checkbox" name="exam_parts[]" value="part3">
-                                <span class="part-checkbox-copy">
-                                    <span class="part-checkbox-title">Part 3 — Conversations</span>
-                                    <span class="part-checkbox-desc">Nghe hội thoại</span>
+                                <span style="font-size: 10px; color: #64748b; font-weight: 700;">
+                                    {{ $readingQuestions }} câu · 75 phút
                                 </span>
-                                <span class="part-checkbox-meta">39 câu</span>
-                            </label>
-
-                            <label class="part-checkbox">
-                                <input type="checkbox" name="exam_parts[]" value="part4">
-                                <span class="part-checkbox-copy">
-                                    <span class="part-checkbox-title">Part 4 — Talks</span>
-                                    <span class="part-checkbox-desc">Nghe bài nói ngắn</span>
-                                </span>
-                                <span class="part-checkbox-meta">30 câu</span>
-                            </label>
-
-                            <label class="part-checkbox">
-                                <input type="checkbox" name="exam_parts[]" value="part5">
-                                <span class="part-checkbox-copy">
-                                    <span class="part-checkbox-title">Part 5 — Incomplete Sentences</span>
-                                    <span class="part-checkbox-desc">Luyện ngữ pháp và từ vựng</span>
-                                </span>
-                                <span class="part-checkbox-meta">30 câu</span>
-                            </label>
-
-                            <label class="part-checkbox">
-                                <input type="checkbox" name="exam_parts[]" value="part6">
-                                <span class="part-checkbox-copy">
-                                    <span class="part-checkbox-title">Part 6 — Text Completion</span>
-                                    <span class="part-checkbox-desc">Hoàn thành đoạn văn</span>
-                                </span>
-                                <span class="part-checkbox-meta">16 câu</span>
-                            </label>
-
-                            <label class="part-checkbox">
-                                <input type="checkbox" name="exam_parts[]" value="part7">
-                                <span class="part-checkbox-copy">
-                                    <span class="part-checkbox-title">Part 7 — Reading Comprehension</span>
-                                    <span class="part-checkbox-desc">Đọc hiểu đoạn văn đơn, kép và ba</span>
-                                </span>
-                                <span class="part-checkbox-meta">54 câu</span>
                             </label>
                         </div>
 
-                        <!-- đối với đề speaking và writing -->
-                        <div class="part-selection-panel" id="partSelectionPanel" >
+                        <!-- Khung chọn từng Part (Hình thức 3) -->
+                        <div class="part-selection-panel" id="partSelectionPanel" hidden>
                             <div class="selection-tools">
-                                <span class="part-selection-heading">Chọn phần thi speaking writing</span>
+                                <span class="part-selection-heading">Chọn phần thi</span>
                                 <button class="text-action" type="button" id="toggleAllParts">Chọn tất cả</button>
                             </div>
 
-                            <label class="part-checkbox">
-                                <input type="checkbox" name="exam_parts[]" value="part1">
-                                <span class="part-checkbox-copy">
-                                    <span class="part-checkbox-title">Part 1 — Read a Text Aloud</span>
-                                    <span class="part-checkbox-desc">Đọc to một đoạn văn tiếng Anh được cung cấp</span>
-                                </span>
-                                <span class="part-checkbox-meta">2 câu</span>
-                            </label>
-
-                            <label class="part-checkbox">
-                                <input type="checkbox" name="exam_parts[]" value="part2">
-                                <span class="part-checkbox-copy">
-                                    <span class="part-checkbox-title">Part 2 — Describe a Picture</span>
-                                    <span class="part-checkbox-desc">Quan sát một bức ảnh và mô tả những gì đang diễn ra.</span>
-                                </span>
-                                <span class="part-checkbox-meta">2 câu</span>
-                            </label>
-
-                            <label class="part-checkbox">
-                                <input type="checkbox" name="exam_parts[]" value="part3">
-                                <span class="part-checkbox-copy">
-                                    <span class="part-checkbox-title">Part 3 — Respond to Questions</span>
-                                    <span class="part-checkbox-desc">Trả lời các câu hỏi về một chủ đề quen thuộc, thường liên quan đến lịch trình, sở thích hoặc hoạt động hằng ngày.</span>
-                                </span>
-                                <span class="part-checkbox-meta">3 câu</span>
-                            </label>
-
-                            <label class="part-checkbox">
-                                <input type="checkbox" name="exam_parts[]" value="part4">
-                                <span class="part-checkbox-copy">
-                                    <span class="part-checkbox-title">Part 4 — Respond to Questions Using Information Provided</span>
-                                    <span class="part-checkbox-desc">Đọc bảng lịch trình, thông báo hoặc thông tin sự kiện, sau đó trả lời câu hỏi dựa trên dữ liệu được cho.</span>
-                                </span>
-                                <span class="part-checkbox-meta">3 câu</span>
-                            </label>
-
-                            <label class="part-checkbox">
-                                <input type="checkbox" name="exam_parts[]" value="part5">
-                                <span class="part-checkbox-copy">
-                                    <span class="part-checkbox-title">Part 5 — Express an opinion</span>
-                                    <span class="part-checkbox-desc">Bày tỏ quan điểm cá nhân về một chủ đề</span>
-                                </span>
-                                <span class="part-checkbox-meta">1 câu</span>
-                            </label>
-
-                            <!-- writing -->
-                             <label class="part-checkbox">
-                                <input type="checkbox" name="exam_parts[]" value="part1">
-                                <span class="part-checkbox-copy">
-                                    <span class="part-checkbox-title">Part 1 — Write a Sentence Based on a Picture</span>
-                                    <span class="part-checkbox-desc">Viết một câu mô tả bức tranh, sử dụng hai từ hoặc cụm từ cho sẵn. Có thể thay đổi dạng từ và thứ tự sử dụng.</span>
-                                </span>
-                                <span class="part-checkbox-meta">5 câu</span>
-                            </label>
-
-                            <label class="part-checkbox">
-                                <input type="checkbox" name="exam_parts[]" value="part2">
-                                <span class="part-checkbox-copy">
-                                    <span class="part-checkbox-title">Part 2 — Respond to a Written Request</span>
-                                    <span class="part-checkbox-desc">Đọc email hoặc yêu cầu bằng văn bản, sau đó viết email phản hồi phù hợp với thông tin và các yêu cầu được đưa ra.</span>
-                                </span>
-                                <span class="part-checkbox-meta">2 câu</span>
-                            </label>
-
-                            <label class="part-checkbox">
-                                <input type="checkbox" name="exam_parts[]" value="part3">
-                                <span class="part-checkbox-copy">
-                                    <span class="part-checkbox-title">Part 3 — Write an Opinion Essay</span>
-                                    <span class="part-checkbox-desc">Trình bày quan điểm về một vấn đề, sau đó đưa ra lý do và ví dụ để bảo vệ quan điểm đó.</span>
-                                </span>
-                                <span class="part-checkbox-meta">1 câu</span>
-                            </label>
+                            @foreach($parts as $part)
+                                <label class="part-checkbox" style="{{ $part['actual_count'] === 0 ? 'opacity: 0.6;' : '' }}">
+                                    <input type="checkbox" name="exam_parts[]" value="{{ $part['code'] }}" 
+                                        data-name="{{ $part['name'] }}"
+                                        data-count="{{ $part['actual_count'] }}" 
+                                        data-time="{{ $part['time_minutes'] }}"
+                                        {{ $part['actual_count'] > 0 ? 'checked' : '' }}>
+                                    <span class="part-checkbox-copy">
+                                        <span class="part-checkbox-title">{{ $part['name'] }}</span>
+                                        <span class="part-checkbox-desc">{{ $part['description'] }}</span>
+                                    </span>
+                                    <span class="part-checkbox-meta">
+                                        {{ $part['actual_count'] }} câu · {{ $part['time_minutes'] }}p
+                                    </span>
+                                </label>
+                            @endforeach
                         </div>
-
 
                         <div class="selection-footer">
-                            <div class="selection-hint" id="selectedModeHint">Đang chọn: Full Test · 200 câu · 120 phút</div>
-                            <a href="{{ url('/thi-thu/giao-dien-thi') }}"><button type="button" class="primary-action">Bắt đầu thi <span aria-hidden="true">→</span></button></a>
+                            <div class="selection-hint" id="selectedModeHint">Đang chọn: Full Test · {{ $totalQuestionsInTest }} câu · {{ $totalDuration }} phút</div>
+                            <button type="submit" class="primary-action">Bắt đầu thi <span aria-hidden="true">→</span></button>
                         </div>
                     </form>
                 </section>
@@ -736,38 +670,26 @@
         </div>
     </main>
 
-
-    <!-- <x-modal id="confirm-test-modal" title="Xác nhận bắt đầu bài thi thử" maxWidth="520px">
-        <p style="margin: 0 0 12px; font-size: 14px; color: #334155; line-height: 1.7;">
-            Bạn chuẩn bị bắt đầu bài thi thử. Khi chọn <strong>“Vào thi &amp; Toàn màn hình”</strong>, hệ thống sẽ chuyển sang giao diện làm bài.
-        </p>
-        <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 14px; margin-bottom: 16px; font-size: 13px; color: #92400e; line-height: 1.7;">
-            ⚠️ Một lượt thi sẽ được sử dụng.<br>
-            ⚠️ Trình duyệt sẽ yêu cầu chế độ toàn màn hình.<br>
-            ⚠️ Hệ thống có thể ghi nhận khi bạn rời khỏi cửa sổ thi.
-        </div>
-        <p style="margin: 0; font-size: 12px; color: #64748b; line-height: 1.6;">
-            Đảm bảo bạn đã sẵn sàng trước khi bắt đầu. Hiện tại thao tác khởi tạo lượt thi cần được tích hợp với backend.
-        </p>
-        <x-slot:actions>
-            <x-button variant="neutral" data-sp-modal-close>Huỷ bỏ</x-button>
-            <x-button variant="success" onclick="startFullscreenExam()">Vào thi &amp; Toàn màn hình</x-button>
-        </x-slot:actions>
-    </x-modal> -->
-
     @push('scripts')
-    <!-- <script>
+    <script>
         (function () {
             function initExamModeSelector() {
                 const form = document.getElementById('startExamForm');
-                const panel = document.getElementById('partSelectionPanel');
-                if (!form || !panel || form.dataset.modeSelectorInitialized === 'true') return;
+                const partPanel = document.getElementById('partSelectionPanel');
+                const skillPanel = document.getElementById('skillSelectionPanel');
+                if (!form || !partPanel || form.dataset.modeSelectorInitialized === 'true') return;
                 form.dataset.modeSelectorInitialized = 'true';
 
                 const modeRadios = form.querySelectorAll('input[name="exam_mode"]');
+                const skillRadios = form.querySelectorAll('input[name="selected_skill"]');
                 const checkboxes = Array.from(form.querySelectorAll('input[name="exam_parts[]"]'));
                 const toggleAllButton = document.getElementById('toggleAllParts');
                 const hint = document.getElementById('selectedModeHint');
+
+                const defaultTotalQuestions = {{ $totalQuestionsInTest }};
+                const defaultTotalDuration = {{ $totalDuration }};
+                const listeningQ = {{ $listeningQuestions }};
+                const readingQ = {{ $readingQuestions }};
 
                 function updateSelectedPartsHint() {
                     const checked = checkboxes.filter(function (checkbox) { return checkbox.checked; });
@@ -775,11 +697,14 @@
                     if (!checked.length) {
                         hint.textContent = 'Vui lòng chọn ít nhất một phần thi.';
                     } else {
+                        let totalQ = 0;
+                        let totalTime = 0;
                         const labels = checked.map(function (checkbox) {
-                            const title = checkbox.closest('.part-checkbox')?.querySelector('.part-checkbox-title');
-                            return title ? title.textContent.trim().split(' — ')[0] : checkbox.value;
+                            totalQ += parseInt(checkbox.dataset.count || 0, 10);
+                            totalTime += parseInt(checkbox.dataset.time || 15, 10);
+                            return checkbox.dataset.name || checkbox.value;
                         });
-                        hint.textContent = 'Đã chọn: ' + labels.join(', ') + ' · ' + checked.length + ' phần';
+                        hint.textContent = 'Đang chọn: ' + labels.join(', ') + ' · ' + totalQ + ' câu · ' + totalTime + ' phút';
                     }
 
                     if (toggleAllButton) {
@@ -789,27 +714,51 @@
                     }
                 }
 
+                function updateSkillHint() {
+                    const selectedSkill = form.querySelector('input[name="selected_skill"]:checked')?.value || 'listening';
+                    if (selectedSkill === 'listening') {
+                        hint.textContent = 'Đang chọn: Kỹ năng Listening (Part 1–4) · ' + listeningQ + ' câu · 45 phút';
+                    } else {
+                        hint.textContent = 'Đang chọn: Kỹ năng Reading (Part 5–7) · ' + readingQ + ' câu · 75 phút';
+                    }
+                }
+
                 function updateModeUI() {
                     const selectedMode = form.querySelector('input[name="exam_mode"]:checked')?.value || 'fulltest';
-                    const isSelectedParts = selectedMode === 'selected_parts';
 
-                    // Dùng hidden để ẩn/hiện panel; không phụ thuộc CSS display bên ngoài.
-                    panel.hidden = !isSelectedParts;
-                    panel.style.display = isSelectedParts ? 'grid' : 'none';
-
-                    if (isSelectedParts) {
+                    if (selectedMode === 'selected_parts') {
+                        partPanel.hidden = false;
+                        partPanel.style.display = 'grid';
+                        if (skillPanel) { skillPanel.hidden = true; skillPanel.style.display = 'none'; }
                         updateSelectedPartsHint();
+                    } else if (selectedMode === 'skill') {
+                        partPanel.hidden = true;
+                        partPanel.style.display = 'none';
+                        if (skillPanel) { skillPanel.hidden = false; skillPanel.style.display = 'grid'; }
+                        updateSkillHint();
                     } else {
-                        hint.textContent = 'Đang chọn: Full Test · 200 câu · 120 phút';
+                        partPanel.hidden = true;
+                        partPanel.style.display = 'none';
+                        if (skillPanel) { skillPanel.hidden = true; skillPanel.style.display = 'none'; }
+                        hint.textContent = 'Đang chọn: Full Test · ' + defaultTotalQuestions + ' câu · ' + defaultTotalDuration + ' phút';
                     }
                 }
 
                 modeRadios.forEach(function (radio) {
                     radio.addEventListener('change', updateModeUI);
-                    // Hỗ trợ trường hợp click vào nhãn/card trên một số cấu trúc CSS.
                     radio.closest('.mode-option')?.addEventListener('click', function () {
                         radio.checked = true;
                         updateModeUI();
+                    });
+                });
+
+                skillRadios.forEach(function (radio) {
+                    radio.addEventListener('change', updateSkillHint);
+                    radio.closest('.skill-option')?.addEventListener('click', function () {
+                        if (!radio.disabled) {
+                            radio.checked = true;
+                            updateSkillHint();
+                        }
                     });
                 });
 
@@ -829,33 +778,38 @@
                     if (selectedMode === 'selected_parts' &&
                         !checkboxes.some(function (checkbox) { return checkbox.checked; })) {
                         event.preventDefault();
-                        panel.hidden = false;
-                        panel.style.display = 'grid';
+                        partPanel.hidden = false;
+                        partPanel.style.display = 'grid';
                         hint.textContent = 'Vui lòng tích chọn ít nhất một phần đề thi trước khi bắt đầu.';
-                        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        partPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                     }
                 });
+
+                // History filter handler
+                const historyFilter = document.getElementById('historyFilter');
+                if (historyFilter) {
+                    historyFilter.addEventListener('change', function () {
+                        const val = this.value;
+                        const rows = document.querySelectorAll('#historyTableBody tr[data-mode]');
+                        rows.forEach(function (row) {
+                            if (val === 'all' || row.getAttribute('data-mode') === val) {
+                                row.style.display = '';
+                            } else {
+                                row.style.display = 'none';
+                            }
+                        });
+                    });
+                }
 
                 updateModeUI();
             }
 
-            // Khởi tạo dù script được đưa vào trang trước hay sau sự kiện DOMContentLoaded.
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', initExamModeSelector, { once: true });
             } else {
                 initExamModeSelector();
             }
         })();
-
-        function startFullscreenExam() {
-            const elem = document.documentElement;
-            if (elem.requestFullscreen) {
-                elem.requestFullscreen().catch(function () {
-                    console.warn('Không thể bật chế độ toàn màn hình.');
-                });
-            }
-            alert('Giao diện xác nhận đã hoàn tất. Cần tích hợp backend để trừ lượt và khởi tạo bài thi thực tế.');
-        }
-    </script> -->
+    </script>
     @endpush
 </x-layouts.app>

@@ -84,6 +84,7 @@ trait CreatesStudyPrepSchema
             $table->id('response_id');
             $table->unsignedBigInteger('attempt_id');
             $table->unsignedBigInteger('question_id');
+            $table->integer('sequence_no')->default(1);
             $table->text('text_response')->nullable();
             $table->string('media_url', 500)->nullable();
             $table->decimal('score', 6, 2)->nullable();
@@ -121,7 +122,7 @@ trait CreatesStudyPrepSchema
         Schema::create('attempts', function (Blueprint $table): void {
             $table->id('attempt_id');
             $table->unsignedBigInteger('user_id');
-            $table->unsignedBigInteger('test_form_id');
+            $table->unsignedBigInteger('test_form_id')->nullable();
             $table->string('session_type', 20);
             $table->timestamp('started_at')->useCurrent();
             $table->timestamp('ended_at')->nullable();

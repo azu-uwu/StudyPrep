@@ -8,13 +8,16 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VocabularyController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GoalController;
+use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\ListeningPracticeController;
+use App\Http\Controllers\MockTestController;
 use App\Http\Controllers\PersonalTopicController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReadingPracticeController;
 use App\Http\Controllers\StudySettingController;
 use App\Http\Controllers\VocabularyPracticeController;
 use App\Models\Question;
+use App\Models\TestAttempt;
 use App\Models\TestForm;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -29,19 +32,7 @@ Route::get('/', function () {
 
 // Các màn hình chính trong Sidebar (HỌC & TIẾN ĐỘ)
 Route::view('/luyen-tap', 'pages.luyen-tap')->name('luyen-tap');
-Route::get('/luyen-tap/doc', function () {
-    if (request('skill') === 'nghe') {
-        return redirect('/luyen-tap/nghe');
-    }
-    if (request('skill') === 'noi') {
-        return redirect('/luyen-tap/noi');
-    }
-    if (request('skill') === 'viet') {
-        return redirect('/luyen-tap/viet');
-    }
-
-    return view('pages.luyen-tap-doc');
-})->name('luyen-tap.doc');
+Route::get('/luyen-tap/doc', [ReadingPracticeController::class, 'index'])->name('luyen-tap.doc');
 
 // Luồng Luyện kỹ năng Nghe (Listening)
 Route::view('/luyen-tap/nghe', 'pages.luyen-tap-nghe')->name('luyen-tap.nghe');
@@ -53,8 +44,12 @@ Route::post('/luyen-tap/nghe/nop-bai', [ListeningPracticeController::class, 'sub
 Route::get('/luyen-tap/nghe/ket-qua', [ListeningPracticeController::class, 'result'])->name('luyen-tap.nghe.ket-qua');
 Route::get('/luyen-tap/nghe/xem-dap-an', [ListeningPracticeController::class, 'result'])->name('luyen-tap.nghe.xem-dap-an');
 
-// Luồng Luyện kỹ năng Đọc (Part 5: Hoàn thành câu & Kết quả)
+// Luồng Luyện kỹ năng Đọc (Part 5: Hoàn thành câu, Part 6: Hoàn thành đoạn văn & Kết quả)
 Route::get('/luyen-tap/doc/hoan-thanh-cau', [ReadingPracticeController::class, 'practice'])->name('luyen-tap.doc.hoan-thanh-cau');
+Route::get('/luyen-tap/doc/tiep-tuc', [ReadingPracticeController::class, 'resume'])->name('luyen-tap.doc.tiep-tuc');
+Route::post('/luyen-tap/doc/luu-va-thoat', [ReadingPracticeController::class, 'saveAndExit'])->name('luyen-tap.doc.luu-va-thoat');
+Route::post('/luyen-tap/doc/kiem-tra-cau-hoi', [ReadingPracticeController::class, 'checkAnswer'])->name('luyen-tap.doc.kiem-tra-cau-hoi');
+Route::post('/luyen-tap/doc/kiem-tra-nhom', [ReadingPracticeController::class, 'checkGroupAnswers'])->name('luyen-tap.doc.kiem-tra-nhom');
 Route::post('/luyen-tap/doc/nop-bai', [ReadingPracticeController::class, 'submit'])->name('luyen-tap.doc.nop-bai');
 Route::get('/luyen-tap/doc/ket-qua', [ReadingPracticeController::class, 'result'])->name('luyen-tap.doc.ket-qua');
 
@@ -67,45 +62,30 @@ Route::view('/luyen-tap/viet', 'pages.luyen-tap-viet')->name('luyen-tap.viet');
 Route::view('/luyen-tap/viet-cau', 'pages.viet-cau')->name('luyen-tap.viet-cau');
 Route::view('/luyen-tap/viet-doan', 'pages.viet-doan')->name('luyen-tap.viet-doan');
 
-Route::get('/thi-thu', function () {
-    $publishedLrTests = collect();
-    $publishedSwTests = collect();
-
-    if (Schema::hasTable('test_form') && Schema::hasTable('test_form_question')) {
-        $dbTests = TestForm::query()
-            ->with('blueprint')
-            ->withCount([
-                'questions as active_questions_count' => fn ($q) => $q->where('questions.status', Question::STATUS_ACTIVE),
-            ])
-            ->whereHas('questions', fn ($q) => $q->where('questions.status', Question::STATUS_ACTIVE))
-            ->orderByDesc('test_form_id')
-            ->get();
-
-        foreach ($dbTests as $dbTest) {
-            $examType = strtoupper((string) ($dbTest->blueprint?->exam_type ?? TestForm::EXAM_TYPE_LR));
-            if (in_array($examType, [TestForm::EXAM_TYPE_SW, TestForm::EXAM_TYPE_SPEAKING, TestForm::EXAM_TYPE_WRITING], true)) {
-                $publishedSwTests->push($dbTest);
-            } else {
-                $publishedLrTests->push($dbTest);
-            }
-        }
+// Luồng Thi Thử TOEIC (Mock Test)
+Route::get('/thi-thu', [MockTestController::class, 'index'])->name('thi-thu');
+Route::get('/thi-thu/gioi-thieu-de/{id}', [MockTestController::class, 'intro'])->name('thi-thu.gioi-thieu-de');
+Route::get('/thi-thu/gioi-thieu-de', function () {
+    $firstTestId = TestForm::query()->whereHas('questions')->value('test_form_id')
+        ?? TestForm::query()->value('test_form_id');
+    if (! $firstTestId) {
+        return redirect('/thi-thu')->with('error', 'Chưa có đề thi nào trong hệ thống.');
     }
 
-    return view('pages.thi-thu', [
-        'publishedLrTests' => $publishedLrTests,
-        'publishedSwTests' => $publishedSwTests,
-    ]);
-})->name('thi-thu');
-Route::view('/thi-thu/gioi-thieu-de', 'pages.thi-thu-gioi-thieu-de')->name('thi-thu-gioi-thieu-de');
-Route::get('/thi-thu/giao-dien-thi', function (Request $request) {
-    $examTestForm = null;
-    $examQuestions = [];
+    return redirect()->route('thi-thu.gioi-thieu-de', $firstTestId);
+})->name('thi-thu-gioi-thieu-de');
 
+Route::post('/thi-thu/bat-dau/{id}', [MockTestController::class, 'start'])->name('thi-thu.bat-dau');
+
+Route::get('/thi-thu/giao-dien-thi/{attemptId}', [MockTestController::class, 'exam'])->name('thi-thu.giao-dien-thi');
+Route::get('/thi-thu/giao-dien-thi', function (Request $request) {
     if ($request->filled('test_id') && Schema::hasTable('test_form')) {
         $examTestForm = TestForm::query()
             ->with('blueprint')
             ->find((int) $request->query('test_id'));
+        $examQuestions = [];
 
+        $clustersPayload = [];
         if ($examTestForm && Schema::hasTable('test_form_question')) {
             $loadedQuestions = $examTestForm->questions()
                 ->where('questions.status', Question::STATUS_ACTIVE)
@@ -122,10 +102,12 @@ Route::get('/thi-thu/giao-dien-thi', function (Request $request) {
                 foreach ($q->options->sortBy('label') as $opt) {
                     $opts[strtoupper(trim((string) $opt->label))] = (string) $opt->content;
                 }
-                $examQuestions[] = [
+                $partCode = strtoupper((string) ($q->section?->code ?? 'PART5'));
+                $item = [
                     'id' => (int) $q->question_id,
+                    'question_id' => (int) $q->question_id,
                     'sequence_no' => $idx + 1,
-                    'part_code' => strtoupper((string) ($q->section?->code ?? 'PART5')),
+                    'part_code' => $partCode,
                     'content' => (string) $q->content,
                     'stimulus_text' => $q->questionSet?->stimulus_text,
                     'media_url' => $q->questionSet?->resolved_media_url,
@@ -134,16 +116,50 @@ Route::get('/thi-thu/giao-dien-thi', function (Request $request) {
                     'part_directions_audio_url' => $q->section?->resolved_directions_audio_url,
                     'options' => $opts,
                 ];
+                $examQuestions[] = $item;
+                $clustersPayload[] = [
+                    'part_code' => $partCode,
+                    'part_directions_text' => $q->section?->directions_text,
+                    'part_directions_audio_url' => $q->section?->resolved_directions_audio_url,
+                    'questions' => [$item],
+                ];
             }
         }
+
+        return view('pages.thi-thu-giao-dien-thi', [
+            'attempt' => (object) ['attempt_id' => 0],
+            'test' => $examTestForm,
+            'clustersPayload' => $clustersPayload,
+            'flatQuestions' => $examQuestions,
+            'partDirections' => [],
+            'totalQuestions' => count($examQuestions),
+            'remainingSeconds' => 2700,
+            'durationMinutes' => 45,
+            'examTestForm' => $examTestForm,
+            'examQuestions' => $examQuestions,
+        ]);
     }
 
-    return view('pages.thi-thu-giao-dien-thi', [
-        'examTestForm' => $examTestForm,
-        'examQuestions' => $examQuestions,
-    ]);
+    $lastAttemptId = TestAttempt::query()->latest('attempt_id')->value('attempt_id');
+    if (! $lastAttemptId) {
+        return redirect('/thi-thu');
+    }
+
+    return redirect()->route('thi-thu.giao-dien-thi', $lastAttemptId);
 })->name('thi-thu-giao-dien-thi');
-Route::view('/thi-thu/ket-qua', 'pages.thi-thu-ket-qua')->name('thi-thu-ket-qua');
+
+Route::post('/thi-thu/nop-bai/{attemptId}', [MockTestController::class, 'submit'])->name('thi-thu.nop-bai');
+
+Route::get('/thi-thu/ket-qua/{attemptId}', [MockTestController::class, 'result'])->name('thi-thu.ket-qua');
+Route::get('/thi-thu/ket-qua', function () {
+    $lastAttemptId = TestAttempt::query()->where('status', 'COMPLETED')->latest('attempt_id')->value('attempt_id')
+        ?? TestAttempt::query()->latest('attempt_id')->value('attempt_id');
+    if (! $lastAttemptId) {
+        return redirect('/thi-thu');
+    }
+
+    return redirect()->route('thi-thu.ket-qua', $lastAttemptId);
+})->name('thi-thu-ket-qua');
 
 Route::get('/tu-vung', [VocabularyPracticeController::class, 'index'])->name('tu-vung');
 Route::post('/tu-vung/check-answer', [VocabularyPracticeController::class, 'checkAnswer'])->name('tu-vung.check-answer');
@@ -164,7 +180,11 @@ Route::redirect('/chon-tu', '/tu-vung');
 Route::view('/phan-tich', 'pages.phan-tich-tong-quan')->name('phan-tich');
 Route::view('/phan-tich/chi-tiet', 'pages.phan-tich')->name('phan-tich.chi-tiet');
 
-Route::view('/lich-su', 'pages.lich-su')->name('lich-su');
+Route::middleware('auth')->group(function () {
+    Route::get('/lich-su', [HistoryController::class, 'index'])->name('lich-su');
+    Route::get('/lich-su/{attemptId}', [HistoryController::class, 'show'])->name('lich-su.show')->whereNumber('attemptId');
+    Route::get('/lich-su/{attemptId}/on-lai', [HistoryController::class, 'retry'])->name('lich-su.retry')->whereNumber('attemptId');
+});
 
 Route::view('/cai-thien', 'pages.cai-thien')->name('cai-thien');
 

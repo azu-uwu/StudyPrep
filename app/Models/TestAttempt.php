@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
@@ -18,6 +19,14 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 ])]
 class TestAttempt extends Model
 {
+    public const SESSION_TYPE_PRACTICE = 'PRACTICE';
+
+    public const SESSION_TYPE_EXAM = 'EXAM';
+
+    public const STATUS_IN_PROGRESS = 'IN_PROGRESS';
+
+    public const STATUS_COMPLETED = 'COMPLETED';
+
     public $timestamps = false;
 
     protected $table = 'attempts';
@@ -58,5 +67,21 @@ class TestAttempt extends Model
     public function scoreResult(): HasOne
     {
         return $this->hasOne(ScoreResult::class, 'attempt_id', 'attempt_id');
+    }
+
+    /**
+     * @return HasMany<AttemptResponse, $this>
+     */
+    public function attemptResponses(): HasMany
+    {
+        return $this->hasMany(AttemptResponse::class, 'attempt_id', 'attempt_id');
+    }
+
+    /**
+     * @return HasMany<AttemptResponse, $this>
+     */
+    public function responses(): HasMany
+    {
+        return $this->hasMany(AttemptResponse::class, 'attempt_id', 'attempt_id');
     }
 }

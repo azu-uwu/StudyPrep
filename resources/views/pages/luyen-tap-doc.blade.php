@@ -15,10 +15,10 @@
                 <p class="sp-review-desc">Bạn có muốn ôn lại câu sai bây giờ không?</p>
             </div>
         </div>
-        <a href="{{ url('/cai-thien') }}" class="sp-review-btn">
+        <x-button variant="warning" size="small" href="{{ url('/cai-thien') }}">
             <span>Ôn lại</span>
             <span aria-hidden="true">&rarr;</span>
-        </a>
+        </x-button>
     </div>
 
     {{-- 2. Tiêu đề danh sách: "Tất cả phần luyện" --}}
@@ -32,6 +32,12 @@
         </span>
         <h2 class="sp-section-heading-title">Tất cả phần luyện</h2>
     </div>
+
+    @php
+        $inProgressPart5 = !empty($inProgressAttempts[5]);
+        $inProgressPart6 = !empty($inProgressAttempts[6]);
+        $inProgressPart7 = !empty($inProgressAttempts[7]);
+    @endphp
 
     {{-- 3. Danh sách các phần luyện TOEIC Reading --}}
     <div class="sp-parts-list">
@@ -58,28 +64,22 @@
                     </svg>
                 </div>
                 <div class="sp-part-item-info">
-                    <h3 class="sp-part-item-title" onclick="openInpageSetup(5)">Part 5: Hoàn thành câu</h3>
-                    <div style="margin-bottom: 6px;">
-                        <span class="sp-part-item-badge">Tỉ lệ đúng 40%</span>
-                    </div>
-                    <p class="sp-part-item-sub">Hoàn thành 8%</p>
-                    <div class="sp-part-item-progress">
-                        <div class="sp-part-item-progress-fill" style="width: 8%;"></div>
-                    </div>
+                    <h3 class="sp-part-item-title" @if($inProgressPart5) onclick="window.location.href='{{ route('luyen-tap.doc.tiep-tuc', ['part' => 5]) }}'" @else onclick="openInpageSetup(5)" @endif>Part 5: Hoàn thành câu</h3>
+                    <p class="sp-part-item-sub">{{ $inProgressPart5 ? 'Đang làm dở' : 'Chưa bắt đầu' }}</p>
                 </div>
             </div>
             <div class="sp-part-item-actions">
-                <a href="{{ route('luyen-tap.doc.ket-qua') }}" class="sp-part-btn sp-part-btn--result" title="Xem kết quả bài làm">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                    </svg>
-                    <span>Kết quả</span>
-                </a>
-                <button type="button" class="sp-part-btn sp-part-btn--continue" onclick="openInpageSetup(5)">
-                    <span>Hoàn thành câu</span>
-                    <span aria-hidden="true">&rarr;</span>
-                </button>
+                @if($inProgressPart5)
+                    <x-button variant="primary" size="small" href="{{ route('luyen-tap.doc.tiep-tuc', ['part' => 5]) }}">
+                        <span>Tiếp tục</span>
+                        <span aria-hidden="true">&rarr;</span>
+                    </x-button>
+                @else
+                    <x-button variant="success" size="small" onclick="openInpageSetup(5)">
+                        <span>Bắt đầu</span>
+                        <span aria-hidden="true">&rarr;</span>
+                    </x-button>
+                @endif
             </div>
         </div>
 
@@ -101,15 +101,22 @@
                     </svg>
                 </div>
                 <div class="sp-part-item-info">
-                    <h3 class="sp-part-item-title" onclick="openInpageSetup(6)">Part 6: Hoàn thành đoạn văn</h3>
-                    <p class="sp-part-item-sub">Chưa bắt đầu</p>
+                    <h3 class="sp-part-item-title" @if($inProgressPart6) onclick="window.location.href='{{ route('luyen-tap.doc.tiep-tuc', ['part' => 6]) }}'" @else onclick="openInpageSetup(6)" @endif>Part 6: Hoàn thành đoạn văn</h3>
+                    <p class="sp-part-item-sub">{{ $inProgressPart6 ? 'Đang làm dở' : 'Chưa bắt đầu' }}</p>
                 </div>
             </div>
             <div class="sp-part-item-actions">
-                <button type="button" class="sp-part-btn sp-part-btn--start" onclick="openInpageSetup(6)">
-                    <span>Bắt đầu</span>
-                    <span aria-hidden="true">&rarr;</span>
-                </button>
+                @if($inProgressPart6)
+                    <x-button variant="primary" size="small" href="{{ route('luyen-tap.doc.tiep-tuc', ['part' => 6]) }}">
+                        <span>Tiếp tục</span>
+                        <span aria-hidden="true">&rarr;</span>
+                    </x-button>
+                @else
+                    <x-button variant="success" size="small" onclick="openInpageSetup(6)">
+                        <span>Bắt đầu</span>
+                        <span aria-hidden="true">&rarr;</span>
+                    </x-button>
+                @endif
             </div>
         </div>
 
@@ -125,15 +132,22 @@
                     </svg>
                 </div>
                 <div class="sp-part-item-info">
-                    <h3 class="sp-part-item-title" onclick="openInpageSetup(7)">Part 7: Đọc hiểu đoạn văn</h3>
-                    <p class="sp-part-item-sub">Chưa bắt đầu</p>
+                    <h3 class="sp-part-item-title" @if($inProgressPart7) onclick="window.location.href='{{ route('luyen-tap.doc.tiep-tuc', ['part' => 7]) }}'" @else onclick="openInpageSetup(7)" @endif>Part 7: Đọc hiểu đoạn văn</h3>
+                    <p class="sp-part-item-sub">{{ $inProgressPart7 ? 'Đang làm dở' : 'Chưa bắt đầu' }}</p>
                 </div>
             </div>
             <div class="sp-part-item-actions">
-                <button type="button" class="sp-part-btn sp-part-btn--start" onclick="openInpageSetup(7)">
-                    <span>Bắt đầu</span>
-                    <span aria-hidden="true">&rarr;</span>
-                </button>
+                @if($inProgressPart7)
+                    <x-button variant="primary" size="small" href="{{ route('luyen-tap.doc.tiep-tuc', ['part' => 7]) }}">
+                        <span>Tiếp tục</span>
+                        <span aria-hidden="true">&rarr;</span>
+                    </x-button>
+                @else
+                    <x-button variant="success" size="small" onclick="openInpageSetup(7)">
+                        <span>Bắt đầu</span>
+                        <span aria-hidden="true">&rarr;</span>
+                    </x-button>
+                @endif
             </div>
         </div>
 

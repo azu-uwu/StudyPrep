@@ -6,18 +6,28 @@
  * Responsive trên máy tính, máy tính bảng và điện thoại.
  */
 
+.sp-kq-container,
+.sp-kq-container button,
+.sp-kq-container input,
+.sp-kq-container select,
+.sp-view-summary,
+.sp-view-review,
+.sp-review-tabs,
+.sp-kq-stats-box {
+    font-family: 'Nunito', var(--sp-font-family, sans-serif);
+}
+
 .sp-kq-container {
     width: 100%;
     max-width: 780px;
     margin: 0 auto;
     padding: 16px 16px 60px;
-    font-family: var(--sp-font-family, 'Nunito', 'Instrument Sans', sans-serif);
     color: #1E293B;
     box-sizing: border-box;
     position: relative;
 }
 
-/* Thanh topbar: Logo bên trái & Nút đóng X bên phải */
+/* Thanh topbar: Nút đóng X bên phải */
 .sp-kq-topbar {
     position: relative;
     width: 100%;
@@ -25,7 +35,7 @@
     margin-bottom: 12px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
 }
 
 .sp-kq-logo-link {
@@ -661,6 +671,7 @@
         opacity: 0;
         transform: translateY(4px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);

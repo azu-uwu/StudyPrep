@@ -235,14 +235,88 @@
 /* ==========================================================================
    2. VOCAPREP PRACTICE INTERFACE (ẢNH MẪU 4)
    ========================================================================== */
+.sp-vp-page,
+.sp-vp-page button,
+.sp-vp-page input,
+.sp-vp-page select,
+.sp-vp-page textarea,
+.sp-vp-passage-title,
+.sp-vp-passage-text,
+.sp-vp-explain-body,
+.sp-group-explain-body,
+.sp-vp-option,
+.sp-vp-option-content,
+.sp-vp-stem-text,
+.sp-submit-modal {
+    font-family: 'Nunito', var(--sp-font-family, sans-serif);
+}
+
 .sp-vp-page {
     min-height: 100vh;
     min-height: 100dvh;
     background: #F8FAFC;
     display: flex;
     flex-direction: column;
-    font-family: var(--sp-font-family, 'Nunito', 'Instrument Sans', sans-serif);
     color: #111C2D;
+}
+
+/* Thanh thông báo điều chỉnh số câu (Khớp Ảnh 4) */
+.sp-adjustment-notice-banner {
+    background: #EFF6FF;
+    border-bottom: 1.5px solid #BFDBFE;
+    color: #1D4ED8;
+    padding: 10px 24px;
+    font-size: 13.5px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    position: relative;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.sp-adjustment-notice-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+    line-height: 1.45;
+}
+
+.sp-adjustment-notice-close {
+    background: transparent;
+    border: none;
+    color: #1D4ED8;
+    cursor: pointer;
+    padding: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    flex-shrink: 0;
+    transition: background-color 0.15s ease, opacity 0.15s ease;
+    opacity: 0.8;
+}
+
+.sp-adjustment-notice-close:hover {
+    background-color: #DBEAFE;
+    opacity: 1;
+}
+
+@media (max-width: 640px) {
+    .sp-adjustment-notice-banner {
+        padding: 8px 12px;
+        font-size: 12.5px;
+        align-items: flex-start;
+    }
+
+    .sp-adjustment-notice-content {
+        justify-content: flex-start;
+    }
 }
 
 /* Header thanh trên cùng */
@@ -381,39 +455,70 @@
 }
 
 .sp-vp-nav-btn {
-    padding: 6px 14px;
-    border-radius: 8px;
-    border: 1px solid #E2E8F0;
+    padding: 7px 16px;
+    border-radius: 12px;
+    border: 1px solid #CBD5E1;
     background: #FFFFFF;
-    color: #475569;
-    font-size: 13px;
+    color: #334155;
+    font-size: 13.5px;
     font-weight: 700;
+    font-family: 'Nunito', sans-serif;
     cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     transition: all 0.15s ease;
+    user-select: none;
 }
 
-.sp-vp-nav-btn:hover {
+.sp-vp-nav-btn:hover:not(:disabled) {
     background: #F8FAFC;
+    border-color: #94A3B8;
     color: #0F172A;
 }
 
+.sp-vp-nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #F1F5F9;
+    border-color: #E2E8F0;
+    color: #94A3B8;
+    box-shadow: none;
+}
+
 .sp-vp-explain-btn {
-    padding: 6px 16px;
-    border-radius: 8px;
-    border: 1.5px solid #5B4BF5;
-    background: #5B4BF5;
-    color: #FFFFFF;
-    font-size: 13px;
+    padding: 7px 18px;
+    border-radius: 12px;
+    border: 1px solid #CBD5E1;
+    background: #FFFFFF;
+    color: #374151;
+    font-size: 13.5px;
     font-weight: 800;
+    font-family: 'Nunito', sans-serif;
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     transition: all 0.15s ease;
+    user-select: none;
+}
+
+.sp-vp-explain-btn:hover {
+    background: #F8FAFC;
+    border-color: #94A3B8;
+    color: #1E293B;
 }
 
 .sp-vp-explain-btn.is-active {
+    background: #5B4BF5;
+    border-color: #5B4BF5;
+    color: #FFFFFF;
+    box-shadow: 0 2px 8px rgba(91, 75, 245, 0.3);
+}
+
+.sp-vp-explain-btn.is-active:hover {
     background: #4A3AD4;
+    border-color: #4A3AD4;
+    color: #FFFFFF;
 }
 
 .sp-vp-tip-banner {
@@ -442,18 +547,19 @@
 .sp-vp-main-layout {
     flex: 1;
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
     gap: 20px;
     padding: 8px 24px 32px;
     max-width: 1440px;
     margin: 0 auto;
     width: 100%;
     box-sizing: border-box;
+    align-items: start;
     transition: all 0.25s ease;
 }
 
 .sp-vp-main-layout.with-explanation {
-    grid-template-columns: 1.1fr 1fr 1fr;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr);
 }
 
 /* Cột 1: Passage / Context */
@@ -623,6 +729,99 @@
     color: #1E293B;
 }
 
+/* ===== PHẢN HỒI TỨC THỜI CHO CHẾ ĐỘ LUYỆN TẬP PART 5 ===== */
+/* Khi người dùng chọn đáp án ĐÚNG: Tô xanh đáp án đã chọn, hiển thị biểu tượng đúng */
+.sp-vp-opt-row.is-correct {
+    border-color: #22C55E !important;
+    background: #F0FDF4 !important;
+}
+
+.sp-vp-opt-row.is-correct .sp-vp-opt-radio {
+    border-color: #22C55E !important;
+    background: #22C55E !important;
+    color: #FFFFFF !important;
+}
+
+.sp-vp-opt-row.is-correct .sp-vp-opt-text {
+    color: #166534 !important;
+    font-weight: 700;
+}
+
+/* Khi người dùng chọn đáp án SAI: Tô đỏ đáp án đã chọn, hiển thị biểu tượng sai */
+.sp-vp-opt-row.is-incorrect {
+    border-color: #EF4444 !important;
+    background: #FEF2F2 !important;
+}
+
+.sp-vp-opt-row.is-incorrect .sp-vp-opt-radio {
+    border-color: #EF4444 !important;
+    background: #EF4444 !important;
+    color: #FFFFFF !important;
+}
+
+.sp-vp-opt-row.is-incorrect .sp-vp-opt-text {
+    color: #991B1B !important;
+    font-weight: 700;
+}
+
+/* Đáp án đúng mục tiêu: Tô xanh khi người dùng chọn sai hoặc khi bấm nút Giải thích trước khi trả lời */
+.sp-vp-opt-row.is-correct-target {
+    border-color: #22C55E !important;
+    background: #F0FDF4 !important;
+}
+
+.sp-vp-opt-row.is-correct-target .sp-vp-opt-radio {
+    border-color: #22C55E !important;
+    background: #22C55E !important;
+    color: #FFFFFF !important;
+}
+
+.sp-vp-opt-row.is-correct-target .sp-vp-opt-text {
+    color: #166534 !important;
+    font-weight: 700;
+}
+
+/* Khóa các phương án sau khi đã trả lời hoặc đã xem giải thích */
+.sp-vp-opt-row.is-locked {
+    cursor: default !important;
+}
+
+.sp-vp-opt-row.is-locked:hover {
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+/* Badge biểu tượng trạng thái đúng/sai trên dòng phương án */
+.sp-vp-opt-status-badge {
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.sp-vp-opt-status-badge--correct {
+    background: #DCFCE7;
+    color: #15803D;
+    border: 1px solid #86EFAC;
+}
+
+.sp-vp-opt-status-badge--incorrect {
+    background: #FEE2E2;
+    color: #B91C1C;
+    border: 1px solid #FCA5A5;
+}
+
+.sp-vp-opt-status-badge--target {
+    background: #DCFCE7;
+    color: #15803D;
+    border: 1px solid #86EFAC;
+}
+
 /* ==========================================================================
    3. MODAL NỘP BÀI (ẢNH MẪU 1 & ẢNH MẪU 2)
    ========================================================================== */
@@ -726,30 +925,383 @@
 }
 
 /* ==========================================================================
-   RESPONSIVE DESIGN
+   RESPONSIVE DESIGN (TABLET & MOBILE)
    ========================================================================== */
-@media (max-width: 1023.98px) {
+
+/* 1. TABLET (768px - 1199.98px): Giữ 2 cột song song phía trên, giải thích nằm bên dưới */
+@media (min-width: 768px) and (max-width: 1199.98px) {
     .sp-vp-main-layout,
-    .sp-vp-main-layout.with-explanation {
-        grid-template-columns: 1fr;
+    .sp-vp-main-layout.with-explanation,
+    .sp-vp-main-layout.is-group-mode,
+    .sp-vp-main-layout.is-group-mode.with-explanation {
+        grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr) !important;
+        gap: 18px;
+        padding: 8px 18px 32px;
+        align-items: start;
+    }
+
+    #passageCol {
+        grid-column: 1 !important;
+        grid-row: 1 !important;
+        max-height: calc(100vh - 160px);
+        overflow-y: auto;
+    }
+
+    #answersCol {
+        grid-column: 2 !important;
+        grid-row: 1 !important;
+        max-height: calc(100vh - 160px);
+        overflow-y: auto;
+    }
+
+    #explainCol {
+        grid-column: 1 / -1 !important;
+        grid-row: 2 !important;
+        width: 100% !important;
+        max-height: none !important;
+        overflow-y: visible !important;
+        margin-top: 6px;
+    }
+
+    .sp-bottom-sheet-handle-bar {
+        display: none !important;
+    }
+
+    .sp-explain-backdrop {
+        display: none !important;
+    }
+}
+
+/* 2. MOBILE (< 768px): Một cột cuộn dọc toàn trang, Bottom Sheet cho giải thích */
+@media (max-width: 767.98px) {
+    .sp-vp-header {
+        height: 56px;
+        padding: 0 14px;
+        gap: 10px;
+    }
+
+    .sp-vp-header-left {
+        gap: 10px;
+    }
+
+    .sp-vp-logo-img {
+        height: 28px !important;
+        max-width: 110px;
+    }
+
+    .sp-vp-close-btn {
+        width: 30px;
+        height: 30px;
+    }
+
+    .sp-vp-progress-bar-wrap {
+        height: 6px;
+        min-width: 48px;
+    }
+
+    .sp-vp-header-right {
+        gap: 6px;
+    }
+
+    .sp-vp-icon-btn {
+        width: 32px;
+        height: 32px;
+    }
+
+    .sp-vp-submit-btn {
+        padding: 6px 12px;
+        font-size: 12.5px;
+        border-radius: 8px;
+        white-space: nowrap;
+    }
+
+    /* Subnav trên mobile */
+    .sp-vp-subnav {
+        padding: 8px 12px 6px;
+    }
+
+    .sp-vp-nav-controls {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        gap: 6px;
+        margin-bottom: 8px;
+    }
+
+    .sp-vp-nav-btn {
+        flex: 1;
+        min-width: 0;
+        text-align: center;
+        padding: 6px 8px;
+        font-size: 12px;
+        white-space: nowrap;
+        justify-content: center;
+    }
+
+    .sp-vp-explain-btn {
+        flex: 1;
+        min-width: 0;
+        text-align: center;
+        padding: 6px 8px;
+        font-size: 12px;
+        justify-content: center;
+        white-space: nowrap;
+    }
+
+    .sp-vp-tip-banner {
+        font-size: 11.5px;
+        padding: 5px 12px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Layout 1 cột cuộn dọc */
+    .sp-vp-main-layout,
+    .sp-vp-main-layout.with-explanation,
+    .sp-vp-main-layout.is-group-mode,
+    .sp-vp-main-layout.is-group-mode.with-explanation {
+        display: flex !important;
+        flex-direction: column !important;
+        padding: 6px 12px 36px;
+        gap: 14px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    #passageCol {
+        order: 1 !important;
+        width: 100% !important;
+        max-height: none !important;
+        overflow-y: visible !important;
+        padding: 16px 14px;
+        border-radius: 14px;
+    }
+
+    #answersCol {
+        order: 2 !important;
+        width: 100% !important;
+        max-height: none !important;
+        overflow-y: visible !important;
+        padding: 16px 14px;
+        border-radius: 14px;
+    }
+
+    /* Đảm bảo hình ảnh và bảng trong bài đọc co theo khung chứa */
+    .sp-vp-passage-text img,
+    .sp-vp-panel img,
+    .sp-group-q-card img {
+        max-width: 100% !important;
+        height: auto !important;
+        display: block;
+        margin: 10px auto;
+        border-radius: 8px;
+        object-fit: contain;
+    }
+
+    .sp-vp-passage-text table,
+    .sp-vp-panel table {
+        max-width: 100% !important;
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Tự động xuống dòng cho văn bản dài, không xuất hiện cuộn ngang */
+    .sp-vp-passage-text,
+    .sp-vp-stem-text,
+    .sp-group-q-stem,
+    .sp-vp-opt-text {
+        word-break: break-word;
+        overflow-wrap: break-word;
+    }
+
+    /* Kích thước phương án trả lời thuận tiện thao tác ngón tay */
+    .sp-vp-opt-row {
+        padding: 11px 12px;
+        min-height: 46px;
+    }
+
+    /* Bottom Sheet trên Mobile */
+    #explainCol {
+        position: fixed !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        max-height: 82vh !important;
+        max-height: 85dvh !important;
+        border-radius: 20px 20px 0 0 !important;
+        z-index: 1050 !important;
+        box-shadow: 0 -10px 40px rgba(15, 23, 42, 0.35) !important;
+        padding: 8px 16px max(18px, env(safe-area-inset-bottom, 18px)) !important;
+        box-sizing: border-box !important;
+        transform: translateY(105%) !important;
+        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.28s ease !important;
+        display: flex !important;
+        flex-direction: column !important;
+        pointer-events: none !important;
+        visibility: hidden !important;
+    }
+
+    #explainCol.is-bottom-sheet-open {
+        transform: translateY(0) !important;
+        pointer-events: auto !important;
+        visibility: visible !important;
+    }
+
+    .sp-bottom-sheet-handle-bar {
+        display: flex !important;
+        justify-content: center;
+        padding: 4px 0 10px;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    .sp-bottom-sheet-handle {
+        width: 36px;
+        height: 4.5px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.65);
+    }
+
+    #explainBody,
+    #groupExplainBody {
+        overflow-y: auto !important;
+        flex: 1 1 auto;
+        -webkit-overflow-scrolling: touch;
+        padding-right: 4px;
+        max-height: calc(82vh - 80px);
+        max-height: calc(85dvh - 80px);
+    }
+
+    /* Lớp overlay màu tối mờ phía sau */
+    .sp-explain-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.55);
+        backdrop-filter: blur(2px);
+        z-index: 1045;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease;
+    }
+
+    .sp-explain-backdrop.is-open {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    /* Modal xác nhận nộp bài trên Mobile */
+    .sp-submit-modal {
+        width: 92%;
+        max-width: 420px;
+        padding: 20px 18px;
     }
 
     .sp-setup-count-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-}
-
-@media (max-width: 640px) {
-    .sp-vp-header {
-        padding: 0 14px;
-    }
-
-    .sp-vp-main-layout {
-        padding: 8px 12px 24px;
-    }
 
     .sp-setup-modal {
-        padding: 24px 20px 28px;
+        padding: 24px 18px 28px;
+    }
+}
+
+/* Khóa cuộn trang khi Bottom Sheet đang mở trên mobile */
+body.sp-bottom-sheet-open {
+    overflow: hidden !important;
+    touch-action: none;
+}
+
+/* 3. MÀN HÌNH NHỎ (<= 480px) */
+@media (max-width: 480px) {
+    .sp-vp-header {
+        height: 52px;
+        padding: 0 10px;
+        gap: 8px;
+    }
+
+    .sp-vp-logo-img {
+        max-width: 95px;
+        height: 25px !important;
+    }
+
+    .sp-vp-close-btn {
+        width: 28px;
+        height: 28px;
+    }
+
+    .sp-vp-icon-btn {
+        width: 28px;
+        height: 28px;
+    }
+
+    .sp-vp-submit-btn {
+        padding: 5px 10px;
+        font-size: 12px;
+    }
+
+    .sp-vp-subnav {
+        padding: 6px 10px 4px;
+    }
+
+    .sp-vp-nav-btn,
+    .sp-vp-explain-btn {
+        font-size: 11.5px;
+        padding: 5px 6px;
+    }
+
+    .sp-vp-tip-banner {
+        font-size: 11px;
+        padding: 4px 8px;
+    }
+
+    .sp-group-q-card {
+        padding: 12px 10px;
+        margin-bottom: 14px;
+    }
+
+    .sp-group-q-num-pill {
+        font-size: 12.5px;
+        padding: 3px 8px;
+    }
+}
+
+/* 4. MÀN HÌNH SIÊU NHỎ (<= 360px & 320px) */
+@media (max-width: 360px) {
+    .sp-vp-header {
+        padding: 0 6px;
+        gap: 6px;
+    }
+
+    .sp-vp-logo-img {
+        max-width: 80px;
+        height: 22px !important;
+    }
+
+    .sp-vp-header-right {
+        gap: 4px;
+    }
+
+    .sp-vp-submit-btn {
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+
+    .sp-vp-nav-btn,
+    .sp-vp-explain-btn {
+        font-size: 10.5px;
+        padding: 5px 4px;
+    }
+
+    .sp-submit-modal {
+        padding: 16px 12px;
+    }
+
+    .sp-btn-revisit,
+    .sp-btn-confirm-submit {
+        padding: 8px 12px;
+        font-size: 12px;
     }
 }
 
@@ -781,4 +1333,182 @@
     color: #1E293B;
     line-height: 1.65;
     margin: 0;
+}
+
+/* ==========================================================================
+   PART 6 & PART 7: LUYỆN TẬP THEO NHÓM ĐOẠN VĂN (BE-007.4 & BE-007.5)
+   ========================================================================== */
+@media (min-width: 1200px) {
+    .sp-vp-main-layout.is-group-mode {
+        grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+        gap: 20px;
+        align-items: start;
+    }
+
+    .sp-vp-main-layout.is-group-mode.with-explanation {
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    .sp-vp-main-layout .sp-vp-panel,
+    .sp-vp-main-layout .sp-vp-explain-panel,
+    .sp-vp-main-layout .sp-vp-answers-panel {
+        max-height: calc(100vh - 145px);
+        overflow-y: auto;
+        box-sizing: border-box;
+    }
+}
+
+.sp-group-answers-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1.5px solid #EEF1F7;
+}
+
+.sp-group-progress-badge {
+    font-size: 12px;
+    font-weight: 800;
+    color: #5B4BF5;
+    background: #EDE9FE;
+    padding: 4px 12px;
+    border-radius: 999px;
+    letter-spacing: 0.3px;
+}
+
+.sp-group-progress-badge.is-completed {
+    color: #166534;
+    background: #DCFCE7;
+}
+
+.sp-group-q-card {
+    background: #FFFFFF;
+    border: 1.5px solid #EEF1F7;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 20px;
+    transition: border-color 0.15s ease;
+}
+
+.sp-group-q-card:focus-within,
+.sp-group-q-card:hover {
+    border-color: #CBD5E1;
+}
+
+.sp-group-q-card-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.sp-group-q-num-pill {
+    font-size: 13.5px;
+    font-weight: 800;
+    color: #1E293B;
+    background: #F1F5F9;
+    padding: 4px 10px;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.sp-group-q-stem {
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+    line-height: 1.6;
+}
+
+/* Vùng giải thích tổng hợp cho cả nhóm Part 6 (màu xanh theo phong cách hệ thống) */
+.sp-group-explain-box {
+    background: #38BDF8;
+    color: #FFFFFF;
+    border-radius: 18px;
+    padding: 20px;
+    margin-top: 24px;
+    box-shadow: 0 8px 24px rgba(56, 189, 248, 0.25);
+    animation: spFadeIn 0.25s ease-out;
+}
+
+.sp-group-explain-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+    flex-shrink: 0;
+}
+
+.sp-group-explain-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sp-group-explain-close {
+    background: transparent;
+    border: none;
+    color: #FFFFFF;
+    font-size: 18px;
+    cursor: pointer;
+    opacity: 0.85;
+    padding: 2px 8px;
+    border-radius: 6px;
+    transition: opacity 0.15s;
+}
+
+.sp-group-explain-close:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.sp-group-explain-item {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+}
+
+.sp-group-explain-item:last-child {
+    margin-bottom: 0;
+}
+
+.sp-group-explain-item-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.sp-group-explain-opt-badge {
+    font-size: 12px;
+    font-weight: 800;
+    padding: 2px 10px;
+    border-radius: 999px;
+}
+
+.sp-group-explain-opt-badge.is-correct {
+    background: #22C55E;
+    color: #FFFFFF;
+}
+
+.sp-group-explain-opt-badge.is-wrong {
+    background: #EF4444;
+    color: #FFFFFF;
+}
+
+.sp-group-explain-item-text {
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: #F8FAFC;
 }
