@@ -178,8 +178,8 @@ Route::get('/tu-vung/{topicId}', [VocabularyPracticeController::class, 'show'])-
 Route::redirect('/flashcard', '/tu-vung');
 Route::redirect('/chon-tu', '/tu-vung');
 
-Route::view('/phan-tich', 'pages.phan-tich-tong-quan')->name('phan-tich');
-Route::view('/phan-tich/chi-tiet', 'pages.phan-tich')->name('phan-tich.chi-tiet');
+Route::view('/phan-tich', 'pages.phan-tich')->name('phan-tich');
+Route::redirect('/phan-tich/chi-tiet', '/phan-tich');
 
 Route::middleware('auth')->group(function () {
     Route::get('/lich-su', [HistoryController::class, 'index'])->name('lich-su');
