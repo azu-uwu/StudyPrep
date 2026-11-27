@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VocabularyController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GoalController;
+use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\ListeningPracticeController;
 use App\Http\Controllers\PersonalTopicController;
 use App\Http\Controllers\ProfileController;
@@ -79,7 +80,11 @@ Route::redirect('/chon-tu', '/tu-vung');
 Route::view('/phan-tich', 'pages.phan-tich-tong-quan')->name('phan-tich');
 Route::view('/phan-tich/chi-tiet', 'pages.phan-tich')->name('phan-tich.chi-tiet');
 
-Route::view('/lich-su', 'pages.lich-su')->name('lich-su');
+Route::middleware('auth')->group(function () {
+    Route::get('/lich-su', [HistoryController::class, 'index'])->name('lich-su');
+    Route::get('/lich-su/{attemptId}', [HistoryController::class, 'show'])->name('lich-su.show')->whereNumber('attemptId');
+    Route::get('/lich-su/{attemptId}/on-lai', [HistoryController::class, 'retry'])->name('lich-su.retry')->whereNumber('attemptId');
+});
 
 Route::view('/cai-thien', 'pages.cai-thien')->name('cai-thien');
 

@@ -659,7 +659,7 @@ class PracticeAttemptService
         $attempt = TestAttempt::query()
             ->where('attempt_id', $attemptId)
             ->where('user_id', $userId)
-            ->where('status', TestAttempt::STATUS_COMPLETED)
+            ->whereIn('status', [TestAttempt::STATUS_COMPLETED, 'SUBMITTED'])
             ->with([
                 'scoreResult',
                 'attemptResponses' => fn ($r) => $r->orderBy('sequence_no', 'asc')->with([
@@ -776,7 +776,7 @@ class PracticeAttemptService
         $attempt = TestAttempt::query()
             ->where('attempt_id', $attemptId)
             ->where('user_id', $userId)
-            ->where('status', TestAttempt::STATUS_COMPLETED)
+            ->whereIn('status', [TestAttempt::STATUS_COMPLETED, 'SUBMITTED'])
             ->with([
                 'attemptResponses' => fn ($r) => $r->orderBy('sequence_no', 'asc')->with('question.options'),
             ])
@@ -836,6 +836,34 @@ class PracticeAttemptService
         }
 
         return array_values(array_unique($allRetryQids));
+    }
+
+    /**
+     * Lấy toàn bộ danh sách question_id của một lượt làm bài hợp lệ theo thứ tự sequence_no.
+     * Phục vụ chức năng Ôn lại bài làm của trang Lịch sử.
+     *
+     * @return array<int>
+     */
+    public function getAttemptAllQuestionIds(int $attemptId, int $userId): array
+    {
+        $attempt = TestAttempt::query()
+            ->where('attempt_id', $attemptId)
+            ->where('user_id', $userId)
+            ->whereIn('status', [TestAttempt::STATUS_COMPLETED, 'SUBMITTED'])
+            ->with([
+                'attemptResponses' => fn ($r) => $r->orderBy('sequence_no', 'asc'),
+            ])
+            ->first();
+
+        if (! $attempt || $attempt->attemptResponses->isEmpty()) {
+            return [];
+        }
+
+        return $attempt->attemptResponses
+            ->pluck('question_id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
     }
 
     /**

@@ -162,6 +162,8 @@ class ReadingPracticeController extends Controller
         $existingSession = session('reading_practice_session');
         $isNewRequest = (bool) $request->query('new');
         $isRetryWrong = (bool) $request->query('retry_wrong');
+        $retryAttemptId = $request->query('retry_attempt_id') ?? $request->query('retry_attempt');
+        $isRetryAttempt = ($retryAttemptId !== null && (int) $retryAttemptId > 0);
 
         $rawCount = $request->query('count');
         $hasCountQuery = ($rawCount !== null && trim((string) $rawCount) !== '');
@@ -184,6 +186,7 @@ class ReadingPracticeController extends Controller
         $isReload = (
             ! $isNewRequest &&
             ! $isRetryWrong &&
+            ! $isRetryAttempt &&
             ! empty($existingSession) &&
             ($existingSession['part'] ?? null) === $part &&
             ! empty($existingSession['question_ids']) &&
@@ -219,8 +222,18 @@ class ReadingPracticeController extends Controller
         }
 
         $specificIds = null;
-        // Xử lý làm lại các câu bị sai
-        if ($isRetryWrong) {
+        if ($isRetryAttempt) {
+            if (auth()->check()) {
+                $specificIds = $this->practiceAttemptService->getAttemptAllQuestionIds((int) $retryAttemptId, (int) auth()->id());
+            }
+
+            if (empty($specificIds)) {
+                return redirect()->to(url('/luyen-tap/doc?part='.$part))
+                    ->with('practice_error', 'Không tìm thấy câu hỏi từ lượt luyện tập trước để ôn lại.');
+            }
+
+            $count = count($specificIds);
+        } elseif ($isRetryWrong) {
             $attemptIdForRetry = $request->query('attempt_id');
             if ($attemptIdForRetry && auth()->check()) {
                 $specificIds = $this->practiceAttemptService->getRetryQuestionIds((int) $attemptIdForRetry, (int) auth()->id());
@@ -1769,7 +1782,7 @@ class ReadingPracticeController extends Controller
                     ->with('practice_error', 'Bạn không có quyền truy cập kết quả bài luyện tập của người khác.');
             }
 
-            if ($attempt->status !== TestAttempt::STATUS_COMPLETED) {
+            if (! in_array($attempt->status, [TestAttempt::STATUS_COMPLETED, 'SUBMITTED'], true)) {
                 return redirect()->route('luyen-tap.doc')
                     ->with('practice_error', 'Lượt luyện tập này chưa hoàn thành.');
             }
@@ -1796,8 +1809,11 @@ class ReadingPracticeController extends Controller
             ];
         }
 
+        $backUrl = $request->query('from') === 'history' ? route('lich-su') : route('luyen-tap.doc');
+
         return view('pages.doc-ket-qua', [
             'result' => $result,
+            'backUrl' => $backUrl,
         ]);
     }
 }

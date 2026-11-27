@@ -8,7 +8,7 @@
 
     {{-- Thanh trên cùng: Nút X đóng --}}
     <div class="sp-kq-topbar">
-        <a href="{{ url('/luyen-tap/doc') }}" class="sp-kq-close-btn" title="Đóng và quay lại danh sách bài luyện Đọc" aria-label="Đóng">
+        <a href="{{ $backUrl ?? url('/luyen-tap/doc') }}" class="sp-kq-close-btn" title="Đóng và quay lại" aria-label="Đóng">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -117,8 +117,8 @@
             </button>
         </div>
 
-        <a href="{{ url('/luyen-tap/doc') }}" class="sp-kq-continue-link">
-            Tiếp tục
+        <a href="{{ $backUrl ?? url('/luyen-tap/doc') }}" class="sp-kq-continue-link">
+            Quay lại
         </a>
 
     </div>
