@@ -10,11 +10,14 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GoalController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\ListeningPracticeController;
+use App\Http\Controllers\MockTestController;
 use App\Http\Controllers\PersonalTopicController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReadingPracticeController;
 use App\Http\Controllers\StudySettingController;
 use App\Http\Controllers\VocabularyPracticeController;
+use App\Models\TestAttempt;
+use App\Models\TestForm;
 use Illuminate\Support\Facades\Route;
 
 // use Illuminate\Support\Facades\Route;
@@ -56,10 +59,43 @@ Route::view('/luyen-tap/viet', 'pages.luyen-tap-viet')->name('luyen-tap.viet');
 Route::view('/luyen-tap/viet-cau', 'pages.viet-cau')->name('luyen-tap.viet-cau');
 Route::view('/luyen-tap/viet-doan', 'pages.viet-doan')->name('luyen-tap.viet-doan');
 
-Route::view('/thi-thu', 'pages.thi-thu')->name('thi-thu');
-Route::view('/thi-thu/gioi-thieu-de', 'pages.thi-thu-gioi-thieu-de')->name('thi-thu-gioi-thieu-de');
-Route::view('/thi-thu/giao-dien-thi', 'pages.thi-thu-giao-dien-thi')->name('thi-thu-giao-dien-thi');
-Route::view('/thi-thu/ket-qua', 'pages.thi-thu-ket-qua')->name('thi-thu-ket-qua');
+// Luồng Thi Thử TOEIC (Mock Test)
+Route::get('/thi-thu', [MockTestController::class, 'index'])->name('thi-thu');
+Route::get('/thi-thu/gioi-thieu-de/{id}', [MockTestController::class, 'intro'])->name('thi-thu.gioi-thieu-de');
+Route::get('/thi-thu/gioi-thieu-de', function () {
+    $firstTestId = TestForm::query()->whereHas('questions')->value('test_form_id')
+        ?? TestForm::query()->value('test_form_id');
+    if (! $firstTestId) {
+        return redirect('/thi-thu')->with('error', 'Chưa có đề thi nào trong hệ thống.');
+    }
+
+    return redirect()->route('thi-thu.gioi-thieu-de', $firstTestId);
+})->name('thi-thu-gioi-thieu-de');
+
+Route::post('/thi-thu/bat-dau/{id}', [MockTestController::class, 'start'])->name('thi-thu.bat-dau');
+
+Route::get('/thi-thu/giao-dien-thi/{attemptId}', [MockTestController::class, 'exam'])->name('thi-thu.giao-dien-thi');
+Route::get('/thi-thu/giao-dien-thi', function () {
+    $lastAttemptId = TestAttempt::query()->latest('attempt_id')->value('attempt_id');
+    if (! $lastAttemptId) {
+        return redirect('/thi-thu');
+    }
+
+    return redirect()->route('thi-thu.giao-dien-thi', $lastAttemptId);
+})->name('thi-thu-giao-dien-thi');
+
+Route::post('/thi-thu/nop-bai/{attemptId}', [MockTestController::class, 'submit'])->name('thi-thu.nop-bai');
+
+Route::get('/thi-thu/ket-qua/{attemptId}', [MockTestController::class, 'result'])->name('thi-thu.ket-qua');
+Route::get('/thi-thu/ket-qua', function () {
+    $lastAttemptId = TestAttempt::query()->where('status', 'COMPLETED')->latest('attempt_id')->value('attempt_id')
+        ?? TestAttempt::query()->latest('attempt_id')->value('attempt_id');
+    if (! $lastAttemptId) {
+        return redirect('/thi-thu');
+    }
+
+    return redirect()->route('thi-thu.ket-qua', $lastAttemptId);
+})->name('thi-thu-ket-qua');
 
 Route::get('/tu-vung', [VocabularyPracticeController::class, 'index'])->name('tu-vung');
 Route::post('/tu-vung/check-answer', [VocabularyPracticeController::class, 'checkAnswer'])->name('tu-vung.check-answer');

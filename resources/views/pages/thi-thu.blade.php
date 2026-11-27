@@ -238,6 +238,19 @@
 @endpush
 
 <div class="toeic-page">
+    @if(session('error'))
+        <div style="margin-bottom: 20px; padding: 14px 18px; border-radius: 12px; background: #fef2f2; border: 1px solid #fee2e2; color: #b91c1c; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 18px;">⚠️</span>
+            <span>{{ session('error') }}</span>
+        </div>
+    @endif
+    @if(session('success'))
+        <div style="margin-bottom: 20px; padding: 14px 18px; border-radius: 12px; background: #ecfdf5; border: 1px solid #d1fae5; color: #047857; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 18px;">✓</span>
+            <span>{{ session('success') }}</span>
+        </div>
+    @endif
+
     <section class="toeic-hero">
         <div class="hero-copy">
             <div class="eyebrow"><span class="eyebrow-dot"></span> StudyPrep · Exam Center</div>
@@ -246,7 +259,7 @@
         </div>
         <div class="hero-stat">
             <div class="hero-stat-label">Lượt thi khả dụng</div>
-            <div class="hero-stat-value">5 <span>/ 5 lượt</span></div>
+            <div class="hero-stat-value">{{ $availableAttempts ?? 5 }} <span>/ 5 lượt</span></div>
             <p class="hero-stat-note">Mỗi lượt được sử dụng khi bạn bắt đầu một bài thi.</p>
         </div>
     </section>
@@ -294,17 +307,22 @@
                             <span class="exam-details">Đánh giá nhanh trình độ hiện tại của bạn</span>
                         </span>
                     </span>
-                    <span class="exam-category-end"><span class="exam-count">1 bài thi</span><span class="exam-chevron" aria-hidden="true">⌄</span></span>
+                    <span class="exam-category-end"><span class="exam-count">{{ count($placementTests ?? []) }} bài thi</span><span class="exam-chevron" aria-hidden="true">⌄</span></span>
                 </button>
                 <div class="exam-sublist" id="placement-tests">
+                    @forelse($placementTests ?? [] as $exam)
                     <div class="exam-subitem">
                         <div class="exam-subitem-copy">
-                            <span class="exam-subitem-title">Mini Placement Test – Đánh giá năng lực nhanh</span>
-                            <span class="exam-subitem-details">50 câu hỏi · 45 phút · Ước lượng trình độ hiện tại</span>
+                            <span class="exam-subitem-title">{{ $exam['title'] }}</span>
+                            <span class="exam-subitem-details">{{ $exam['questions_count'] }} câu hỏi · {{ $exam['duration'] }} phút · {{ $exam['parts_summary'] }}</span>
                         </div>
-                        <a href="{{ url('/thi-thu/gioi-thieu-de') }}" data-require-auth>Bắt đầu</a>
-                        <!-- <x-button variant="warning" size="medium" data-sp-modal-open="confirm-test-modal">Kiểm tra ngay →</x-button> -->
+                        <a href="{{ route('thi-thu.gioi-thieu-de', $exam['id']) }}" data-require-auth>Bắt đầu</a>
                     </div>
+                    @empty
+                    <div class="exam-subitem" style="color: #8b94a9; font-size: 12px; padding: 12px 0;">
+                        Chưa có bài kiểm tra đầu vào nào. Bạn có thể chọn các đề TOEIC bên dưới.
+                    </div>
+                    @endforelse
                 </div>
             </article>
 
@@ -319,25 +337,22 @@
                             <span class="exam-details">Luyện đủ 2 kỹ năng Nghe và Đọc · 120 phút</span>
                         </span>
                     </span>
-                    <span class="exam-category-end"><span class="exam-count">2 bài thi</span><span class="exam-chevron" aria-hidden="true">⌄</span></span>
+                    <span class="exam-category-end"><span class="exam-count">{{ count($lrTests ?? []) }} bài thi</span><span class="exam-chevron" aria-hidden="true">⌄</span></span>
                 </button>
                 <div class="exam-sublist" id="listening-reading-tests">
+                    @forelse($lrTests ?? [] as $exam)
                     <div class="exam-subitem">
                         <div class="exam-subitem-copy">
-                            <span class="exam-subitem-title">TOEIC Listening &amp; Reading #01</span>
-                            <span class="exam-subitem-details">200 câu hỏi · Part 1–7 · 120 phút · Đề tuyển chọn 2026</span>
+                            <span class="exam-subitem-title">{{ $exam['title'] }}</span>
+                            <span class="exam-subitem-details">{{ $exam['questions_count'] }} câu hỏi · {{ $exam['duration'] }} phút · {{ $exam['parts_summary'] }}</span>
                         </div>
-                        <!-- <x-button variant="primary" size="medium" data-sp-modal-open="confirm-test-modal">Bắt đầu thi →</x-button> -->
-                        <a href="{{ url('/thi-thu/gioi-thieu-de') }}" data-require-auth>Bắt đầu</a>
+                        <a href="{{ route('thi-thu.gioi-thieu-de', $exam['id']) }}" data-require-auth>Bắt đầu</a>
                     </div>
-                    <div class="exam-subitem">
-                        <div class="exam-subitem-copy">
-                            <span class="exam-subitem-title">TOEIC Listening &amp; Reading #02</span>
-                            <span class="exam-subitem-details">200 câu hỏi · Part 1–7 · 120 phút · Bộ đề ETS</span>
-                        </div>
-                        <!-- <x-button variant="primary" size="medium" data-sp-modal-open="confirm-test-modal">Bắt đầu thi →</x-button> -->
-                        <a href="{{ url('/thi-thu/gioi-thieu-de') }}" data-require-auth>Bắt đầu</a>
+                    @empty
+                    <div class="exam-subitem" style="color: #8b94a9; font-size: 12px; padding: 12px 0;">
+                        Chưa có đề thi Listening & Reading nào.
                     </div>
+                    @endforelse
                 </div>
             </article>
 
@@ -349,20 +364,25 @@
                         <span class="exam-category-copy">
                             <span class="exam-meta"><span class="exam-tag exam-tag--rose">SPEAKING &amp; WRITING</span><span class="exam-note">Kỹ năng nâng cao</span></span>
                             <span class="exam-name">TOEIC Speaking &amp; Writing</span>
-                            <span class="exam-details">Luyện nói và viết · Hỗ trợ chấm điểm AI</span>
+                            <span class="exam-details">Luyện nói và viết · Hỗ trợ chấm điểm</span>
                         </span>
                     </span>
-                    <span class="exam-category-end"><span class="exam-count">1 bài thi</span><span class="exam-chevron" aria-hidden="true">⌄</span></span>
+                    <span class="exam-category-end"><span class="exam-count">{{ count($swTests ?? []) }} bài thi</span><span class="exam-chevron" aria-hidden="true">⌄</span></span>
                 </button>
                 <div class="exam-sublist" id="speaking-writing-tests">
+                    @forelse($swTests ?? [] as $exam)
                     <div class="exam-subitem">
                         <div class="exam-subitem-copy">
-                            <span class="exam-subitem-title">TOEIC Speaking &amp; Writing Official Test #01</span>
-                            <span class="exam-subitem-details">19 câu · 11 Speaking + 8 Writing · 80 phút · Chấm điểm AI</span>
+                            <span class="exam-subitem-title">{{ $exam['title'] }}</span>
+                            <span class="exam-subitem-details">{{ $exam['questions_count'] }} câu hỏi · {{ $exam['duration'] }} phút · {{ $exam['parts_summary'] }}</span>
                         </div>
-                        <!-- <x-button variant="neutral" size="medium" data-sp-modal-open="confirm-test-modal">Bắt đầu thi →</x-button> -->
-                        <a href="{{ url('/thi-thu/gioi-thieu-de') }}" data-require-auth>Bắt đầu</a>
+                        <a href="{{ route('thi-thu.gioi-thieu-de', $exam['id']) }}" data-require-auth>Bắt đầu</a>
                     </div>
+                    @empty
+                    <div class="exam-subitem" style="color: #8b94a9; font-size: 12px; padding: 12px 0;">
+                        Chưa có đề thi Speaking & Writing nào.
+                    </div>
+                    @endforelse
                 </div>
             </article>
         </div>

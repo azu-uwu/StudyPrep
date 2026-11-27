@@ -76,4 +76,12 @@ class TestAttempt extends Model
     {
         return $this->hasMany(AttemptResponse::class, 'attempt_id', 'attempt_id');
     }
+
+    /**
+     * @return HasMany<AttemptResponse, $this>
+     */
+    public function responses(): HasMany
+    {
+        return $this->hasMany(AttemptResponse::class, 'attempt_id', 'attempt_id');
+    }
 }

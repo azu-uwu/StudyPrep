@@ -96,6 +96,53 @@ html, body {
     line-height: 1.3;
 }
 
+/* Header Right Actions: Bookmark & Report (Ảnh 2 & Ảnh 4) */
+.sp-speaking-header-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: none;
+}
+
+.sp-header-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #64748B;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition: all 0.15s ease;
+    font-family: inherit;
+}
+
+.sp-header-action-btn:hover {
+    color: #111C2D;
+    background: #F1F5F9;
+}
+
+.sp-header-action-btn.is-active {
+    color: #0076FE;
+}
+
+.sp-header-action-btn.is-active svg {
+    fill: #0076FE;
+    stroke: #0076FE;
+}
+
+.sp-header-action-btn svg {
+    width: 17px;
+    height: 17px;
+    stroke: currentColor;
+    stroke-width: 2;
+    fill: none;
+}
+
 /* ===== MAIN CONTENT CONTAINER ===== */
 .sp-speaking-main {
     flex: 1;
@@ -351,6 +398,94 @@ html, body {
 
 .sp-chunk-green:hover {
     background: #ECFDF5;
+}
+
+.sp-chunk-blue {
+    color: #2563EB;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+    border-radius: 4px;
+    padding: 2px 4px;
+}
+.sp-chunk-blue:hover {
+    background: #EFF6FF;
+}
+
+.sp-chunk-orange {
+    color: #D97706;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+    border-radius: 4px;
+    padding: 2px 4px;
+}
+.sp-chunk-orange:hover {
+    background: #FFFBEB;
+}
+
+.sp-chunk-purple {
+    color: #7C3AED;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+    border-radius: 4px;
+    padding: 2px 4px;
+}
+.sp-chunk-purple:hover {
+    background: #F5F3FF;
+}
+
+.sp-chunk-brown {
+    color: #B45309;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+    border-radius: 4px;
+    padding: 2px 4px;
+}
+.sp-chunk-brown:hover {
+    background: #FEF3C7;
+}
+
+.sp-chunk-emerald {
+    color: #059669;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+    border-radius: 4px;
+    padding: 2px 4px;
+}
+.sp-chunk-emerald:hover {
+    background: #ECFDF5;
+}
+
+.sp-clickable-word {
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 0 2px;
+    display: inline-block;
+    transition: background-color 0.15s ease, transform 0.1s ease;
+}
+.sp-clickable-word:hover {
+    background-color: #FEF3C7;
+    transform: scale(1.05);
+}
+
+.sp-passage-display {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.85;
+    text-align: left;
+    margin: 0 0 16px;
+    letter-spacing: -0.01em;
+}
+
+.sp-passage-ipa {
+    font-size: 14.5px;
+    font-weight: 500;
+    color: #64748B;
+    line-height: 1.8;
+    text-align: left;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed #E2E8F0;
+    font-family: 'Instrument Sans', 'Nunito', sans-serif;
 }
 
 .sp-sentence-ipa {
