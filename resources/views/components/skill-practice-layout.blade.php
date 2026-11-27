@@ -472,9 +472,12 @@
         // Kiểm tra xem có đang ở chế độ ôn lại câu sai (mode=review từ trang Cải thiện) không
         var urlParams = new URLSearchParams(window.location.search);
         var isReviewMode = (urlParams.get('mode') === 'review');
-        var wrongCount = parseInt(urlParams.get('wrong'), 10);
-        if (isNaN(wrongCount) || wrongCount <= 0) {
-            wrongCount = 22; // Giá trị mẫu mặc định nếu không truyền
+        var backendCount = (window.WRONG_COUNTS_BY_PART && window.WRONG_COUNTS_BY_PART[cfg.partNum] !== undefined)
+            ? window.WRONG_COUNTS_BY_PART[cfg.partNum]
+            : null;
+        var wrongCount = backendCount !== null ? parseInt(backendCount, 10) : parseInt(urlParams.get('wrong'), 10);
+        if (isNaN(wrongCount) || wrongCount < 0) {
+            wrongCount = 0;
         }
 
         var setupView = document.getElementById('spSetupView');
@@ -855,12 +858,25 @@
         var urlParams = new URLSearchParams(window.location.search);
         var isReviewMode = (urlParams.get('mode') === 'review');
 
-        // CHẾ ĐỘ ÔN LẠI CÂU SAI: Mô phỏng Frontend & Chuẩn bị vị trí cho Backend BE-018
+        // CHẾ ĐỘ ÔN LẠI CÂU SAI: Điều hướng làm bài ôn lại các câu đã làm sai
         if (isReviewMode) {
-            alert(
-                '🎯 Đã thiết lập bài ôn lại ' + selectedPracticeCount + ' câu sai cho ' + cfg.title + '!\n\n' +
-                'ℹ️ Nghiệp vụ sau này: Hệ thống chỉ lấy câu hỏi trong danh sách câu sai đã lưu của bạn để tạo phiên làm bài ôn tập, không lấy thêm câu hỏi ngẫu nhiên từ ngân hàng chung (kết nối Backend BE-018).'
-            );
+            var backendWrong = (window.WRONG_COUNTS_BY_PART && window.WRONG_COUNTS_BY_PART[cfg.partNum] !== undefined)
+                ? window.WRONG_COUNTS_BY_PART[cfg.partNum]
+                : parseInt(urlParams.get('wrong'), 10);
+            var actualWrong = isNaN(backendWrong) ? 0 : backendWrong;
+
+            if (actualWrong <= 0) {
+                showPageError('Phần này hiện không có câu sai nào để ôn lại. Vui lòng quay lại trang Cải thiện.');
+                return;
+            }
+
+            if (selectedPracticeCount > actualWrong) {
+                showPageError('Số câu ôn lại không được vượt quá số câu sai hiện có (' + actualWrong + ' câu).');
+                return;
+            }
+
+            var url = cfg.startUrl + '?part=' + cfg.partNum + '&count=' + selectedPracticeCount + '&mode=review' + (cfg.skill === 'doc' ? '&new=1' : '');
+            window.location.href = url;
             return;
         }
 

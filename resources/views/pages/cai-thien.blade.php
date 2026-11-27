@@ -10,15 +10,6 @@
 {{-- ===== TIÊU ĐỀ TRANG (Đồng bộ chuẩn hệ thống StudyPrep) ===== --}}
 <div class="ct-page-header-row">
     <h1 class="ct-page-title">Cải thiện</h1>
-
-    {{-- Thanh chuyển đổi nhanh chế độ mẫu (hỗ trợ kiểm tra giao diện & Empty State theo YC) --}}
-    <div class="ct-demo-toggle-wrap" title="Chuyển đổi trạng thái dữ liệu mẫu để kiểm tra giao diện">
-        <span class="ct-demo-toggle-label">Dữ liệu mẫu:</span>
-        <button type="button" class="ct-demo-toggle-btn is-active" data-mode="full" onclick="setDemoState('full', this)">Có dữ liệu</button>
-        <button type="button" class="ct-demo-toggle-btn" data-mode="empty_wrong" onclick="setDemoState('empty_wrong', this)">Trống câu sai</button>
-        <button type="button" class="ct-demo-toggle-btn" data-mode="empty_weakness" onclick="setDemoState('empty_weakness', this)">Trống điểm yếu</button>
-        <button type="button" class="ct-demo-toggle-btn" data-mode="all_empty" onclick="setDemoState('all_empty', this)">Chưa có dữ liệu</button>
-    </div>
 </div>
 
 {{-- ===== HÀNG 2 THẺ THỐNG KÊ TỔNG HỢP ===== --}}
@@ -28,7 +19,7 @@
         <div class="ct-stat-content">
             <p class="ct-stat-label">Tổng câu sai</p>
             <div class="ct-stat-value-wrap">
-                <span class="ct-stat-number ct-stat-number--danger" id="statWrongCount">150</span>
+                <span class="ct-stat-number ct-stat-number--danger" id="statWrongCount">{{ $totalWrongCount ?? 0 }}</span>
                 <span class="ct-stat-unit" id="statWrongUnit">câu</span>
             </div>
         </div>
@@ -44,8 +35,8 @@
         <div class="ct-stat-content">
             <p class="ct-stat-label">Điểm yếu nhất</p>
             <div class="ct-stat-value-wrap">
-                <span class="ct-stat-number ct-stat-number--danger" id="statWeaknessName">Part 4</span>
-                <span class="ct-stat-badge" id="statWeaknessBadge">Độ thành thạo 18%</span>
+                <span class="ct-stat-number ct-stat-number--danger" id="statWeaknessName" style="font-size: 20px;">Chưa xác định</span>
+                <span class="ct-stat-badge ct-stat-badge--neutral" id="statWeaknessBadge">Chưa có dữ liệu phân tích</span>
             </div>
         </div>
         <div class="ct-stat-icon-wrap ct-stat-icon-wrap--red" id="statWeaknessIconWrap">
@@ -85,199 +76,32 @@
 <div id="view-wrong" class="ct-tab-view is-active">
 
     {{-- Trạng thái CÓ DỮ LIỆU: Một khung card chung chứa danh sách Part phân cách nhẹ --}}
-    <div class="ct-wrong-card-group" id="ctWrongDataContainer">
-
-        {{-- Part 1: Mô tả hình (22 câu sai khớp Ảnh 1 & Ảnh 2) --}}
-        <div class="ct-wrong-part-row">
-            <div class="ct-wrong-part-left">
-                <div class="ct-part-icon" style="background: #E0F2FE;">
-                    <svg width="40" height="40" viewBox="0 0 34 34" fill="none">
-                        <path d="M6 25L14 15L19 21L22 17L27 25H6Z" fill="#10B981"/>
-                        <circle cx="21" cy="11" r="3" fill="#F59E0B"/>
-                        <g transform="translate(13, 7) rotate(32)">
-                            <rect x="0" y="0" width="4" height="14" rx="1.5" fill="#F59E0B"/>
-                            <path d="M0 14L2 18L4 14Z" fill="#3B82F6"/>
-                        </g>
-                    </svg>
+    <div class="ct-wrong-card-group" id="ctWrongDataContainer" style="{{ ($totalWrongCount ?? 0) > 0 ? '' : 'display: none;' }}">
+        @if(!empty($wrongParts))
+            @foreach($wrongParts as $part)
+                <div class="ct-wrong-part-row" data-part="{{ $part['part_number'] }}" data-section="{{ $part['section_code'] }}">
+                    <div class="ct-wrong-part-left">
+                        <div class="ct-part-icon" style="background: {{ $part['icon_bg'] }};">
+                            {!! $part['icon_svg'] !!}
+                        </div>
+                        <div class="ct-wrong-part-info">
+                            <h3 class="ct-wrong-part-title">{{ $part['display_title'] }}</h3>
+                            <p class="ct-wrong-part-count">Số câu sai: <span class="ct-wrong-num">{{ $part['wrong_count'] }}</span></p>
+                            <button type="button" class="ct-link-view-result" onclick="openPartResult('{{ $part['section_key'] }}')">Xem kết quả</button>
+                        </div>
+                    </div>
+                    <div class="ct-wrong-part-actions">
+                        <x-button variant="primary" size="small" type="button" onclick="goToRedoSetup('{{ $part['section_key'] }}', {{ $part['wrong_count'] }})">
+                            Làm lại
+                        </x-button>
+                    </div>
                 </div>
-                <div class="ct-wrong-part-info">
-                    <h3 class="ct-wrong-part-title">Part 1: Mô tả hình</h3>
-                    <p class="ct-wrong-part-count">Số câu sai: <span class="ct-wrong-num">22</span></p>
-                    <button type="button" class="ct-link-view-result" onclick="openPartResult(1)">Xem kết quả</button>
-                </div>
-            </div>
-            <div class="ct-wrong-part-actions">
-                <x-button variant="primary" size="small" type="button" onclick="goToRedoSetup(1, 22)">
-                    Làm lại
-                </x-button>
-            </div>
-        </div>
-
-        {{-- Part 2: Hỏi & Đáp --}}
-        <div class="ct-wrong-part-row">
-            <div class="ct-wrong-part-left">
-                <div class="ct-part-icon" style="background: #EFF6FF;">
-                    <svg width="40" height="40" viewBox="0 0 34 34" fill="none">
-                        <rect x="7" y="9" width="14" height="11" rx="4" fill="#38BDF8"/>
-                        <path d="M10 20L8 23V20H10Z" fill="#38BDF8"/>
-                        <line x1="10" y1="13" x2="18" y2="13" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-                        <line x1="10" y1="16" x2="15" y2="16" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-                        <rect x="15" y="14" width="13" height="11" rx="4" fill="#EF4444"/>
-                        <path d="M25 25L23 27V25H25Z" fill="#EF4444"/>
-                        <text x="21.5" y="22.5" font-size="8" font-weight="800" fill="white" text-anchor="middle">A</text>
-                    </svg>
-                </div>
-                <div class="ct-wrong-part-info">
-                    <h3 class="ct-wrong-part-title">Part 2: Hỏi &amp; Đáp</h3>
-                    <p class="ct-wrong-part-count">Số câu sai: <span class="ct-wrong-num">15</span></p>
-                    <button type="button" class="ct-link-view-result" onclick="openPartResult(2)">Xem kết quả</button>
-                </div>
-            </div>
-            <div class="ct-wrong-part-actions">
-                <x-button variant="primary" size="small" type="button" onclick="goToRedoSetup(2, 15)">
-                    Làm lại
-                </x-button>
-            </div>
-        </div>
-
-        {{-- Part 3: Hội thoại ngắn --}}
-        <div class="ct-wrong-part-row">
-            <div class="ct-wrong-part-left">
-                <div class="ct-part-icon" style="background: #FEF3C7;">
-                    <svg width="40" height="40" viewBox="0 0 34 34" fill="none">
-                        <rect x="8" y="7" width="16" height="11" rx="4" fill="#F59E0B"/>
-                        <path d="M11 18L9 21V18H11Z" fill="#F59E0B"/>
-                        <line x1="11" y1="11" x2="21" y2="11" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-                        <line x1="11" y1="14" x2="17" y2="14" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-                        <rect x="13" y="15" width="15" height="11" rx="4" fill="#0D9488"/>
-                        <path d="M25 26L23 28V26H25Z" fill="#0D9488"/>
-                        <line x1="16" y1="19" x2="25" y2="19" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-                        <line x1="16" y1="22" x2="22" y2="22" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-                    </svg>
-                </div>
-                <div class="ct-wrong-part-info">
-                    <h3 class="ct-wrong-part-title">Part 3: Hội thoại ngắn</h3>
-                    <p class="ct-wrong-part-count">Số câu sai: <span class="ct-wrong-num">32</span></p>
-                    <button type="button" class="ct-link-view-result" onclick="openPartResult(3)">Xem kết quả</button>
-                </div>
-            </div>
-            <div class="ct-wrong-part-actions">
-                <x-button variant="primary" size="small" type="button" onclick="goToRedoSetup(3, 32)">
-                    Làm lại
-                </x-button>
-            </div>
-        </div>
-
-        {{-- Part 4: Bài nói chuyện ngắn --}}
-        <div class="ct-wrong-part-row">
-            <div class="ct-wrong-part-left">
-                <div class="ct-part-icon" style="background: #FDF2F8;">
-                    <svg width="40" height="40" viewBox="0 0 34 34" fill="none">
-                        <circle cx="17" cy="11" r="3.5" fill="#FB7185"/>
-                        <path d="M12 18C12 16 14 15 17 15C20 15 22 16 22 18V20H12V18Z" fill="#FDA4AF"/>
-                        <path d="M13 20H21L20 28H14L13 20Z" fill="#94A3B8"/>
-                        <rect x="11" y="19" width="12" height="2" rx="1" fill="#64748B"/>
-                        <line x1="19" y1="16" x2="18" y2="19" stroke="#1E293B" stroke-width="1.2"/>
-                        <circle cx="19" cy="15.5" r="1" fill="#1E293B"/>
-                    </svg>
-                </div>
-                <div class="ct-wrong-part-info">
-                    <h3 class="ct-wrong-part-title">Part 4: Bài nói chuyện ngắn</h3>
-                    <p class="ct-wrong-part-count">Số câu sai: <span class="ct-wrong-num">26</span></p>
-                    <button type="button" class="ct-link-view-result" onclick="openPartResult(4)">Xem kết quả</button>
-                </div>
-            </div>
-            <div class="ct-wrong-part-actions">
-                <x-button variant="primary" size="small" type="button" onclick="goToRedoSetup(4, 26)">
-                    Làm lại
-                </x-button>
-            </div>
-        </div>
-
-        {{-- Part 5: Hoàn thành câu --}}
-        <div class="ct-wrong-part-row">
-            <div class="ct-wrong-part-left">
-                <div class="ct-part-icon" style="background: #EEF2FF;">
-                    <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
-                        <rect x="8" y="6" width="26" height="36" rx="5" fill="#FFFFFF" stroke="#1E293B" stroke-width="2.5"/>
-                        <rect x="12" y="11" width="8" height="8" rx="2" fill="#38BDF8" stroke="#0284C7" stroke-width="1.2"/>
-                        <path d="M14 15l2 2 3-3" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                        <rect x="12" y="22" width="8" height="8" rx="2" fill="#38BDF8" stroke="#0284C7" stroke-width="1.2"/>
-                        <path d="M14 26l2 2 3-3" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                        <g transform="translate(32, 22) rotate(42)">
-                            <rect x="-18" y="-4" width="22" height="8" rx="1" fill="#F59E0B" stroke="#1E293B" stroke-width="1.8"/>
-                            <line x1="-18" y1="0" x2="4" y2="0" stroke="#D97706" stroke-width="1.2"/>
-                            <path d="M-18 -4 L-25 0 L-18 4 Z" fill="#FDE68A" stroke="#1E293B" stroke-width="1.8"/>
-                            <rect x="4" y="-4" width="5" height="8" rx="1" fill="#EF4444" stroke="#1E293B" stroke-width="1.8"/>
-                        </g>
-                    </svg>
-                </div>
-                <div class="ct-wrong-part-info">
-                    <h3 class="ct-wrong-part-title">Part 5: Hoàn thành câu</h3>
-                    <p class="ct-wrong-part-count">Số câu sai: <span class="ct-wrong-num">22</span></p>
-                    <button type="button" class="ct-link-view-result" onclick="openPartResult(5)">Xem kết quả</button>
-                </div>
-            </div>
-            <div class="ct-wrong-part-actions">
-                <x-button variant="primary" size="small" type="button" onclick="goToRedoSetup(5, 22)">
-                    Làm lại
-                </x-button>
-            </div>
-        </div>
-
-        {{-- Part 6: Hoàn thành đoạn văn --}}
-        <div class="ct-wrong-part-row">
-            <div class="ct-wrong-part-left">
-                <div class="ct-part-icon" style="background: #EEF2FF;">
-                    <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
-                        <rect x="8" y="6" width="24" height="32" rx="4" fill="#EEF2FF" stroke="#4F46E5" stroke-width="2"/>
-                        <rect x="16" y="12" width="24" height="30" rx="4" fill="#FFFFFF" stroke="#4F46E5" stroke-width="2"/>
-                        <line x1="22" y1="18" x2="34" y2="18" stroke="#4F46E5" stroke-width="1.8" stroke-linecap="round"/>
-                        <line x1="22" y1="24" x2="32" y2="24" stroke="#4F46E5" stroke-width="1.8" stroke-linecap="round"/>
-                        <line x1="22" y1="30" x2="34" y2="30" stroke="#4F46E5" stroke-width="1.8" stroke-linecap="round"/>
-                    </svg>
-                </div>
-                <div class="ct-wrong-part-info">
-                    <h3 class="ct-wrong-part-title">Part 6: Hoàn thành đoạn văn</h3>
-                    <p class="ct-wrong-part-count">Số câu sai: <span class="ct-wrong-num">14</span></p>
-                    <button type="button" class="ct-link-view-result" onclick="openPartResult(6)">Xem kết quả</button>
-                </div>
-            </div>
-            <div class="ct-wrong-part-actions">
-                <x-button variant="primary" size="small" type="button" onclick="goToRedoSetup(6, 14)">
-                    Làm lại
-                </x-button>
-            </div>
-        </div>
-
-        {{-- Part 7: Đọc hiểu đoạn văn --}}
-        <div class="ct-wrong-part-row">
-            <div class="ct-wrong-part-left">
-                <div class="ct-part-icon" style="background: #EFF6FF;">
-                    <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
-                        <rect x="12" y="6" width="24" height="36" rx="4" fill="#3B82F6"/>
-                        <rect x="12" y="6" width="5" height="36" rx="2" fill="#2563EB"/>
-                        <line x1="32" y1="8" x2="32" y2="38" stroke="#93C5FD" stroke-width="1.2"/>
-                        <path d="M18 36v8l3-2 3 2v-8z" fill="#BFDBFE"/>
-                    </svg>
-                </div>
-                <div class="ct-wrong-part-info">
-                    <h3 class="ct-wrong-part-title">Part 7: Đọc hiểu đoạn văn</h3>
-                    <p class="ct-wrong-part-count">Số câu sai: <span class="ct-wrong-num">19</span></p>
-                    <button type="button" class="ct-link-view-result" onclick="openPartResult(7)">Xem kết quả</button>
-                </div>
-            </div>
-            <div class="ct-wrong-part-actions">
-                <x-button variant="primary" size="small" type="button" onclick="goToRedoSetup(7, 19)">
-                    Làm lại
-                </x-button>
-            </div>
-        </div>
-
+            @endforeach
+        @endif
     </div>
 
     {{-- Trạng thái CHƯA CÓ DỮ LIỆU (EMPTY STATE) --}}
-    <div class="ct-empty-state-box" id="ctWrongEmptyState" style="display: none;">
+    <div class="ct-empty-state-box" id="ctWrongEmptyState" style="{{ ($totalWrongCount ?? 0) > 0 ? 'display: none;' : '' }}">
         <div class="ct-empty-state-icon">
             <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
@@ -615,7 +439,7 @@
     </div>
 
     <div class="ct-result-heading">
-        <div class="ct-result-eyebrow">KẾT QUẢ BÀI LUYỆN</div>
+        <div class="ct-result-eyebrow">KẾT QUẢ CÂU SAI TÍCH LŨY</div>
         <h1 class="ct-result-title" id="ctResultMainTitle">Part 1 — Nghe</h1>
     </div>
 
@@ -717,40 +541,58 @@
 @push('scripts')
 <script>
     /**
-     * Dữ liệu Part và số câu sai mẫu
+     * Dữ liệu các câu sai theo Part được đổ từ Backend
      */
-    const PART_WRONG_DATA = {
-        1: { name: 'Part 1: Mô tả hình', skillName: 'Nghe', skillRoute: 'nghe', count: 22, bg: '#E0F2FE' },
-        2: { name: 'Part 2: Hỏi & Đáp', skillName: 'Nghe', skillRoute: 'nghe', count: 15, bg: '#EFF6FF' },
-        3: { name: 'Part 3: Hội thoại ngắn', skillName: 'Nghe', skillRoute: 'nghe', count: 32, bg: '#FEF3C7' },
-        4: { name: 'Part 4: Bài nói chuyện ngắn', skillName: 'Nghe', skillRoute: 'nghe', count: 26, bg: '#FDF2F8' },
-        5: { name: 'Part 5: Hoàn thành câu', skillName: 'Đọc', skillRoute: 'doc', count: 22, bg: '#EEF2FF' },
-        6: { name: 'Part 6: Hoàn thành đoạn văn', skillName: 'Đọc', skillRoute: 'doc', count: 14, bg: '#EEF2FF' },
-        7: { name: 'Part 7: Đọc hiểu đoạn văn', skillName: 'Đọc', skillRoute: 'doc', count: 19, bg: '#EFF6FF' }
-    };
-
-    let currentResultPart = 1;
+    window.WRONG_PARTS_DATA = @json($wrongPartsDetails ?? []);
+    let currentResultKey = null;
 
     /**
-     * Điều hướng sang trang chọn số câu ôn lại (Tái sử dụng in-page setup - Ảnh 1)
+     * Hàm an toàn mã hóa HTML
      */
-    function goToRedoSetup(partNum, wrongCount) {
-        var info = PART_WRONG_DATA[partNum] || { count: wrongCount, skillRoute: (partNum <= 4 ? 'nghe' : 'doc') };
-        var count = wrongCount || info.count;
-        var baseUrl = (partNum <= 4) ? "{{ route('luyen-tap.nghe') }}" : "{{ url('/luyen-tap/doc') }}";
-        window.location.href = baseUrl + '?part=' + partNum + '&mode=review&wrong=' + count;
+    function escapeHtml(text) {
+        if (!text) return '';
+        var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+        return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
     }
 
     /**
-     * Mở giao diện xem kết quả câu sai của Part (Khớp Ảnh 2)
+     * Điều hướng sang trang chọn số câu ôn lại
      */
-    function openPartResult(partNum) {
-        currentResultPart = partNum;
-        var info = PART_WRONG_DATA[partNum] || { name: 'Part ' + partNum, skillName: (partNum <= 4 ? 'Nghe' : 'Đọc'), count: 22 };
+    function goToRedoSetup(sectionKey, wrongCount) {
+        var info = window.WRONG_PARTS_DATA[sectionKey];
+        var baseUrl = info ? info.redo_url : "{{ url('/luyen-tap/doc') }}";
+        var count = wrongCount || (info ? info.count : 0);
+        var partNum = info ? info.part_number : sectionKey;
+        var sectionId = info ? info.section_id : '';
+
+        window.location.href = baseUrl + '?part=' + partNum + '&mode=review&wrong=' + count + (sectionId ? '&section_id=' + sectionId : '');
+    }
+
+    /**
+     * Mở giao diện xem kết quả câu sai của Part
+     */
+    function openPartResult(sectionKey) {
+        var info = window.WRONG_PARTS_DATA[sectionKey];
+        if (!info) {
+            // Thử tìm theo part_number nếu truyền số (1..7)
+            var foundKey = Object.keys(window.WRONG_PARTS_DATA).find(function(k) {
+                return String(window.WRONG_PARTS_DATA[k].part_number) === String(sectionKey)
+                    || String(window.WRONG_PARTS_DATA[k].section_id) === String(sectionKey)
+                    || String(window.WRONG_PARTS_DATA[k].section_code) === String(sectionKey);
+            });
+            if (foundKey) {
+                info = window.WRONG_PARTS_DATA[foundKey];
+                sectionKey = foundKey;
+            }
+        }
+
+        if (!info) return;
+
+        currentResultKey = sectionKey;
 
         // Cập nhật Tiêu đề
-        document.getElementById('ctResultMainTitle').textContent = 'Part ' + partNum + ' — ' + info.skillName;
-        document.getElementById('ctResultCardTitle').textContent = info.name;
+        document.getElementById('ctResultMainTitle').textContent = info.header_title;
+        document.getElementById('ctResultCardTitle').textContent = info.display_title;
 
         // Cập nhật Badges số lượng
         document.getElementById('badgeResultAll').textContent = info.count;
@@ -767,8 +609,8 @@
         var firstTab = document.querySelector('.ct-result-tab-btn[data-filter="all"]');
         if (firstTab) firstTab.classList.add('is-active');
 
-        // Render danh sách câu hỏi
-        renderResultQuestions(partNum, info.count);
+        // Render danh sách câu hỏi thật từ CSDL
+        renderResultQuestions(info.questions);
 
         // Chuyển view: Ẩn trang chính Cải thiện, hiện View kết quả
         document.getElementById('ctMainWrapper').style.display = 'none';
@@ -776,8 +618,8 @@
 
         // Cập nhật URL (?result_part=X)
         var newUrl = new URL(window.location);
-        newUrl.searchParams.set('result_part', partNum);
-        window.history.pushState({ result_part: partNum }, '', newUrl);
+        newUrl.searchParams.set('result_part', sectionKey);
+        window.history.pushState({ result_part: sectionKey }, '', newUrl);
 
         // Cuộn mượt lên đầu
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -835,8 +677,11 @@
      * Ôn lại các câu sai của Part hiện tại từ giao diện kết quả
      */
     function redoFromCurrentResult() {
-        var info = PART_WRONG_DATA[currentResultPart];
-        goToRedoSetup(currentResultPart, info ? info.count : 22);
+        if (!currentResultKey) return;
+        var info = window.WRONG_PARTS_DATA[currentResultKey];
+        if (info) {
+            goToRedoSetup(currentResultKey, info.count);
+        }
     }
 
     /**
@@ -857,157 +702,141 @@
     }
 
     /**
-     * Sinh danh sách câu hỏi mẫu cho View Kết quả (Khớp 100% Ảnh 2)
+     * Đổ danh sách câu hỏi thật vào View Kết quả
      */
-    function renderResultQuestions(partNum, totalCount) {
+    function renderResultQuestions(questions) {
         var container = document.getElementById('ctResultQuestionsBody');
         if (!container) return;
 
-        // Mẫu 10 câu đầu tiên cho Part 1 chuẩn xác theo Ảnh 2:
-        // Câu 1: User A, Đúng D
-        // Câu 2: User B, Đúng C
-        // Câu 3: User B, Đúng A
-        // Câu 4: User B, Đúng C
-        // Câu 5: User B, Đúng D
-        // Câu 6: User B, Đúng D
-        // Câu 7: User C, Đúng B
-        // Câu 8: User C, Đúng B
-        // Câu 9: User C, Đúng D
-        // Câu 10: User C, Đúng D
-        var part1Answers = [
-            { user: 'A', correct: 'D' },
-            { user: 'B', correct: 'C' },
-            { user: 'B', correct: 'A' },
-            { user: 'B', correct: 'C' },
-            { user: 'B', correct: 'D' },
-            { user: 'B', correct: 'D' },
-            { user: 'C', correct: 'B' },
-            { user: 'C', correct: 'B' },
-            { user: 'C', correct: 'D' },
-            { user: 'C', correct: 'D' },
-        ];
-
-        var isPart2 = (partNum === 2);
-        var optionsList = isPart2 ? ['A', 'B', 'C'] : ['A', 'B', 'C', 'D'];
+        if (!questions || questions.length === 0) {
+            container.innerHTML = '<div style="padding: 24px; text-align: center; color: #64748B;">Không có câu hỏi nào.</div>';
+            return;
+        }
 
         var html = '';
-        var renderCount = Math.min(totalCount, 22);
-
-        for (var i = 1; i <= renderCount; i++) {
-            var answerPair;
-            if (partNum === 1 && i <= 10) {
-                answerPair = part1Answers[i - 1];
-            } else {
-                var u = isPart2 ? (i % 2 === 0 ? 'B' : 'A') : (i % 3 === 0 ? 'C' : (i % 2 === 0 ? 'B' : 'A'));
-                var c = isPart2 ? (u === 'A' ? 'B' : (u === 'B' ? 'C' : 'A')) : (u === 'D' ? 'A' : (u === 'A' ? 'D' : (u === 'B' ? 'C' : 'B')));
-                answerPair = { user: u, correct: c };
+        questions.forEach(function(q, idx) {
+            var num = idx + 1;
+            var optionsList = ['A', 'B', 'C', 'D'];
+            if (q.options && typeof q.options === 'object') {
+                optionsList = Object.keys(q.options).sort();
             }
 
             var optionCirclesHtml = '';
             optionsList.forEach(function(opt) {
                 var cls = 'ct-result-opt-circle--neutral';
-                if (opt === answerPair.user) {
+                if (opt === q.user_answer) {
                     cls = 'ct-result-opt-circle--user-wrong';
-                } else if (opt === answerPair.correct) {
+                } else if (opt === q.correct_answer) {
                     cls = 'ct-result-opt-circle--correct';
                 }
                 optionCirclesHtml += `<span class="ct-result-opt-circle ${cls}">${opt}</span>`;
             });
 
-            // Chi tiết giải thích mẫu
-            var detailContentHtml = getQuestionDetailHtml(partNum, i, answerPair, optionsList);
+            var detailContentHtml = renderQuestionDetailContent(q, num, optionsList);
 
             html += `
-                <div class="ct-result-q-item" id="ctQItem_${i}">
-                    <div class="ct-result-q-row" onclick="toggleResultQuestionDetail(${i})">
-                        <div class="ct-result-q-label">Câu ${i}</div>
+                <div class="ct-result-q-item" id="ctQItem_${num}">
+                    <div class="ct-result-q-row" onclick="toggleResultQuestionDetail(${num})">
+                        <div class="ct-result-q-label">Câu ${num}</div>
                         <div class="ct-result-q-controls">
                             <span class="ct-result-status-icon ct-result-status-icon--incorrect" title="Câu sai">&times;</span>
                             ${optionCirclesHtml}
-                            <span class="ct-result-chevron" id="ctQChevron_${i}">
+                            <span class="ct-result-chevron" id="ctQChevron_${num}">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                     <polyline points="9 18 15 12 9 6"></polyline>
                                 </svg>
                             </span>
                         </div>
                     </div>
-                    <div class="ct-result-q-detail" id="ctQDetail_${i}">
+                    <div class="ct-result-q-detail" id="ctQDetail_${num}">
                         ${detailContentHtml}
                     </div>
                 </div>
             `;
-        }
+        });
 
         container.innerHTML = html;
     }
 
     /**
-     * Dữ liệu giải thích chi tiết mẫu mô phỏng cho từng câu hỏi
+     * Render chi tiết giải thích cho từng câu hỏi thật
      */
-    function getQuestionDetailHtml(partNum, qNum, pair, optionsList) {
-        var optTexts = {
-            'A': 'They are walking along the hallway in the office.',
-            'B': 'A woman is giving a formal presentation to the team.',
-            'C': 'Some documents are scattered across the large conference table.',
-            'D': 'Several colleagues are gathered around a computer screen.'
-        };
-
-        if (partNum === 5) {
-            optTexts = {
-                'A': 'frequently',
-                'B': 'frequency',
-                'C': 'frequent',
-                'D': 'frequenting'
-            };
-        }
-
+    function renderQuestionDetailContent(q, num, optionsList) {
         var optListHtml = '';
         optionsList.forEach(function(opt) {
-            var isCorrect = (opt === pair.correct);
-            var isUserWrong = (opt === pair.user);
+            var isCorrect = (opt === q.correct_answer);
+            var isUserWrong = (opt === q.user_answer);
             var itemCls = isCorrect ? 'is-correct' : (isUserWrong ? 'is-user-wrong' : '');
             var badgeHtml = isCorrect 
                 ? '<span class="ct-result-opt-badge ct-result-opt-badge--correct">Đáp án đúng</span>' 
                 : (isUserWrong ? '<span class="ct-result-opt-badge ct-result-opt-badge--wrong">Bạn chọn</span>' : '');
 
+            var optText = (q.options && q.options[opt]) ? q.options[opt] : ('Phương án ' + opt);
             optListHtml += `
                 <div class="ct-result-opt-item ${itemCls}">
                     <strong>${opt}.</strong>
-                    <span style="flex: 1;">${optTexts[opt] || 'Nội dung phương án ' + opt}</span>
+                    <span style="flex: 1;">${escapeHtml(optText)}</span>
                     ${badgeHtml}
                 </div>
             `;
         });
 
-        var stemText = partNum <= 4 
-            ? `[Câu hỏi Listening Part ${partNum} - Câu ${qNum}] Nghe đoạn ghi âm và chọn câu trả lời chính xác nhất.`
-            : `[Câu hỏi Reading Part ${partNum} - Câu ${qNum}] The board of directors agreed that the quarterly reports should be reviewed ________ before the shareholders meeting.`;
-
-        var explanation = partNum <= 4
-            ? `Phương án (${pair.correct}) mô tả hoàn toàn chuẩn xác hành động và bối cảnh chính được đề cập. Phương án bạn chọn (${pair.user}) bị sai do từ khóa đồng âm gây bẫy trong bài nghe.`
-            : `Vị trí trống đứng sau động từ ở thể bị động 'be reviewed' và bổ nghĩa cho hành động xem xét, nên cần một trạng từ (adverb). Do đó chọn đáp án (${pair.correct}).`;
-
-        var transcriptHtml = '';
-        if (partNum <= 4) {
-            transcriptHtml = `
-                <div class="ct-result-transcript">
-                    <strong>🎧 Audio Transcript:</strong><br>
-                    (A) ${optTexts['A'] || ''}<br>
-                    (B) ${optTexts['B'] || ''}<br>
-                    (C) ${optTexts['C'] || ''}<br>
-                    ${!optionsList.includes('D') ? '' : '(D) ' + (optTexts['D'] || '')}
-                    <div style="margin-top: 6px; color: #64748B;">
-                        <strong>Dịch nghĩa:</strong> Bức ảnh chụp các đồng nghiệp đang tập trung làm việc và thảo luận công việc cùng nhau.
-                    </div>
+        // Đoạn văn / stimulus_text nếu có
+        var passageHtml = '';
+        if (q.stimulus_text && q.stimulus_text.trim() !== '') {
+            passageHtml = `
+                <div class="ct-result-passage-box" style="margin-bottom: 14px; padding: 14px 16px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; font-size: 14px; line-height: 1.6; color: #1E293B;">
+                    <div style="font-weight: 700; margin-bottom: 6px; color: #475569; font-size: 13px; text-transform: uppercase;">📄 Đoạn văn / Ngữ cảnh chung:</div>
+                    <div style="white-space: pre-wrap;">${escapeHtml(q.stimulus_text)}</div>
                 </div>
             `;
         }
 
+        // Hình ảnh nếu có
+        var imageHtml = '';
+        if (q.image_url) {
+            imageHtml = `
+                <div style="margin-bottom: 14px; text-align: center;">
+                    <img src="${escapeHtml(q.image_url)}" alt="Hình ảnh câu hỏi" style="max-width: 100%; max-height: 280px; border-radius: 8px; border: 1px solid #E2E8F0;">
+                </div>
+            `;
+        }
+
+        // Audio nếu có
+        var audioHtml = '';
+        if (q.audio_url) {
+            audioHtml = `
+                <div style="margin-bottom: 14px;">
+                    <audio controls src="${escapeHtml(q.audio_url)}" style="width: 100%; height: 40px;"></audio>
+                </div>
+            `;
+        }
+
+        // Transcript nếu có
+        var transcriptHtml = '';
+        if (q.transcript) {
+            var transcriptText = Array.isArray(q.transcript) ? q.transcript.join('<br>') : escapeHtml(q.transcript);
+            if (transcriptText.trim() !== '') {
+                transcriptHtml = `
+                    <div class="ct-result-transcript">
+                        <strong>🎧 Audio Transcript:</strong><br>
+                        ${transcriptText}
+                    </div>
+                `;
+            }
+        }
+
+        var stemText = q.content ? escapeHtml(q.content) : `Câu hỏi ${num}`;
+        var explanationText = q.explanation ? escapeHtml(q.explanation) : `Đáp án đúng là (${q.correct_answer}).`;
+
         return `
+            ${passageHtml}
+            ${imageHtml}
+            ${audioHtml}
             <div class="ct-result-q-stem">${stemText}</div>
             <div class="ct-result-opt-list">${optListHtml}</div>
             <div class="ct-result-explanation">
-                <strong>💡 Giải thích chi tiết:</strong> ${explanation}
+                <strong>💡 Giải thích chi tiết:</strong> ${explanationText}
             </div>
             ${transcriptHtml}
         `;
@@ -1022,16 +851,16 @@
         var viewWrong = document.getElementById('view-wrong');
         var viewWeakness = document.getElementById('view-weakness');
 
-        if (tab === 'wrong') {
-            btnWrong.classList.add('is-active');
-            btnWeakness.classList.remove('is-active');
-            viewWrong.style.display = 'block';
-            viewWeakness.style.display = 'none';
-        } else {
+        if (tab === 'weakness' || tab === 'diem-yeu') {
             btnWeakness.classList.add('is-active');
             btnWrong.classList.remove('is-active');
             viewWeakness.style.display = 'block';
             viewWrong.style.display = 'none';
+        } else {
+            btnWrong.classList.add('is-active');
+            btnWeakness.classList.remove('is-active');
+            viewWrong.style.display = 'block';
+            viewWeakness.style.display = 'none';
         }
     }
 
@@ -1048,13 +877,13 @@
         var rows = document.querySelectorAll('.ct-weakness-row');
 
         if (skill === 'all') {
-            priorityWrap.style.display = 'flex';
-            groupedCard.style.display = 'block';
+            if (priorityWrap) priorityWrap.style.display = 'flex';
+            if (groupedCard) groupedCard.style.display = 'block';
             rows.forEach(function(r) { r.style.display = 'flex'; });
             if (topLabel) topLabel.textContent = 'TOP 11';
         } else if (skill === 'listen') {
-            priorityWrap.style.display = 'flex';
-            groupedCard.style.display = 'block';
+            if (priorityWrap) priorityWrap.style.display = 'flex';
+            if (groupedCard) groupedCard.style.display = 'block';
             rows.forEach(function(r) {
                 if (r.getAttribute('data-skill') === 'listen') {
                     r.style.display = 'flex';
@@ -1064,8 +893,8 @@
             });
             if (topLabel) topLabel.textContent = 'TOP 6';
         } else if (skill === 'read') {
-            priorityWrap.style.display = 'none';
-            groupedCard.style.display = 'block';
+            if (priorityWrap) priorityWrap.style.display = 'none';
+            if (groupedCard) groupedCard.style.display = 'block';
             rows.forEach(function(r) {
                 if (r.getAttribute('data-skill') === 'read') {
                     r.style.display = 'flex';
@@ -1102,100 +931,20 @@
         }
     }
 
-    /**
-     * Quản lý chuyển đổi chế độ kiểm tra dữ liệu mẫu
-     */
-    function setDemoState(mode, btn) {
-        document.querySelectorAll('.ct-demo-toggle-btn').forEach(function(b) { b.classList.remove('is-active'); });
-        if (btn) btn.classList.add('is-active');
-
-        var wrongData = document.getElementById('ctWrongDataContainer');
-        var wrongEmpty = document.getElementById('ctWrongEmptyState');
-        var weaknessData = document.getElementById('ctWeaknessDataContainer');
-        var weaknessMeta = document.getElementById('ctWeaknessMetaHeader');
-        var weaknessEmpty = document.getElementById('ctWeaknessEmptyState');
-
-        var statWrongCount = document.getElementById('statWrongCount');
-        var statWrongUnit = document.getElementById('statWrongUnit');
-        var statWeaknessName = document.getElementById('statWeaknessName');
-        var statWeaknessBadge = document.getElementById('statWeaknessBadge');
-        var statWeaknessIconWrap = document.getElementById('statWeaknessIconWrap');
-
-        if (mode === 'full') {
-            wrongData.style.display = 'block';
-            wrongEmpty.style.display = 'none';
-            weaknessData.style.display = 'block';
-            weaknessMeta.style.display = 'flex';
-            weaknessEmpty.style.display = 'none';
-
-            statWrongCount.textContent = '150';
-            statWrongUnit.textContent = 'câu';
-            statWeaknessName.textContent = 'Part 4';
-            statWeaknessBadge.textContent = 'Độ thành thạo 18%';
-            statWeaknessBadge.className = 'ct-stat-badge';
-            statWeaknessIconWrap.className = 'ct-stat-icon-wrap ct-stat-icon-wrap--red';
-        } else if (mode === 'empty_wrong') {
-            wrongData.style.display = 'none';
-            wrongEmpty.style.display = 'block';
-            weaknessData.style.display = 'block';
-            weaknessMeta.style.display = 'flex';
-            weaknessEmpty.style.display = 'none';
-
-            statWrongCount.textContent = '0';
-            statWrongUnit.textContent = 'câu';
-            statWeaknessName.textContent = 'Part 4';
-            statWeaknessBadge.textContent = 'Độ thành thạo 18%';
-            statWeaknessBadge.className = 'ct-stat-badge';
-        } else if (mode === 'empty_weakness') {
-            wrongData.style.display = 'block';
-            wrongEmpty.style.display = 'none';
-            weaknessData.style.display = 'none';
-            weaknessMeta.style.display = 'none';
-            weaknessEmpty.style.display = 'block';
-
-            statWrongCount.textContent = '150';
-            statWrongUnit.textContent = 'câu';
-            statWeaknessName.textContent = '--';
-            statWeaknessBadge.textContent = 'Chưa có đánh giá';
-            statWeaknessBadge.className = 'ct-stat-badge ct-stat-badge--neutral';
-        } else if (mode === 'all_empty') {
-            wrongData.style.display = 'none';
-            wrongEmpty.style.display = 'block';
-            weaknessData.style.display = 'none';
-            weaknessMeta.style.display = 'none';
-            weaknessEmpty.style.display = 'block';
-
-            statWrongCount.textContent = '0';
-            statWrongUnit.textContent = 'câu';
-            statWeaknessName.textContent = '--';
-            statWeaknessBadge.textContent = 'Chưa có đánh giá';
-            statWeaknessBadge.className = 'ct-stat-badge ct-stat-badge--neutral';
-        }
-    }
-
-    // Đọc URL param khởi tạo ban đầu (?tab=...&state=...&result_part=...)
+    // Đọc URL param khởi tạo ban đầu (?tab=...&result_part=...)
     window.addEventListener('DOMContentLoaded', function() {
         var params = new URLSearchParams(window.location.search);
         var tabParam = params.get('tab');
-        if (tabParam === 'weakness') {
+        if (tabParam === 'weakness' || tabParam === 'diem-yeu') {
             switchImproveTab('weakness');
         } else {
             switchImproveTab('wrong');
         }
 
-        var stateParam = params.get('state');
-        if (stateParam) {
-            var btn = document.querySelector('.ct-demo-toggle-btn[data-mode="' + stateParam + '"]');
-            if (btn) setDemoState(stateParam, btn);
-        }
-
         // Tự động mở View Kết quả nếu có param ?result_part=...
         var resultPartParam = params.get('result_part');
         if (resultPartParam) {
-            var pNum = parseInt(resultPartParam, 10);
-            if (!isNaN(pNum) && pNum >= 1 && pNum <= 7) {
-                openPartResult(pNum);
-            }
+            openPartResult(resultPartParam);
         }
     });
 
@@ -1203,7 +952,7 @@
         var params = new URLSearchParams(window.location.search);
         var resultPartParam = params.get('result_part');
         if (resultPartParam) {
-            openPartResult(parseInt(resultPartParam, 10));
+            openPartResult(resultPartParam);
         } else {
             closePartResult();
         }

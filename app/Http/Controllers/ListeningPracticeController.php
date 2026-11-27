@@ -2,7 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AttemptResponse;
 use App\Models\Question;
+use App\Models\ScoreResult;
+use App\Models\TestAttempt;
+use App\Services\HistoryService;
 use App\Services\TextToSpeechService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -11,6 +15,35 @@ use Illuminate\View\View;
 
 class ListeningPracticeController extends Controller
 {
+    public function __construct(
+        public HistoryService $historyService
+    ) {}
+
+    /**
+     * Màn hình danh sách luyện tập kỹ năng Nghe (Part 1, 2, 3, 4).
+     */
+    public function index(Request $request): View
+    {
+        $wrongCountsByPart = [
+            1 => 0,
+            2 => 0,
+            3 => 0,
+            4 => 0,
+        ];
+
+        if (auth()->check()) {
+            $userId = (int) auth()->id();
+            $wrongCountsByPart = [
+                1 => $this->historyService->countAccumulatedWrongQuestions($userId, sectionCode: 'PART1'),
+                2 => $this->historyService->countAccumulatedWrongQuestions($userId, sectionCode: 'PART2'),
+                3 => $this->historyService->countAccumulatedWrongQuestions($userId, sectionCode: 'PART3'),
+                4 => $this->historyService->countAccumulatedWrongQuestions($userId, sectionCode: 'PART4'),
+            ];
+        }
+
+        return view('pages.luyen-tap-nghe', compact('wrongCountsByPart'));
+    }
+
     /**
      * Lấy danh sách câu hỏi Listening trạng thái ACTIVE từ Database (kèm resolved_media_url & resolved_audio_url).
      * Nếu DB chưa có dữ liệu Listening ACTIVE thì fallback về bộ mẫu để không gián đoạn giao diện.
@@ -228,20 +261,59 @@ class ListeningPracticeController extends Controller
     /**
      * Màn hình làm bài nghe (nối dữ liệu thật từ DB).
      */
-    public function practice(Request $request): View
+    public function practice(Request $request): View|RedirectResponse
     {
-        $count = (int) $request->query('count', 10);
-        if ($count <= 0) {
-            $count = 10;
-        }
-
         $rawPart = (string) $request->query('part', '');
         $partFilter = null;
         if (preg_match('/(\d)/', $rawPart, $m) === 1) {
             $partFilter = (int) $m[1];
         }
 
-        $allQuestions = $this->loadListeningQuestions($partFilter, $count);
+        $isReviewMode = ($request->query('mode') === 'review');
+        $specificIds = null;
+
+        if ($isReviewMode) {
+            if (! auth()->check()) {
+                return redirect()->route('login')
+                    ->with('error', 'Vui lòng đăng nhập để ôn lại câu sai.');
+            }
+
+            $userId = (int) auth()->id();
+            $wrongIds = $this->historyService->getAccumulatedWrongQuestionIds(
+                $userId,
+                sectionCode: $partFilter ? 'PART'.$partFilter : null
+            );
+
+            if (empty($wrongIds)) {
+                return redirect()->to(url('/cai-thien'))
+                    ->with('practice_error', 'Bạn không có câu sai nào trong Part '.$partFilter.' để ôn lại.');
+            }
+
+            $rawCount = $request->query('count');
+            $requestedCount = ($rawCount !== null && trim((string) $rawCount) !== '')
+                ? (int) trim((string) $rawCount)
+                : count($wrongIds);
+
+            if ($requestedCount < 1) {
+                return redirect()->to(url('/luyen-tap/nghe?part='.$partFilter.'&mode=review'))
+                    ->with('practice_error', 'Số lượng câu hỏi phải lớn hơn 0.');
+            }
+
+            if ($requestedCount > count($wrongIds)) {
+                return redirect()->to(url('/luyen-tap/nghe?part='.$partFilter.'&mode=review'))
+                    ->with('practice_error', 'Số câu ôn lại không được vượt quá số câu sai hiện có ('.count($wrongIds).' câu).');
+            }
+
+            $specificIds = collect($wrongIds)->shuffle()->take($requestedCount)->values()->all();
+            $count = count($specificIds);
+        } else {
+            $count = (int) $request->query('count', 10);
+            if ($count <= 0) {
+                $count = 10;
+            }
+        }
+
+        $allQuestions = $this->loadListeningQuestions($partFilter, $count, $specificIds);
         $selectedQuestions = array_map(static function (array $q): array {
             unset($q['correct'], $q['explanation'], $q['translation'], $q['transcript']);
 
@@ -252,7 +324,7 @@ class ListeningPracticeController extends Controller
             'questions' => $selectedQuestions,
             'totalCount' => count($selectedQuestions),
             'targetCount' => $count,
-            'isReview' => false,
+            'isReview' => $isReviewMode,
             'userAnswers' => [],
         ]);
     }
@@ -317,6 +389,48 @@ class ListeningPracticeController extends Controller
             'answers' => $submittedAnswers,
             'details' => $details,
         ];
+
+        if (auth()->check()) {
+            $userId = (int) auth()->id();
+            $attempt = TestAttempt::query()->create([
+                'user_id' => $userId,
+                'test_form_id' => null,
+                'session_type' => TestAttempt::SESSION_TYPE_PRACTICE,
+                'started_at' => now()->subSeconds($timeSpentSeconds),
+                'ended_at' => now(),
+                'submitted_at' => now(),
+                'status' => TestAttempt::STATUS_COMPLETED,
+            ]);
+
+            foreach ($details as $detail) {
+                $qid = (int) $detail['id'];
+                $userPick = $detail['user_answer'];
+                $isCorrect = ($detail['status'] === 'correct');
+                $score = $isCorrect ? 1.00 : 0.00;
+
+                AttemptResponse::query()->create([
+                    'attempt_id' => $attempt->attempt_id,
+                    'question_id' => $qid,
+                    'text_response' => $userPick,
+                    'score' => $score,
+                    'is_flagged' => false,
+                ]);
+            }
+
+            ScoreResult::query()->create([
+                'attempt_id' => $attempt->attempt_id,
+                'listening_score' => $correctCount,
+                'reading_score' => null,
+                'speaking_score' => null,
+                'writing_score' => null,
+                'total_score' => $correctCount,
+                'graded_at' => now(),
+            ]);
+
+            $resultData['attempt_id'] = $attempt->attempt_id;
+        }
+
+        session(['listening_practice_result' => $resultData]);
 
         session(['listening_practice_result' => $resultData]);
 

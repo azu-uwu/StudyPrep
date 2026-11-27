@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Question;
 use App\Models\QuestionSet;
 use App\Models\TestAttempt;
+use App\Services\HistoryService;
 use App\Services\PracticeAttemptService;
 use App\Services\ReadingQuestionBank;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -18,7 +19,8 @@ use Illuminate\View\View;
 class ReadingPracticeController extends Controller
 {
     public function __construct(
-        public PracticeAttemptService $practiceAttemptService
+        public PracticeAttemptService $practiceAttemptService,
+        public HistoryService $historyService
     ) {}
 
     /**
@@ -46,12 +48,25 @@ class ReadingPracticeController extends Controller
             7 => null,
         ];
 
+        $wrongCountsByPart = [
+            5 => 0,
+            6 => 0,
+            7 => 0,
+        ];
+
         if (auth()->check()) {
-            $inProgressAttempts = $this->practiceAttemptService->getInProgressAttemptsByPart((int) auth()->id());
+            $userId = (int) auth()->id();
+            $inProgressAttempts = $this->practiceAttemptService->getInProgressAttemptsByPart($userId);
+            $wrongCountsByPart = [
+                5 => $this->historyService->countAccumulatedWrongQuestions($userId, sectionCode: 'PART5'),
+                6 => $this->historyService->countAccumulatedWrongQuestions($userId, sectionCode: 'PART6'),
+                7 => $this->historyService->countAccumulatedWrongQuestions($userId, sectionCode: 'PART7'),
+            ];
         }
 
         return view('pages.luyen-tap-doc', [
             'inProgressAttempts' => $inProgressAttempts,
+            'wrongCountsByPart' => $wrongCountsByPart,
         ]);
     }
 
@@ -160,6 +175,7 @@ class ReadingPracticeController extends Controller
         $part = (int) $rawPart;
 
         $existingSession = session('reading_practice_session');
+        $isReviewMode = ($request->query('mode') === 'review');
         $isNewRequest = (bool) $request->query('new');
         $isRetryWrong = (bool) $request->query('retry_wrong');
         $retryAttemptId = $request->query('retry_attempt_id') ?? $request->query('retry_attempt');
@@ -184,6 +200,7 @@ class ReadingPracticeController extends Controller
         $userMatches = (auth()->check() ? ($sessionUserId === auth()->id()) : true);
 
         $isReload = (
+            ! $isReviewMode &&
             ! $isNewRequest &&
             ! $isRetryWrong &&
             ! $isRetryAttempt &&
@@ -222,7 +239,38 @@ class ReadingPracticeController extends Controller
         }
 
         $specificIds = null;
-        if ($isRetryAttempt) {
+        if ($isReviewMode) {
+            if (! auth()->check()) {
+                return redirect()->route('login')
+                    ->with('error', 'Vui lòng đăng nhập để ôn lại câu sai.');
+            }
+
+            $userId = (int) auth()->id();
+            $wrongIds = $this->historyService->getAccumulatedWrongQuestionIds($userId, sectionCode: 'PART'.$part);
+
+            if (empty($wrongIds)) {
+                return redirect()->to(url('/cai-thien'))
+                    ->with('practice_error', 'Bạn không có câu sai nào trong Part '.$part.' để ôn lại.');
+            }
+
+            $rawCount = $request->query('count');
+            $requestedReviewCount = ($rawCount !== null && trim((string) $rawCount) !== '')
+                ? (int) trim((string) $rawCount)
+                : count($wrongIds);
+
+            if ($requestedReviewCount < 1) {
+                return redirect()->to(url('/luyen-tap/doc?part='.$part.'&mode=review'))
+                    ->with('practice_error', 'Số lượng câu hỏi phải lớn hơn 0.');
+            }
+
+            if ($requestedReviewCount > count($wrongIds)) {
+                return redirect()->to(url('/luyen-tap/doc?part='.$part.'&mode=review'))
+                    ->with('practice_error', 'Số câu ôn lại không được vượt quá số câu sai hiện có ('.count($wrongIds).' câu).');
+            }
+
+            $specificIds = collect($wrongIds)->shuffle()->take($requestedReviewCount)->values()->all();
+            $count = count($specificIds);
+        } elseif ($isRetryAttempt) {
             if (auth()->check()) {
                 $specificIds = $this->practiceAttemptService->getAttemptAllQuestionIds((int) $retryAttemptId, (int) auth()->id());
             }
@@ -572,13 +620,19 @@ class ReadingPracticeController extends Controller
 
         foreach ($selectedSets as $set) {
             $sortedQuestions = $this->sortQuestionsInSet($set->questions);
-            if ($sortedQuestions->count() !== 4) {
+            if (! empty($specificIds)) {
+                $sortedQuestions = $sortedQuestions->filter(fn ($q) => in_array($q->question_id, $specificIds, true))->values();
+            } elseif ($sortedQuestions->count() !== 4) {
+                continue;
+            }
+
+            if ($sortedQuestions->isEmpty()) {
                 continue;
             }
 
             $groupStart = $globalNum;
             $groupEnd = $globalNum + $sortedQuestions->count() - 1;
-            $rangeText = "Câu {$groupStart} - {$groupEnd}";
+            $rangeText = $sortedQuestions->count() > 1 ? "Câu {$groupStart} - {$groupEnd}" : "Câu {$groupStart}";
 
             foreach ($sortedQuestions as $q) {
                 $mapped[] = $this->formatQuestionPayload($q, $globalNum++, 6, $set, $rangeText);
@@ -727,14 +781,22 @@ class ReadingPracticeController extends Controller
 
         foreach ($shuffledSelectedSets as $set) {
             $sortedQuestions = $this->sortQuestionsInSet($set->questions);
-            $qCount = $sortedQuestions->count();
-            if ($qCount < 2 || $qCount > 5) {
+            if (! empty($specificIds)) {
+                $sortedQuestions = $sortedQuestions->filter(fn ($q) => in_array($q->question_id, $specificIds, true))->values();
+            } else {
+                $qCount = $sortedQuestions->count();
+                if ($qCount < 2 || $qCount > 5) {
+                    continue;
+                }
+            }
+
+            if ($sortedQuestions->isEmpty()) {
                 continue;
             }
 
             $groupStart = $globalNum;
-            $groupEnd = $globalNum + $qCount - 1;
-            $rangeText = "Câu {$groupStart} - {$groupEnd}";
+            $groupEnd = $globalNum + $sortedQuestions->count() - 1;
+            $rangeText = $sortedQuestions->count() > 1 ? "Câu {$groupStart} - {$groupEnd}" : "Câu {$groupStart}";
 
             foreach ($sortedQuestions as $q) {
                 $mapped[] = $this->formatQuestionPayload($q, $globalNum++, 7, $set, $rangeText);

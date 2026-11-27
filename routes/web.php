@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\VocabularyController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GoalController;
 use App\Http\Controllers\HistoryController;
+use App\Http\Controllers\ImprovementController;
 use App\Http\Controllers\ListeningPracticeController;
 use App\Http\Controllers\MockTestController;
 use App\Http\Controllers\PersonalTopicController;
@@ -35,7 +36,7 @@ Route::view('/luyen-tap', 'pages.luyen-tap')->name('luyen-tap');
 Route::get('/luyen-tap/doc', [ReadingPracticeController::class, 'index'])->name('luyen-tap.doc');
 
 // Luồng Luyện kỹ năng Nghe (Listening)
-Route::view('/luyen-tap/nghe', 'pages.luyen-tap-nghe')->name('luyen-tap.nghe');
+Route::get('/luyen-tap/nghe', [ListeningPracticeController::class, 'index'])->name('luyen-tap.nghe');
 Route::get('/luyen-tap/nghe/mo-ta-hinh', function () {
     return redirect('/luyen-tap/nghe?part=1');
 })->name('luyen-tap.nghe.mo-ta-hinh');
@@ -184,9 +185,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/lich-su', [HistoryController::class, 'index'])->name('lich-su');
     Route::get('/lich-su/{attemptId}', [HistoryController::class, 'show'])->name('lich-su.show')->whereNumber('attemptId');
     Route::get('/lich-su/{attemptId}/on-lai', [HistoryController::class, 'retry'])->name('lich-su.retry')->whereNumber('attemptId');
-});
 
-Route::view('/cai-thien', 'pages.cai-thien')->name('cai-thien');
+    Route::get('/cai-thien', [ImprovementController::class, 'index'])->name('cai-thien');
+    Route::get('/cai-thien/cau-sai/{sectionId}', [ImprovementController::class, 'wrongQuestionsByPart'])->name('cai-thien.cau-sai.part');
+});
 
 // Các màn hình quản lý trong Header (Hồ sơ & Cài đặt)
 Route::middleware('auth')->group(function () {

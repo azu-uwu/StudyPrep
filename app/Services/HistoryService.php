@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ExamSection;
+use App\Models\Question;
 use App\Models\TestAttempt;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -196,40 +197,11 @@ class HistoryService
     }
 
     /**
-     * Đếm tổng số câu hỏi trắc nghiệm đã từng làm sai (distinct question_id).
+     * Đếm tổng số câu hỏi trắc nghiệm đã từng làm sai thuộc Listening & Reading (distinct question_id).
      */
-    public function countAccumulatedWrongQuestions(int $userId): int
+    public function countAccumulatedWrongQuestions(int $userId, ?int $sectionId = null, ?string $sectionCode = null): int
     {
-        return DB::table('attempt_response')
-            ->join('attempts', 'attempt_response.attempt_id', '=', 'attempts.attempt_id')
-            ->join('questions', 'attempt_response.question_id', '=', 'questions.question_id')
-            ->join('question_type', 'questions.question_type_id', '=', 'question_type.question_type_id')
-            ->leftJoin('answer_option', function ($join): void {
-                $join->on('questions.question_id', '=', 'answer_option.question_id')
-                    ->where('answer_option.is_correct', '=', 1);
-            })
-            ->where('attempts.user_id', $userId)
-            ->whereIn('attempts.status', [TestAttempt::STATUS_COMPLETED, 'SUBMITTED'])
-            ->where('attempts.session_type', TestAttempt::SESSION_TYPE_PRACTICE)
-            ->where('question_type.response_mode', 'SINGLE_CHOICE')
-            ->whereNotNull('attempt_response.text_response')
-            ->whereRaw("TRIM(attempt_response.text_response) != ''")
-            ->where(function ($sub): void {
-                $sub->whereNull('answer_option.label')
-                    ->orWhereRaw('UPPER(TRIM(attempt_response.text_response)) != UPPER(TRIM(answer_option.label))');
-            })
-            ->distinct('attempt_response.question_id')
-            ->count('attempt_response.question_id');
-    }
-
-    /**
-     * Lấy danh sách câu hỏi làm sai tích lũy (phục vụ tái sử dụng cho tab Câu sai trang Cải thiện).
-     *
-     * @return Collection<int, object>
-     */
-    public function getAccumulatedWrongQuestions(int $userId): Collection
-    {
-        return DB::table('attempt_response')
+        $query = DB::table('attempt_response')
             ->join('attempts', 'attempt_response.attempt_id', '=', 'attempts.attempt_id')
             ->join('questions', 'attempt_response.question_id', '=', 'questions.question_id')
             ->join('question_type', 'questions.question_type_id', '=', 'question_type.question_type_id')
@@ -243,6 +215,182 @@ class HistoryService
             ->whereIn('attempts.status', [TestAttempt::STATUS_COMPLETED, 'SUBMITTED'])
             ->where('attempts.session_type', TestAttempt::SESSION_TYPE_PRACTICE)
             ->where('question_type.response_mode', 'SINGLE_CHOICE')
+            ->where(function ($q): void {
+                $q->whereNull('skills.code')
+                    ->orWhereIn('skills.code', ['LC', 'RC']);
+            })
+            ->whereNotNull('attempt_response.text_response')
+            ->whereRaw("TRIM(attempt_response.text_response) != ''")
+            ->where(function ($sub): void {
+                $sub->whereNull('answer_option.label')
+                    ->orWhereRaw('UPPER(TRIM(attempt_response.text_response)) != UPPER(TRIM(answer_option.label))');
+            });
+
+        if ($sectionId !== null) {
+            $query->where('questions.section_id', $sectionId);
+        }
+
+        if ($sectionCode !== null) {
+            $query->where('exam_section.code', $sectionCode);
+        }
+
+        return $query->distinct('attempt_response.question_id')
+            ->count('attempt_response.question_id');
+    }
+
+    /**
+     * Lấy danh sách ID câu hỏi làm sai tích lũy theo người dùng và (tùy chọn) Part (Listening & Reading).
+     *
+     * @return array<int>
+     */
+    public function getAccumulatedWrongQuestionIds(int $userId, ?int $sectionId = null, ?string $sectionCode = null): array
+    {
+        $query = DB::table('attempt_response')
+            ->join('attempts', 'attempt_response.attempt_id', '=', 'attempts.attempt_id')
+            ->join('questions', 'attempt_response.question_id', '=', 'questions.question_id')
+            ->join('question_type', 'questions.question_type_id', '=', 'question_type.question_type_id')
+            ->leftJoin('exam_section', 'questions.section_id', '=', 'exam_section.section_id')
+            ->leftJoin('skills', 'exam_section.skill_id', '=', 'skills.skill_id')
+            ->leftJoin('answer_option', function ($join): void {
+                $join->on('questions.question_id', '=', 'answer_option.question_id')
+                    ->where('answer_option.is_correct', '=', 1);
+            })
+            ->where('attempts.user_id', $userId)
+            ->whereIn('attempts.status', [TestAttempt::STATUS_COMPLETED, 'SUBMITTED'])
+            ->where('attempts.session_type', TestAttempt::SESSION_TYPE_PRACTICE)
+            ->where('question_type.response_mode', 'SINGLE_CHOICE')
+            ->where(function ($q): void {
+                $q->whereNull('skills.code')
+                    ->orWhereIn('skills.code', ['LC', 'RC']);
+            })
+            ->whereNotNull('attempt_response.text_response')
+            ->whereRaw("TRIM(attempt_response.text_response) != ''")
+            ->where(function ($sub): void {
+                $sub->whereNull('answer_option.label')
+                    ->orWhereRaw('UPPER(TRIM(attempt_response.text_response)) != UPPER(TRIM(answer_option.label))');
+            });
+
+        if ($sectionId !== null) {
+            $query->where('questions.section_id', $sectionId);
+        }
+
+        if ($sectionCode !== null) {
+            $query->where('exam_section.code', $sectionCode);
+        }
+
+        return $query->distinct()
+            ->pluck('attempt_response.question_id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Lấy danh sách câu hỏi làm sai tích lũy (Listening & Reading).
+     *
+     * @return Collection<int, object>
+     */
+    public function getAccumulatedWrongQuestions(int $userId, ?int $sectionId = null, ?string $sectionCode = null): Collection
+    {
+        $query = DB::table('attempt_response')
+            ->join('attempts', 'attempt_response.attempt_id', '=', 'attempts.attempt_id')
+            ->join('questions', 'attempt_response.question_id', '=', 'questions.question_id')
+            ->join('question_type', 'questions.question_type_id', '=', 'question_type.question_type_id')
+            ->leftJoin('exam_section', 'questions.section_id', '=', 'exam_section.section_id')
+            ->leftJoin('skills', 'exam_section.skill_id', '=', 'skills.skill_id')
+            ->leftJoin('answer_option', function ($join): void {
+                $join->on('questions.question_id', '=', 'answer_option.question_id')
+                    ->where('answer_option.is_correct', '=', 1);
+            })
+            ->where('attempts.user_id', $userId)
+            ->whereIn('attempts.status', [TestAttempt::STATUS_COMPLETED, 'SUBMITTED'])
+            ->where('attempts.session_type', TestAttempt::SESSION_TYPE_PRACTICE)
+            ->where('question_type.response_mode', 'SINGLE_CHOICE')
+            ->where(function ($q): void {
+                $q->whereNull('skills.code')
+                    ->orWhereIn('skills.code', ['LC', 'RC']);
+            })
+            ->whereNotNull('attempt_response.text_response')
+            ->whereRaw("TRIM(attempt_response.text_response) != ''")
+            ->where(function ($sub): void {
+                $sub->whereNull('answer_option.label')
+                    ->orWhereRaw('UPPER(TRIM(attempt_response.text_response)) != UPPER(TRIM(answer_option.label))');
+            });
+
+        if ($sectionId !== null) {
+            $query->where('questions.section_id', $sectionId);
+        }
+
+        if ($sectionCode !== null) {
+            $query->where('exam_section.code', $sectionCode);
+        }
+
+        return $query->select([
+            'questions.question_id',
+            'questions.content',
+            'questions.explanation',
+            'exam_section.section_id',
+            'exam_section.code as section_code',
+            'exam_section.name as section_name',
+            'exam_section.sequence_no',
+            'skills.code as skill_code',
+            'skills.skill_name',
+            DB::raw('MAX(attempt_response.submitted_at) as last_attempted_at'),
+        ])
+            ->groupBy(
+                'questions.question_id',
+                'questions.content',
+                'questions.explanation',
+                'exam_section.section_id',
+                'exam_section.code',
+                'exam_section.name',
+                'exam_section.sequence_no',
+                'skills.code',
+                'skills.skill_name'
+            )
+            ->orderBy('last_attempted_at', 'desc')
+            ->get();
+    }
+
+    /**
+     * Tổng hợp danh sách Part có câu sai tích lũy của người dùng (tối đa 7 Part Listening & Reading).
+     * Chỉ hiển thị các Part có câu sai hợp lệ trong CSDL.
+     *
+     * @return array<int, array{
+     *     section_id: int,
+     *     section_code: string,
+     *     section_name: string,
+     *     sequence_no: int,
+     *     skill_id: int,
+     *     skill_code: string,
+     *     skill_name: string,
+     *     skill_slug: string,
+     *     part_number: int,
+     *     display_title: string,
+     *     section_key: string,
+     *     wrong_count: int,
+     *     icon_svg: string,
+     *     icon_bg: string,
+     *     redo_url: string
+     * }>
+     */
+    public function getAccumulatedWrongParts(int $userId): array
+    {
+        $rawCounts = DB::table('attempt_response')
+            ->join('attempts', 'attempt_response.attempt_id', '=', 'attempts.attempt_id')
+            ->join('questions', 'attempt_response.question_id', '=', 'questions.question_id')
+            ->join('question_type', 'questions.question_type_id', '=', 'question_type.question_type_id')
+            ->join('exam_section', 'questions.section_id', '=', 'exam_section.section_id')
+            ->join('skills', 'exam_section.skill_id', '=', 'skills.skill_id')
+            ->leftJoin('answer_option', function ($join): void {
+                $join->on('questions.question_id', '=', 'answer_option.question_id')
+                    ->where('answer_option.is_correct', '=', 1);
+            })
+            ->where('attempts.user_id', $userId)
+            ->whereIn('attempts.status', [TestAttempt::STATUS_COMPLETED, 'SUBMITTED'])
+            ->where('attempts.session_type', TestAttempt::SESSION_TYPE_PRACTICE)
+            ->where('question_type.response_mode', 'SINGLE_CHOICE')
+            ->whereIn('skills.code', ['LC', 'RC'])
             ->whereNotNull('attempt_response.text_response')
             ->whereRaw("TRIM(attempt_response.text_response) != ''")
             ->where(function ($sub): void {
@@ -250,18 +398,346 @@ class HistoryService
                     ->orWhereRaw('UPPER(TRIM(attempt_response.text_response)) != UPPER(TRIM(answer_option.label))');
             })
             ->select([
-                'questions.question_id',
-                'questions.content',
-                'questions.explanation',
+                'exam_section.section_id',
                 'exam_section.code as section_code',
                 'exam_section.name as section_name',
+                'exam_section.sequence_no',
+                'skills.skill_id',
                 'skills.code as skill_code',
                 'skills.skill_name',
-                DB::raw('MAX(attempt_response.submitted_at) as last_attempted_at'),
+                DB::raw('COUNT(DISTINCT attempt_response.question_id) as wrong_count'),
             ])
-            ->groupBy('questions.question_id', 'questions.content', 'questions.explanation', 'exam_section.code', 'exam_section.name', 'skills.code', 'skills.skill_name')
-            ->orderBy('last_attempted_at', 'desc')
+            ->groupBy(
+                'exam_section.section_id',
+                'exam_section.code',
+                'exam_section.name',
+                'exam_section.sequence_no',
+                'skills.skill_id',
+                'skills.code',
+                'skills.skill_name'
+            )
+            ->orderByRaw("
+                CASE skills.code
+                    WHEN 'LC' THEN 1
+                    WHEN 'RC' THEN 2
+                    ELSE 3
+                END ASC
+            ")
+            ->orderBy('exam_section.sequence_no', 'asc')
+            ->limit(7)
             ->get();
+
+        $parts = [];
+        foreach ($rawCounts as $row) {
+            $wrongCount = (int) $row->wrong_count;
+            if ($wrongCount <= 0) {
+                continue;
+            }
+
+            $partNum = $this->extractPartNumber((string) $row->section_code, (int) $row->sequence_no);
+            $skillCode = strtoupper((string) $row->skill_code);
+            $displayTitle = $this->formatPartDisplayTitle((string) $row->section_code, (string) $row->section_name, $partNum, $skillCode);
+            $skillSlug = match ($skillCode) {
+                'LC' => 'nghe',
+                'RC' => 'doc',
+                'SPK' => 'noi',
+                'WRT' => 'viet',
+                default => 'doc',
+            };
+
+            $redoUrl = match ($skillSlug) {
+                'nghe' => route('luyen-tap.nghe'),
+                'noi' => url('/luyen-tap/noi'),
+                'viet' => url('/luyen-tap/viet'),
+                default => url('/luyen-tap/doc'),
+            };
+
+            $icon = $this->getPartIcon((string) $row->section_code, $partNum, $skillCode);
+
+            $parts[] = [
+                'section_id' => (int) $row->section_id,
+                'section_code' => (string) $row->section_code,
+                'section_name' => (string) $row->section_name,
+                'sequence_no' => (int) $row->sequence_no,
+                'skill_id' => (int) $row->skill_id,
+                'skill_code' => $skillCode,
+                'skill_name' => (string) $row->skill_name,
+                'skill_slug' => $skillSlug,
+                'part_number' => $partNum,
+                'display_title' => $displayTitle,
+                'section_key' => (string) $row->section_code,
+                'wrong_count' => $wrongCount,
+                'icon_svg' => $icon['svg'],
+                'icon_bg' => $icon['bg'],
+                'redo_url' => $redoUrl,
+            ];
+        }
+
+        return $parts;
+    }
+
+    /**
+     * Lấy toàn bộ câu hỏi sai của từng Part kèm lời giải chi tiết và đáp án người dùng.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public function getAccumulatedWrongPartsWithQuestions(int $userId): array
+    {
+        $parts = $this->getAccumulatedWrongParts($userId);
+        $result = [];
+
+        foreach ($parts as $p) {
+            $sectionId = $p['section_id'];
+            $sectionCode = $p['section_code'];
+            $sectionKey = $p['section_key'];
+
+            // 1. Lấy response_id gần nhất của từng question_id sai
+            $latestResponses = DB::table('attempt_response')
+                ->join('attempts', 'attempt_response.attempt_id', '=', 'attempts.attempt_id')
+                ->join('questions', 'attempt_response.question_id', '=', 'questions.question_id')
+                ->join('question_type', 'questions.question_type_id', '=', 'question_type.question_type_id')
+                ->leftJoin('answer_option', function ($join): void {
+                    $join->on('questions.question_id', '=', 'answer_option.question_id')
+                        ->where('answer_option.is_correct', '=', 1);
+                })
+                ->where('attempts.user_id', $userId)
+                ->whereIn('attempts.status', [TestAttempt::STATUS_COMPLETED, 'SUBMITTED'])
+                ->where('attempts.session_type', TestAttempt::SESSION_TYPE_PRACTICE)
+                ->where('question_type.response_mode', 'SINGLE_CHOICE')
+                ->where('questions.section_id', $sectionId)
+                ->whereNotNull('attempt_response.text_response')
+                ->whereRaw("TRIM(attempt_response.text_response) != ''")
+                ->where(function ($sub): void {
+                    $sub->whereNull('answer_option.label')
+                        ->orWhereRaw('UPPER(TRIM(attempt_response.text_response)) != UPPER(TRIM(answer_option.label))');
+                })
+                ->select([
+                    'attempt_response.question_id',
+                    'attempt_response.text_response',
+                    'attempt_response.submitted_at',
+                    'attempt_response.response_id',
+                ])
+                ->orderBy('attempt_response.submitted_at', 'desc')
+                ->orderBy('attempt_response.response_id', 'desc')
+                ->get()
+                ->unique('question_id')
+                ->keyBy('question_id');
+
+            if ($latestResponses->isEmpty()) {
+                continue;
+            }
+
+            $questionIds = $latestResponses->keys()->all();
+
+            $loadedQuestions = Question::query()
+                ->whereIn('question_id', $questionIds)
+                ->with([
+                    'options' => fn ($o) => $o->orderBy('label'),
+                    'questionSet',
+                    'section.skill',
+                ])
+                ->get()
+                ->sortBy(fn ($q) => $latestResponses[$q->question_id]->response_id ?? 0)
+                ->values();
+
+            $formattedQuestions = [];
+            foreach ($loadedQuestions as $idx => $q) {
+                $optionsMap = [];
+                $correctLabel = 'A';
+                foreach ($q->options as $opt) {
+                    $lbl = strtoupper(trim((string) $opt->label));
+                    $optionsMap[$lbl] = (string) $opt->content;
+                    if ($opt->is_correct) {
+                        $correctLabel = $lbl;
+                    }
+                }
+
+                $userPick = strtoupper(trim((string) ($latestResponses[$q->question_id]->text_response ?? '')));
+                $qSet = $q->questionSet;
+
+                $imageUrl = null;
+                $audioUrl = null;
+                $transcript = null;
+
+                if ($qSet) {
+                    $mediaUrl = $qSet->resolved_media_url;
+                    $isImage = $mediaUrl !== null && (
+                        strtoupper((string) $qSet->media_type) === 'IMAGE'
+                        || preg_match('/\.(png|jpe?g|gif|webp|bmp)$/i', $mediaUrl) === 1
+                    );
+                    if ($isImage) {
+                        $imageUrl = $mediaUrl;
+                    }
+                    $audioUrl = $qSet->resolved_audio_url;
+                    $transcript = trim((string) ($qSet->transcript ?? ''));
+                }
+
+                $formattedQuestions[] = [
+                    'id' => (int) $q->question_id,
+                    'sequence_no' => $idx + 1,
+                    'content' => (string) $q->content,
+                    'explanation' => trim((string) ($q->explanation ?? '')),
+                    'user_answer' => $userPick,
+                    'correct_answer' => $correctLabel,
+                    'options' => $optionsMap,
+                    'stimulus_text' => $qSet?->stimulus_text,
+                    'image_url' => $imageUrl,
+                    'audio_url' => $audioUrl,
+                    'transcript' => $transcript,
+                    'status' => 'incorrect',
+                ];
+            }
+
+            $headerTitle = match ($p['skill_code']) {
+                'LC' => 'Part '.$p['part_number'].' — Nghe',
+                'RC' => 'Part '.$p['part_number'].' — Đọc',
+                'SPK' => 'Part '.$p['part_number'].' — Nói',
+                'WRT' => 'Part '.$p['part_number'].' — Viết',
+                default => 'Part '.$p['part_number'],
+            };
+
+            $result[$sectionKey] = [
+                'section_id' => $p['section_id'],
+                'section_code' => $p['section_code'],
+                'part_number' => $p['part_number'],
+                'header_title' => $headerTitle,
+                'display_title' => $p['display_title'],
+                'skill_name' => $p['skill_name'],
+                'skill_slug' => $p['skill_slug'],
+                'count' => count($formattedQuestions),
+                'redo_url' => $p['redo_url'],
+                'questions' => $formattedQuestions,
+            ];
+
+            // Đồng thời map theo số part (1..7) nếu là code dạng PART1..7 để tiện truy xuất
+            if (is_numeric($p['part_number']) && ! isset($result[(string) $p['part_number']])) {
+                $result[(string) $p['part_number']] = $result[$sectionKey];
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Trích xuất số Part từ code hoặc sequence_no.
+     */
+    private function extractPartNumber(string $sectionCode, int $sequenceNo): int
+    {
+        if (preg_match('/(\d+)/', $sectionCode, $matches) === 1) {
+            return (int) $matches[1];
+        }
+
+        return max(1, $sequenceNo);
+    }
+
+    /**
+     * Chuẩn hóa tiêu đề hiển thị cho Part.
+     */
+    private function formatPartDisplayTitle(string $sectionCode, string $sectionName, int $partNum, string $skillCode): string
+    {
+        $shortTitles = [
+            'PART1' => 'Part 1: Mô tả hình',
+            'PART2' => 'Part 2: Hỏi & Đáp',
+            'PART3' => 'Part 3: Hội thoại ngắn',
+            'PART4' => 'Part 4: Bài nói chuyện ngắn',
+            'PART5' => 'Part 5: Hoàn thành câu',
+            'PART6' => 'Part 6: Hoàn thành đoạn văn',
+            'PART7' => 'Part 7: Đọc hiểu đoạn văn',
+        ];
+
+        if (isset($shortTitles[strtoupper($sectionCode)])) {
+            return $shortTitles[strtoupper($sectionCode)];
+        }
+
+        if (preg_match('/\(([^()]+)\)/', $sectionName, $m) === 1) {
+            $vnName = trim($m[1]);
+
+            return match ($skillCode) {
+                'SPK' => "Speaking - Part {$partNum}: {$vnName}",
+                'WRT' => "Writing - Part {$partNum}: {$vnName}",
+                default => "Part {$partNum}: {$vnName}",
+            };
+        }
+
+        return $sectionName;
+    }
+
+    /**
+     * Lấy icon SVG và màu nền đại diện cho Part khớp thiết kế trang Cải thiện.
+     *
+     * @return array{svg: string, bg: string}
+     */
+    private function getPartIcon(string $sectionCode, int $partNum, string $skillCode): array
+    {
+        $upperCode = strtoupper($sectionCode);
+
+        if ($upperCode === 'PART1') {
+            return [
+                'bg' => '#E0F2FE',
+                'svg' => '<svg width="40" height="40" viewBox="0 0 34 34" fill="none"><path d="M6 25L14 15L19 21L22 17L27 25H6Z" fill="#10B981"/><circle cx="21" cy="11" r="3" fill="#F59E0B"/><g transform="translate(13, 7) rotate(32)"><rect x="0" y="0" width="4" height="14" rx="1.5" fill="#F59E0B"/><path d="M0 14L2 18L4 14Z" fill="#3B82F6"/></g></svg>',
+            ];
+        }
+
+        if ($upperCode === 'PART2') {
+            return [
+                'bg' => '#EFF6FF',
+                'svg' => '<svg width="40" height="40" viewBox="0 0 34 34" fill="none"><rect x="7" y="9" width="14" height="11" rx="4" fill="#38BDF8"/><path d="M10 20L8 23V20H10Z" fill="#38BDF8"/><line x1="10" y1="13" x2="18" y2="13" stroke="white" stroke-width="1.5" stroke-linecap="round"/><line x1="10" y1="16" x2="15" y2="16" stroke="white" stroke-width="1.5" stroke-linecap="round"/><rect x="15" y="14" width="13" height="11" rx="4" fill="#EF4444"/><path d="M25 25L23 27V25H25Z" fill="#EF4444"/><text x="21.5" y="22.5" font-size="8" font-weight="800" fill="white" text-anchor="middle">A</text></svg>',
+            ];
+        }
+
+        if ($upperCode === 'PART3') {
+            return [
+                'bg' => '#FEF3C7',
+                'svg' => '<svg width="40" height="40" viewBox="0 0 34 34" fill="none"><rect x="8" y="7" width="16" height="11" rx="4" fill="#F59E0B"/><path d="M11 18L9 21V18H11Z" fill="#F59E0B"/><line x1="11" y1="11" x2="21" y2="11" stroke="white" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="14" x2="17" y2="14" stroke="white" stroke-width="1.5" stroke-linecap="round"/><rect x="13" y="15" width="15" height="11" rx="4" fill="#0D9488"/><path d="M25 26L23 28V26H25Z" fill="#0D9488"/><line x1="16" y1="19" x2="25" y2="19" stroke="white" stroke-width="1.5" stroke-linecap="round"/><line x1="16" y1="22" x2="22" y2="22" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>',
+            ];
+        }
+
+        if ($upperCode === 'PART4') {
+            return [
+                'bg' => '#FDF2F8',
+                'svg' => '<svg width="40" height="40" viewBox="0 0 34 34" fill="none"><circle cx="17" cy="11" r="3.5" fill="#FB7185"/><path d="M12 18C12 16 14 15 17 15C20 15 22 16 22 18V20H12V18Z" fill="#FDA4AF"/><path d="M13 20H21L20 28H14L13 20Z" fill="#94A3B8"/><rect x="11" y="19" width="12" height="2" rx="1" fill="#64748B"/><line x1="19" y1="16" x2="18" y2="19" stroke="#1E293B" stroke-width="1.2"/><circle cx="19" cy="15.5" r="1" fill="#1E293B"/></svg>',
+            ];
+        }
+
+        if ($upperCode === 'PART5') {
+            return [
+                'bg' => '#EEF2FF',
+                'svg' => '<svg width="40" height="40" viewBox="0 0 48 48" fill="none"><rect x="8" y="6" width="26" height="36" rx="5" fill="#FFFFFF" stroke="#1E293B" stroke-width="2.5"/><rect x="12" y="11" width="8" height="8" rx="2" fill="#38BDF8" stroke="#0284C7" stroke-width="1.2"/><path d="M14 15l2 2 3-3" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><rect x="12" y="22" width="8" height="8" rx="2" fill="#38BDF8" stroke="#0284C7" stroke-width="1.2"/><path d="M14 26l2 2 3-3" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><g transform="translate(32, 22) rotate(42)"><rect x="-18" y="-4" width="22" height="8" rx="1" fill="#F59E0B" stroke="#1E293B" stroke-width="1.8"/><line x1="-18" y1="0" x2="4" y2="0" stroke="#D97706" stroke-width="1.2"/><path d="M-18 -4 L-25 0 L-18 4 Z" fill="#FDE68A" stroke="#1E293B" stroke-width="1.8"/><rect x="4" y="-4" width="5" height="8" rx="1" fill="#EF4444" stroke="#1E293B" stroke-width="1.8"/></g></svg>',
+            ];
+        }
+
+        if ($upperCode === 'PART6') {
+            return [
+                'bg' => '#EEF2FF',
+                'svg' => '<svg width="40" height="40" viewBox="0 0 48 48" fill="none"><rect x="8" y="6" width="24" height="32" rx="4" fill="#EEF2FF" stroke="#4F46E5" stroke-width="2"/><rect x="16" y="12" width="24" height="30" rx="4" fill="#FFFFFF" stroke="#4F46E5" stroke-width="2"/><line x1="22" y1="18" x2="34" y2="18" stroke="#4F46E5" stroke-width="1.8" stroke-linecap="round"/><line x1="22" y1="24" x2="32" y2="24" stroke="#4F46E5" stroke-width="1.8" stroke-linecap="round"/><line x1="22" y1="30" x2="34" y2="30" stroke="#4F46E5" stroke-width="1.8" stroke-linecap="round"/></svg>',
+            ];
+        }
+
+        if ($upperCode === 'PART7') {
+            return [
+                'bg' => '#EFF6FF',
+                'svg' => '<svg width="40" height="40" viewBox="0 0 48 48" fill="none"><rect x="12" y="6" width="24" height="36" rx="4" fill="#3B82F6"/><rect x="12" y="6" width="5" height="36" rx="2" fill="#2563EB"/><line x1="32" y1="8" x2="32" y2="38" stroke="#93C5FD" stroke-width="1.2"/><path d="M18 36v8l3-2 3 2v-8z" fill="#BFDBFE"/></svg>',
+            ];
+        }
+
+        if ($skillCode === 'SPK') {
+            return [
+                'bg' => '#FEF2F2',
+                'svg' => '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>',
+            ];
+        }
+
+        if ($skillCode === 'WRT') {
+            return [
+                'bg' => '#F0FDF4',
+                'svg' => '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3Z"/></svg>',
+            ];
+        }
+
+        return [
+            'bg' => '#F1F5F9',
+            'svg' => '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>',
+        ];
     }
 
     /**

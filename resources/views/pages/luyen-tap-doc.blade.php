@@ -1,6 +1,8 @@
 <x-skill-practice-layout skill="doc" title="StudyPrep - Luyện theo Kỹ năng Đọc">
 
-    {{-- 1. Card Ôn tập (6 câu sai) --}}
+    <script>window.WRONG_COUNTS_BY_PART = @json($wrongCountsByPart ?? []);</script>
+
+    {{-- 1. Card Ôn tập --}}
     <div class="sp-review-banner">
         <div class="sp-review-left">
             <div class="sp-review-icon" aria-hidden="true">
@@ -11,7 +13,7 @@
             </div>
             <div class="sp-review-content">
                 <span class="sp-review-tag">ÔN TẬP</span>
-                <h3 class="sp-review-title">6 câu sai</h3>
+                <h3 class="sp-review-title">{{ array_sum($wrongCountsByPart ?? [0]) }} câu sai</h3>
                 <p class="sp-review-desc">Bạn có muốn ôn lại câu sai bây giờ không?</p>
             </div>
         </div>

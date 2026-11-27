@@ -1,6 +1,31 @@
 <x-skill-practice-layout skill="nghe" title="StudyPrep - Luyện theo Kỹ năng Nghe">
 
-    {{-- 1. Tiêu đề danh sách: "Tất cả phần luyện" --}}
+    <script>window.WRONG_COUNTS_BY_PART = @json($wrongCountsByPart ?? []);</script>
+
+    {{-- 1. Card Ôn tập --}}
+    @if (!empty($wrongCountsByPart) && array_sum($wrongCountsByPart) > 0)
+        <div class="sp-review-banner">
+            <div class="sp-review-left">
+                <div class="sp-review-icon" aria-hidden="true">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                        <path d="M3 3v5h5"/>
+                    </svg>
+                </div>
+                <div class="sp-review-content">
+                    <span class="sp-review-tag">ÔN TẬP</span>
+                    <h3 class="sp-review-title">{{ array_sum($wrongCountsByPart) }} câu sai</h3>
+                    <p class="sp-review-desc">Bạn có muốn ôn lại câu sai bây giờ không?</p>
+                </div>
+            </div>
+            <x-button variant="warning" size="small" href="{{ url('/cai-thien') }}">
+                <span>Ôn lại</span>
+                <span aria-hidden="true">&rarr;</span>
+            </x-button>
+        </div>
+    @endif
+
+    {{-- 2. Tiêu đề danh sách: "Tất cả phần luyện" --}}
     <div class="sp-section-heading-wrap">
         <span class="sp-section-heading-bars" aria-hidden="true">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="sp-section-icon">
