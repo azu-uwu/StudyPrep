@@ -21,6 +21,10 @@ class TestAttempt extends Model
 {
     public const SESSION_TYPE_PRACTICE = 'PRACTICE';
 
+    public const SESSION_TYPE_PRACTICE_PART = 'PRACTICE_PART';
+
+    public const SESSION_TYPE_FULL_TEST = 'FULL_TEST';
+
     public const SESSION_TYPE_EXAM = 'EXAM';
 
     public const STATUS_IN_PROGRESS = 'IN_PROGRESS';

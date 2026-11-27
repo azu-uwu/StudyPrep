@@ -10,6 +10,8 @@ use App\Models\QuestionType;
 use App\Models\ScoreResult;
 use App\Models\Skill;
 use App\Models\TestAttempt;
+use App\Models\TestBlueprint;
+use App\Models\TestForm;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -553,5 +555,143 @@ class HistoryTest extends TestCase
         $response->assertStatus(200);
         $response->assertDontSee('Flashcard Từ vựng');
         $response->assertDontSee('Luyện thẻ nhớ');
+    }
+
+    /**
+     * Test 29 (BUG-01): Phân biệt bài luyện tập và bài thi thử theo attempts.session_type độc lập với test_form_id.
+     */
+    public function test_activity_type_classification_uses_session_type_independently_of_test_form_id(): void
+    {
+        $q = $this->createQuestion($this->part5Section, 'Question', 'A');
+
+        $blueprint = TestBlueprint::query()->create([
+            'name' => 'Sample Blueprint',
+            'exam_type' => 'LR',
+            'version' => '1.0',
+            'status' => 'ACTIVE',
+        ]);
+
+        $testForm = TestForm::query()->create([
+            'blueprint_id' => $blueprint->blueprint_id,
+            'title' => 'Đề thi thử TOEIC Format Mới',
+        ]);
+
+        // Attempt 1: PRACTICE nhưng có test_form_id != null -> Phải vào tab Bài học
+        $this->createPracticeAttempt(
+            $this->user1,
+            $this->part5Section,
+            [['q' => $q, 'answer' => 'A']],
+            now()->subHours(5)
+        );
+        TestAttempt::query()->latest('attempt_id')->first()->update(['test_form_id' => $testForm->test_form_id]);
+
+        // Attempt 2: PRACTICE_PART với test_form_id = null -> Phải vào tab Luyện đề và có nhãn 'Luyện từng phần'
+        $attemptPart = TestAttempt::query()->create([
+            'user_id' => $this->user1->user_id,
+            'test_form_id' => null,
+            'session_type' => TestAttempt::SESSION_TYPE_PRACTICE_PART,
+            'started_at' => now()->subHours(3),
+            'ended_at' => now()->subHours(2)->subMinutes(45),
+            'submitted_at' => now()->subHours(2)->subMinutes(45),
+            'status' => TestAttempt::STATUS_COMPLETED,
+        ]);
+        AttemptResponse::query()->create([
+            'attempt_id' => $attemptPart->attempt_id,
+            'question_id' => $q->question_id,
+            'sequence_no' => 1,
+            'text_response' => 'A',
+            'score' => 1,
+            'submitted_at' => now()->subHours(2)->subMinutes(45),
+        ]);
+        ScoreResult::query()->create([
+            'attempt_id' => $attemptPart->attempt_id,
+            'total_score' => 100,
+            'graded_at' => now()->subHours(2)->subMinutes(45),
+        ]);
+
+        // Attempt 3: FULL_TEST với test_form_id = null -> Phải vào tab Luyện đề và có nhãn 'Full Test'
+        $attemptFull = TestAttempt::query()->create([
+            'user_id' => $this->user1->user_id,
+            'test_form_id' => null,
+            'session_type' => TestAttempt::SESSION_TYPE_FULL_TEST,
+            'started_at' => now()->subHours(2),
+            'ended_at' => now()->subHour(),
+            'submitted_at' => now()->subHour(),
+            'status' => TestAttempt::STATUS_COMPLETED,
+        ]);
+        AttemptResponse::query()->create([
+            'attempt_id' => $attemptFull->attempt_id,
+            'question_id' => $q->question_id,
+            'sequence_no' => 1,
+            'text_response' => 'A',
+            'score' => 1,
+            'submitted_at' => now()->subHour(),
+        ]);
+        ScoreResult::query()->create([
+            'attempt_id' => $attemptFull->attempt_id,
+            'total_score' => 850,
+            'graded_at' => now()->subHour(),
+        ]);
+
+        // Kiểm tra tab Tất cả (type=all)
+        $respAll = $this->actingAs($this->user1)->get('/lich-su?type=all');
+        $respAll->assertStatus(200);
+        $respAll->assertSee('Hiển thị 3 trong 3 hoạt động');
+        $respAll->assertSee('Luyện từng phần');
+        $respAll->assertSee('Full Test');
+
+        // Kiểm tra tab Bài học (type=lesson): Chỉ có 1 attempt (PRACTICE)
+        $respLesson = $this->actingAs($this->user1)->get('/lich-su?type=lesson');
+        $respLesson->assertStatus(200);
+        $respLesson->assertSee('Hiển thị 1 trong 1 hoạt động');
+        $respLesson->assertDontSee('Luyện từng phần');
+        $respLesson->assertDontSee('Full Test');
+
+        // Kiểm tra tab Luyện đề (type=exam): Có 2 attempt (PRACTICE_PART và FULL_TEST)
+        $respExam = $this->actingAs($this->user1)->get('/lich-su?type=exam');
+        $respExam->assertStatus(200);
+        $respExam->assertSee('Hiển thị 2 trong 2 hoạt động');
+        $respExam->assertSee('Luyện từng phần');
+        $respExam->assertSee('Full Test');
+    }
+
+    /**
+     * Test 30 (BUG-02): Xem kết quả thi thử redirect đến route thi-thu.ket-qua với attemptId.
+     */
+    public function test_show_mock_test_redirects_to_thi_thu_dot_ket_qua_with_attempt_id(): void
+    {
+        $q = $this->createQuestion($this->part5Section, 'Question', 'A');
+
+        $examAttempt = TestAttempt::query()->create([
+            'user_id' => $this->user1->user_id,
+            'test_form_id' => 1,
+            'session_type' => TestAttempt::SESSION_TYPE_FULL_TEST,
+            'started_at' => now()->subHour(),
+            'ended_at' => now()->subMinutes(10),
+            'submitted_at' => now()->subMinutes(10),
+            'status' => TestAttempt::STATUS_COMPLETED,
+        ]);
+
+        $response = $this->actingAs($this->user1)->get("/lich-su/{$examAttempt->attempt_id}");
+        $response->assertRedirect(route('thi-thu.ket-qua', ['attemptId' => $examAttempt->attempt_id]));
+    }
+
+    /**
+     * Test 31 (BUG-03): Ôn lại thi thử redirect đến route thi-thu.gioi-thieu-de với đúng id đề thi.
+     */
+    public function test_retry_mock_test_redirects_to_thi_thu_dot_gioi_thieu_de_with_id(): void
+    {
+        $examAttempt = TestAttempt::query()->create([
+            'user_id' => $this->user1->user_id,
+            'test_form_id' => 77,
+            'session_type' => TestAttempt::SESSION_TYPE_PRACTICE_PART,
+            'started_at' => now()->subHour(),
+            'ended_at' => now()->subMinutes(10),
+            'submitted_at' => now()->subMinutes(10),
+            'status' => TestAttempt::STATUS_COMPLETED,
+        ]);
+
+        $response = $this->actingAs($this->user1)->get("/lich-su/{$examAttempt->attempt_id}/on-lai");
+        $response->assertRedirect(route('thi-thu.gioi-thieu-de', ['id' => 77]));
     }
 }

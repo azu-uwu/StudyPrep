@@ -313,6 +313,9 @@
                             <div class="ls-activity-details">
                                 <div class="ls-activity-title-row">
                                     <h3 class="ls-activity-title">{{ $item['title'] }}</h3>
+                                    @if (! empty($item['mode_label']))
+                                        <span class="ls-badge-mode">{{ $item['mode_label'] }}</span>
+                                    @endif
                                     @if ($item['incorrect_count'] > 0)
                                         <span class="ls-badge-wrong">{{ $item['incorrect_count'] }} câu sai</span>
                                     @endif

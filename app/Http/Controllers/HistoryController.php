@@ -132,8 +132,8 @@ class HistoryController extends Controller
                 ->with('practice_error', 'Lượt làm bài này chưa hoàn thành.');
         }
 
-        if ($attempt->session_type === TestAttempt::SESSION_TYPE_EXAM || $attempt->test_form_id !== null) {
-            return redirect()->route('thi-thu-ket-qua', ['attempt_id' => $attemptId]);
+        if (in_array($attempt->session_type, [TestAttempt::SESSION_TYPE_FULL_TEST, TestAttempt::SESSION_TYPE_PRACTICE_PART, TestAttempt::SESSION_TYPE_EXAM], true)) {
+            return redirect()->route('thi-thu.ket-qua', ['attemptId' => $attemptId]);
         }
 
         $firstQuestion = $attempt->attemptResponses->first()?->question;
@@ -177,9 +177,9 @@ class HistoryController extends Controller
                 ->with('practice_error', 'Lượt làm bài này chưa hoàn thành.');
         }
 
-        if ($attempt->session_type === TestAttempt::SESSION_TYPE_EXAM || $attempt->test_form_id !== null) {
-            return redirect()->route('thi-thu-gioi-thieu-de', [
-                'test_form_id' => $attempt->test_form_id,
+        if (in_array($attempt->session_type, [TestAttempt::SESSION_TYPE_FULL_TEST, TestAttempt::SESSION_TYPE_PRACTICE_PART, TestAttempt::SESSION_TYPE_EXAM], true)) {
+            return redirect()->route('thi-thu.gioi-thieu-de', [
+                'id' => $attempt->test_form_id,
             ]);
         }
 

@@ -306,14 +306,14 @@ class HistoryService
 
         $lessonCount = (clone $baseQuery)
             ->where('session_type', TestAttempt::SESSION_TYPE_PRACTICE)
-            ->whereNull('test_form_id')
             ->count();
 
         $examCount = (clone $baseQuery)
-            ->where(function ($q): void {
-                $q->where('session_type', TestAttempt::SESSION_TYPE_EXAM)
-                    ->orWhereNotNull('test_form_id');
-            })
+            ->whereIn('session_type', [
+                TestAttempt::SESSION_TYPE_PRACTICE_PART,
+                TestAttempt::SESSION_TYPE_FULL_TEST,
+                TestAttempt::SESSION_TYPE_EXAM,
+            ])
             ->count();
 
         return [
@@ -379,13 +379,13 @@ class HistoryService
 
         // 2. Lọc theo loại bài
         if ($type === 'lesson') {
-            $query->where('session_type', TestAttempt::SESSION_TYPE_PRACTICE)
-                ->whereNull('test_form_id');
+            $query->where('session_type', TestAttempt::SESSION_TYPE_PRACTICE);
         } elseif ($type === 'exam') {
-            $query->where(function ($q): void {
-                $q->where('session_type', TestAttempt::SESSION_TYPE_EXAM)
-                    ->orWhereNotNull('test_form_id');
-            });
+            $query->whereIn('session_type', [
+                TestAttempt::SESSION_TYPE_PRACTICE_PART,
+                TestAttempt::SESSION_TYPE_FULL_TEST,
+                TestAttempt::SESSION_TYPE_EXAM,
+            ]);
         }
 
         // 3. Lọc theo Part
@@ -441,7 +441,11 @@ class HistoryService
      */
     private function formatAttemptCard(TestAttempt $attempt, int $userId): array
     {
-        $isExam = ($attempt->session_type === TestAttempt::SESSION_TYPE_EXAM || $attempt->test_form_id !== null);
+        $isExam = in_array($attempt->session_type, [
+            TestAttempt::SESSION_TYPE_PRACTICE_PART,
+            TestAttempt::SESSION_TYPE_FULL_TEST,
+            TestAttempt::SESSION_TYPE_EXAM,
+        ], true);
 
         $firstResponse = $attempt->attemptResponses->first();
         $firstQuestion = $firstResponse?->question;
@@ -451,16 +455,18 @@ class HistoryService
         $sectionCode = $section?->code ? (string) $section->code : null;
         $skillCode = $skill?->code ? (string) $skill->code : null;
 
-        // Tên hiển thị
+        // Tên hiển thị & phân loại nhãn
         if ($isExam) {
             $title = $attempt->testForm?->title ?: 'Đề thi thử TOEIC';
             $iconClass = 'ls-activity-icon--exam';
             $type = 'exam';
+            $modeLabel = $attempt->session_type === TestAttempt::SESSION_TYPE_PRACTICE_PART ? 'Luyện từng phần' : 'Full Test';
         } else {
             $title = $section?->name ?: ('Luyện tập '.($skill?->skill_name ?? 'kỹ năng'));
             $partLower = strtolower($sectionCode ?? 'part5');
             $iconClass = 'ls-activity-icon--'.$partLower;
             $type = 'lesson';
+            $modeLabel = null;
         }
 
         // Tính câu đúng, câu sai, chưa trả lời
@@ -546,6 +552,7 @@ class HistoryService
             'session_type' => (string) $attempt->session_type,
             'type' => $type,
             'is_exam' => $isExam,
+            'mode_label' => $modeLabel,
             'title' => $title,
             'part_code' => $sectionCode,
             'icon_class' => $iconClass,
@@ -587,6 +594,11 @@ class HistoryService
                 ->where('user_id', $userId)
                 ->where('attempt_id', '<', $attempt->attempt_id)
                 ->whereIn('status', [TestAttempt::STATUS_COMPLETED, 'SUBMITTED'])
+                ->whereIn('session_type', [
+                    TestAttempt::SESSION_TYPE_PRACTICE_PART,
+                    TestAttempt::SESSION_TYPE_FULL_TEST,
+                    TestAttempt::SESSION_TYPE_EXAM,
+                ])
                 ->where('test_form_id', $attempt->test_form_id)
                 ->with('scoreResult')
                 ->orderBy('started_at', 'desc')
