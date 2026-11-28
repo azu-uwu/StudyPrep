@@ -15,6 +15,7 @@ use App\Http\Controllers\MockTestController;
 use App\Http\Controllers\PersonalTopicController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReadingPracticeController;
+use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\StudySettingController;
 use App\Http\Controllers\VocabularyPracticeController;
 use App\Models\Question;
@@ -178,10 +179,10 @@ Route::get('/tu-vung/{topicId}', [VocabularyPracticeController::class, 'show'])-
 Route::redirect('/flashcard', '/tu-vung');
 Route::redirect('/chon-tu', '/tu-vung');
 
-Route::view('/phan-tich', 'pages.phan-tich')->name('phan-tich');
-Route::redirect('/phan-tich/chi-tiet', '/phan-tich');
-
 Route::middleware('auth')->group(function () {
+    Route::get('/phan-tich', [StatisticsController::class, 'index'])->name('phan-tich');
+    Route::get('/phan-tich/chart-data', [StatisticsController::class, 'chartData'])->name('phan-tich.chart-data');
+    Route::redirect('/phan-tich/chi-tiet', '/phan-tich');
     Route::get('/lich-su', [HistoryController::class, 'index'])->name('lich-su');
     Route::get('/lich-su/{attemptId}', [HistoryController::class, 'show'])->name('lich-su.show')->whereNumber('attemptId');
     Route::get('/lich-su/{attemptId}/on-lai', [HistoryController::class, 'retry'])->name('lich-su.retry')->whereNumber('attemptId');

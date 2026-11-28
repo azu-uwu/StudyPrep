@@ -4,123 +4,6 @@
     <link rel="stylesheet" href="{{ asset('css/pages/phan-tich.css') }}">
 @endpush
 
-@php
-    /*
-     * DỮ LIỆU MẪU GIAO DIỆN PHÂN TÍCH (FE-018.2)
-     * Tập trung toàn bộ dữ liệu mẫu tại đây để Backend dễ dàng truyền biến thay thế sau này.
-     */
-
-    // 1. Dữ liệu tổng quan Phần thi
-    $analyticsStats = [
-        'highest_score' => 225,
-        'highest_test_name' => 'Test 1 TOEIC NEW 2026',
-        'highest_test_date' => '27/11',
-        'avg_accuracy' => 22,
-        'correct_questions' => 48,
-        'total_questions' => 220,
-        'weakest_skill' => 'Đọc',
-        'weakest_score_info' => '110/495 ở lần thi gần nhất',
-        'wrong_questions_count' => 172,
-    ];
-
-    // Biểu đồ tỉ lệ đúng theo Part (Part 1 -> Part 7)
-    $partAccuracyList = [
-        ['part' => 'Part 1', 'rate' => 15, 'has_data' => true],
-        ['part' => 'Part 2', 'rate' => 40, 'has_data' => true],
-        ['part' => 'Part 3', 'rate' => 18, 'has_data' => true],
-        ['part' => 'Part 4', 'rate' => 13, 'has_data' => true],
-        ['part' => 'Part 5', 'rate' => 27, 'has_data' => true],
-        ['part' => 'Part 6', 'rate' => 13, 'has_data' => true],
-        ['part' => 'Part 7', 'rate' => 24, 'has_data' => true],
-    ];
-
-    // 2. Dữ liệu Luyện đề (Full Test)
-    $fullTestData = [
-        'has_attempts' => true,
-        'is_single_attempt' => true,
-        'recent_test' => [
-            'listening_score' => 115,
-            'reading_score' => 110,
-            'total_score' => 225,
-            'max_skill_score' => 495,
-            'date' => '27/11',
-            'balance_title' => 'Hai kỹ năng khá cân bằng',
-            'balance_desc' => 'Nghe 115, Đọc 110 — hãy giữ nhịp luyện đều cả hai.',
-        ],
-    ];
-
-    // 3. Dữ liệu Điểm yếu & Độ thành thạo
-    $masteryParts = [
-        ['part' => 'Part 1', 'status' => 'CẦN CẢI THIỆN', 'status_type' => 'red', 'rate' => 23, 'has_data' => true],
-        ['part' => 'Part 2', 'status' => 'CẦN CẢI THIỆN', 'status_type' => 'red', 'rate' => 37, 'has_data' => true],
-        ['part' => 'Part 3', 'status' => 'CẦN CẢI THIỆN', 'status_type' => 'red', 'rate' => 25, 'has_data' => true],
-        ['part' => 'Part 4', 'status' => 'CẦN CẢI THIỆN', 'status_type' => 'red', 'rate' => 20, 'has_data' => true],
-        ['part' => 'Part 5', 'status' => 'CẦN CẢI THIỆN', 'status_type' => 'red', 'rate' => 37, 'has_data' => true],
-        ['part' => 'Part 6', 'status' => 'CẦN CẢI THIỆN', 'status_type' => 'red', 'rate' => 26, 'has_data' => true],
-        ['part' => 'Part 7', 'status' => 'CẦN CẢI THIỆN', 'status_type' => 'red', 'rate' => 30, 'has_data' => true],
-    ];
-
-    $topWeaknesses = [
-        [
-            'rank' => 1,
-            'meta' => 'NGHE · PART 4',
-            'title' => 'Lời nói',
-            'practiced_count' => 28,
-            'mastery_rate' => 18,
-        ],
-        [
-            'rank' => 2,
-            'meta' => 'ĐỌC · PART 6',
-            'title' => 'Ngữ pháp / cấu trúc',
-            'practiced_count' => 13,
-            'mastery_rate' => 18,
-        ],
-        [
-            'rank' => 3,
-            'meta' => 'NGHE · PART 3',
-            'title' => 'Hội thoại 2 người',
-            'practiced_count' => 36,
-            'mastery_rate' => 19,
-        ],
-    ];
-
-    // 4. Dữ liệu Từ vựng (Cập nhật đồng bộ cơ chế StudyPrep)
-    $vocabStats = [
-        'total_learned' => 16,
-        'mastered' => 12,
-        'forgotten' => 4,
-        'mastery_rate' => 75, // 12 / 16 = 75%
-    ];
-
-    // 5. Hoạt động gần đây (Luyện tập & Thi thử)
-    $recentActivities = [
-        [
-            'type' => 'part',
-            'icon' => 'photo',
-            'title' => 'Part 1: Mô tả hình',
-            'time' => 'một ngày trước',
-            'score_label' => 'Tỉ lệ đúng',
-            'score_val' => '20%',
-        ],
-        [
-            'type' => 'fulltest',
-            'icon' => 'test',
-            'title' => 'Test 1 TOEIC NEW 2026',
-            'time' => 'một ngày trước',
-            'score_label' => 'Tổng điểm',
-            'score_val' => '225',
-        ],
-        [
-            'type' => 'part',
-            'icon' => 'photo',
-            'title' => 'Part 1: Mô tả hình',
-            'time' => 'một ngày trước',
-            'score_label' => 'Tỉ lệ đúng',
-            'score_val' => '20%',
-        ],
-    ];
-@endphp
-
 <div class="pt-page-wrapper">
 
     {{-- ===== TIÊU ĐỀ TRANG (Đồng nhất với Lịch sử & Cải thiện) ===== --}}
@@ -184,7 +67,7 @@
             <div class="pt-stat-card pt-stat-card--amber">
                 <span class="pt-stat-label">Điểm yếu nhất</span>
                 <div class="pt-stat-val-row">
-                    <span class="pt-stat-big-val pt-stat-big-val--amber">{{ $analyticsStats['weakest_skill'] }}</span>
+                    <span class="pt-stat-big-val pt-stat-big-val--amber" style="font-size: 21px;">{{ $analyticsStats['weakest_skill'] }}</span>
                 </div>
                 <p class="pt-stat-desc">{{ $analyticsStats['weakest_score_info'] }}</p>
             </div>
@@ -225,10 +108,10 @@
                             <div class="pt-col-item">
                                 @if($item['has_data'])
                                     <span class="pt-col-val">{{ $item['rate'] }}%</span>
-                                    <div class="pt-col-pillar" style="height: {{ $item['rate'] }}%;"></div>
+                                    <div class="pt-col-pillar" style="height: {{ $item['rate'] }}%;" title="{{ $item['part'] }}: {{ $item['correct'] }}/{{ $item['total'] }} câu đúng"></div>
                                 @else
                                     <span class="pt-col-val pt-col-val--empty">---</span>
-                                    <div class="pt-col-pillar pt-col-pillar--unrated" style="height: 4px;"></div>
+                                    <div class="pt-col-pillar pt-col-pillar--unrated" style="height: 4px;" title="{{ $item['part'] }}: Chưa đủ 5 câu"></div>
                                 @endif
                                 <span class="pt-col-label">{{ $item['part'] }}</span>
                             </div>
@@ -266,109 +149,157 @@
                 <p class="pt-section-desc">Chỉ tính các bài thi làm ở chế độ Full Test.</p>
             </div>
             <div class="pt-filter-pills" role="tablist">
-                <button type="button" class="pt-filter-pill-btn" onclick="switchFilterPeriod(this, '7')">7 ngày</button>
-                <button type="button" class="pt-filter-pill-btn" onclick="switchFilterPeriod(this, '30')">30 ngày</button>
-                <button type="button" class="pt-filter-pill-btn is-active" onclick="switchFilterPeriod(this, '90')">90 ngày</button>
-                <button type="button" class="pt-filter-pill-btn" onclick="switchFilterPeriod(this, 'all')">Tất cả</button>
+                <button type="button" class="pt-filter-pill-btn {{ ($period ?? '90') === '7' ? 'is-active' : '' }}" onclick="switchFilterPeriod(this, '7')">7 ngày</button>
+                <button type="button" class="pt-filter-pill-btn {{ ($period ?? '90') === '30' ? 'is-active' : '' }}" onclick="switchFilterPeriod(this, '30')">30 ngày</button>
+                <button type="button" class="pt-filter-pill-btn {{ ($period ?? '90') === '90' ? 'is-active' : '' }}" onclick="switchFilterPeriod(this, '90')">90 ngày</button>
+                <button type="button" class="pt-filter-pill-btn {{ ($period ?? '90') === 'all' ? 'is-active' : '' }}" onclick="switchFilterPeriod(this, 'all')">Tất cả</button>
             </div>
         </div>
 
         <div class="pt-card-box">
-            <div class="pt-score-chart-box">
-                {{-- SVG Score Chart responsive --}}
-                <div class="pt-score-chart-canvas-area">
-                    <svg viewBox="0 0 760 200" preserveAspectRatio="none" style="width: 100%; height: 100%;">
-                        {{-- Đường lưới Y (600, 300, 0) --}}
-                        <line x1="40" y1="20" x2="740" y2="20" stroke="#CBD5E1" stroke-width="1.2" stroke-dasharray="0" />
-                        <text x="30" y="24" fill="#94A3B8" font-size="11" font-weight="600" text-anchor="end">600</text>
-
-                        <line x1="40" y1="95" x2="740" y2="95" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="3 3" />
-                        <text x="30" y="99" fill="#94A3B8" font-size="11" font-weight="600" text-anchor="end">300</text>
-
-                        <line x1="40" y1="170" x2="740" y2="170" stroke="#CBD5E1" stroke-width="1.2" stroke-dasharray="0" />
-                        <text x="30" y="174" fill="#94A3B8" font-size="11" font-weight="600" text-anchor="end">0</text>
-
-                        {{-- Điểm dữ liệu (Vị trí 27/11 tại giữa trục x = 390) --}}
-                        <text x="390" y="190" fill="#64748B" font-size="12" font-weight="700" text-anchor="middle">27/11</text>
-
-                        {{-- Điểm 225 Full Test (Y tương ứng khoảng 114) --}}
-                        <text x="390" y="66" fill="#111C2D" font-size="13" font-weight="800" text-anchor="middle">225</text>
-                        <circle cx="390" cy="76" r="4.5" fill="#FFFFFF" stroke="#22C55E" stroke-width="3" />
-
-                        {{-- Điểm Đọc 110 (Y khoảng 142) --}}
-                        <circle cx="390" cy="115" r="4.5" fill="#FFFFFF" stroke="#06B6D4" stroke-width="3" />
-
-                        {{-- Điểm Nghe 115 --}}
-                        <circle cx="390" cy="113" r="3.5" fill="#6366F1" />
-                    </svg>
-                </div>
-
-                {{-- Chú thích màu sắc --}}
-                <div class="pt-chart-legends">
-                    <span class="pt-legend-item">
-                        <span class="pt-legend-dot pt-legend-dot--listening"></span>
-                        Nghe
-                    </span>
-                    <span class="pt-legend-item">
-                        <span class="pt-legend-dot pt-legend-dot--reading"></span>
-                        Đọc
-                    </span>
-                    <span class="pt-legend-item">
-                        <span class="pt-legend-dot pt-legend-dot--fulltest"></span>
-                        Full Test
-                    </span>
-                </div>
-
-                {{-- Thông báo khi chỉ có 1 lần thi --}}
-                @if(!empty($fullTestData['is_single_attempt']))
-                    <div class="pt-trend-notice-banner">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="12" y1="16" x2="12" y2="12"></line>
-                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                        </svg>
-                        <span>Chỉ có 1 lần thi trong khoảng này — chưa đủ để thấy xu hướng.</span>
+            <div class="pt-score-chart-box" id="ptScoreChartBox">
+                @if(empty($fullTestData['has_attempts']))
+                    {{-- Trạng thái chưa có bài thi Full Test trong khoảng thời gian --}}
+                    <div class="pt-trend-empty-wrap" style="padding: 42px 16px; text-align: center;">
+                        <div style="width: 52px; height: 52px; border-radius: 50%; background: #F1F5F9; color: #64748B; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 3v18h18"></path>
+                                <path d="m19 9-5 5-4-4-3 3"></path>
+                            </svg>
+                        </div>
+                        <h3 style="font-size: 16px; font-weight: 800; color: #111C2D; margin: 0 0 6px;">Chưa có bài thi Full Test nào</h3>
+                        <p style="font-size: 13.5px; color: #64748B; margin: 0 0 16px; max-width: 440px; margin-left: auto; margin-right: auto;">
+                            Hãy làm bài thi thử ở chế độ Full Test để bắt đầu theo dõi biểu đồ xu hướng điểm số của bạn.
+                        </p>
+                        <x-button variant="primary" size="small" :href="url('/thi-thu')">
+                            Làm bài thi thử
+                        </x-button>
                     </div>
+                @else
+                    {{-- SVG Score Chart responsive --}}
+                    <div class="pt-score-chart-canvas-area" id="ptScoreChartCanvasArea">
+                        <svg viewBox="0 0 760 200" preserveAspectRatio="none" style="width: 100%; height: 100%;">
+                            {{-- Đường lưới Y (990, 495, 0) --}}
+                            <line x1="40" y1="20" x2="740" y2="20" stroke="#CBD5E1" stroke-width="1.2" stroke-dasharray="0" />
+                            <text x="30" y="24" fill="#94A3B8" font-size="11" font-weight="600" text-anchor="end">990</text>
+
+                            <line x1="40" y1="95" x2="740" y2="95" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="3 3" />
+                            <text x="30" y="99" fill="#94A3B8" font-size="11" font-weight="600" text-anchor="end">495</text>
+
+                            <line x1="40" y1="170" x2="740" y2="170" stroke="#CBD5E1" stroke-width="1.2" stroke-dasharray="0" />
+                            <text x="30" y="174" fill="#94A3B8" font-size="11" font-weight="600" text-anchor="end">0</text>
+
+                            {{-- Đường kẻ nối khi có từ 2 bài thi trở lên --}}
+                            @if(!empty($fullTestData['listening_path']))
+                                <path d="{{ $fullTestData['listening_path'] }}" fill="none" stroke="#6366F1" stroke-width="2" stroke-dasharray="4 4" />
+                            @endif
+                            @if(!empty($fullTestData['reading_path']))
+                                <path d="{{ $fullTestData['reading_path'] }}" fill="none" stroke="#06B6D4" stroke-width="2" stroke-dasharray="4 4" />
+                            @endif
+                            @if(!empty($fullTestData['total_path']))
+                                <path d="{{ $fullTestData['total_path'] }}" fill="none" stroke="#22C55E" stroke-width="2.5" />
+                            @endif
+
+                            {{-- Các điểm thi --}}
+                            @foreach($fullTestData['points'] as $pt)
+                                <text x="{{ $pt['x'] }}" y="190" fill="#64748B" font-size="12" font-weight="700" text-anchor="middle">{{ $pt['date_label'] }}</text>
+
+                                {{-- Điểm Full Test --}}
+                                <text x="{{ $pt['x'] }}" y="{{ max(14, $pt['y_total'] - 10) }}" fill="#111C2D" font-size="13" font-weight="800" text-anchor="middle">{{ $pt['total_score'] }}</text>
+                                <circle cx="{{ $pt['x'] }}" cy="{{ $pt['y_total'] }}" r="4.5" fill="#FFFFFF" stroke="#22C55E" stroke-width="3">
+                                    <title>{{ $pt['test_title'] }}: {{ $pt['total_score'] }} điểm ({{ $pt['full_date'] }})</title>
+                                </circle>
+
+                                {{-- Điểm Đọc --}}
+                                <circle cx="{{ $pt['x'] }}" cy="{{ $pt['y_reading'] }}" r="4" fill="#FFFFFF" stroke="#06B6D4" stroke-width="2.5">
+                                    <title>Đọc: {{ $pt['reading_score'] }} điểm</title>
+                                </circle>
+
+                                {{-- Điểm Nghe --}}
+                                <circle cx="{{ $pt['x'] }}" cy="{{ $pt['y_listening'] }}" r="3.5" fill="#6366F1">
+                                    <title>Nghe: {{ $pt['listening_score'] }} điểm</title>
+                                </circle>
+                            @endforeach
+                        </svg>
+                    </div>
+
+                    {{-- Chú thích màu sắc --}}
+                    <div class="pt-chart-legends">
+                        <span class="pt-legend-item">
+                            <span class="pt-legend-dot pt-legend-dot--listening"></span>
+                            Nghe
+                        </span>
+                        <span class="pt-legend-item">
+                            <span class="pt-legend-dot pt-legend-dot--reading"></span>
+                            Đọc
+                        </span>
+                        <span class="pt-legend-item">
+                            <span class="pt-legend-dot pt-legend-dot--fulltest"></span>
+                            Full Test
+                        </span>
+                    </div>
+
+                    {{-- Thông báo khi chỉ có 1 lần thi --}}
+                    @if(!empty($fullTestData['is_single_attempt']))
+                        <div class="pt-trend-notice-banner" id="ptTrendNoticeBanner">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                            <span>Chỉ có 1 lần thi trong khoảng này — chưa đủ để thấy xu hướng.</span>
+                        </div>
+                    @endif
                 @endif
             </div>
         </div>
 
         {{-- Card kết quả lần thi hoàn chỉnh gần nhất --}}
         <div class="pt-card-box">
-            <div class="pt-recent-test-card">
-                {{-- Cột trái: Tiến độ 2 kỹ năng --}}
-                <div class="pt-recent-test-left">
-                    <span class="pt-stat-label">Lần thi hoàn chỉnh gần nhất</span>
-
-                    {{-- Kỹ năng Nghe --}}
-                    <div class="pt-test-skill-row" style="margin-top: 10px;">
-                        <div class="pt-test-skill-header">
-                            <span>Nghe</span>
-                            <span class="pt-test-skill-score">{{ $fullTestData['recent_test']['listening_score'] }}/{{ $fullTestData['recent_test']['max_skill_score'] }}</span>
+            @if(!empty($fullTestData['recent_test']))
+                <div class="pt-recent-test-card">
+                    {{-- Cột trái: Tiến độ 2 kỹ năng --}}
+                    <div class="pt-recent-test-left">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <span class="pt-stat-label">Lần thi hoàn chỉnh gần nhất</span>
+                            <span style="font-size: 12.5px; font-weight: 700; color: #64748B;">{{ $fullTestData['recent_test']['date'] }} · {{ $fullTestData['recent_test']['total_score'] }} điểm</span>
                         </div>
-                        <div class="pt-progress-track">
-                            <div class="pt-progress-fill pt-progress-fill--listening" style="width: {{ round(($fullTestData['recent_test']['listening_score'] / $fullTestData['recent_test']['max_skill_score']) * 100, 1) }}%;"></div>
+
+                        {{-- Kỹ năng Nghe --}}
+                        <div class="pt-test-skill-row" style="margin-top: 10px;">
+                            <div class="pt-test-skill-header">
+                                <span>Nghe</span>
+                                <span class="pt-test-skill-score">{{ $fullTestData['recent_test']['listening_score'] }}/{{ $fullTestData['recent_test']['max_skill_score'] }}</span>
+                            </div>
+                            <div class="pt-progress-track">
+                                <div class="pt-progress-fill pt-progress-fill--listening" style="width: {{ round(($fullTestData['recent_test']['listening_score'] / $fullTestData['recent_test']['max_skill_score']) * 100, 1) }}%;"></div>
+                            </div>
+                        </div>
+
+                        {{-- Kỹ năng Đọc --}}
+                        <div class="pt-test-skill-row">
+                            <div class="pt-test-skill-header">
+                                <span>Đọc</span>
+                                <span class="pt-test-skill-score">{{ $fullTestData['recent_test']['reading_score'] }}/{{ $fullTestData['recent_test']['max_skill_score'] }}</span>
+                            </div>
+                            <div class="pt-progress-track">
+                                <div class="pt-progress-fill pt-progress-fill--reading" style="width: {{ round(($fullTestData['recent_test']['reading_score'] / $fullTestData['recent_test']['max_skill_score']) * 100, 1) }}%;"></div>
+                            </div>
                         </div>
                     </div>
 
-                    {{-- Kỹ năng Đọc --}}
-                    <div class="pt-test-skill-row">
-                        <div class="pt-test-skill-header">
-                            <span>Đọc</span>
-                            <span class="pt-test-skill-score">{{ $fullTestData['recent_test']['reading_score'] }}/{{ $fullTestData['recent_test']['max_skill_score'] }}</span>
-                        </div>
-                        <div class="pt-progress-track">
-                            <div class="pt-progress-fill pt-progress-fill--reading" style="width: {{ round(($fullTestData['recent_test']['reading_score'] / $fullTestData['recent_test']['max_skill_score']) * 100, 1) }}%;"></div>
-                        </div>
+                    {{-- Cột phải: Nhận xét tương quan --}}
+                    <div class="pt-recent-test-right">
+                        <h3 class="pt-recent-test-status-title">{{ $fullTestData['recent_test']['balance_title'] }}</h3>
+                        <p class="pt-recent-test-status-desc">{{ $fullTestData['recent_test']['balance_desc'] }}</p>
                     </div>
                 </div>
-
-                {{-- Cột phải: Nhận xét tương quan --}}
-                <div class="pt-recent-test-right">
-                    <h3 class="pt-recent-test-status-title">{{ $fullTestData['recent_test']['balance_title'] }}</h3>
-                    <p class="pt-recent-test-status-desc">{{ $fullTestData['recent_test']['balance_desc'] }}</p>
+            @else
+                <div style="padding: 24px 16px; text-align: center; color: var(--sp-text-muted, #64748B);">
+                    <p style="font-size: 14.5px; font-weight: 700; margin: 0 0 4px; color: var(--sp-text-main, #111C2D);">Chưa có kết quả bài thi Full Test nào</p>
+                    <p style="font-size: 13px; margin: 0; color: var(--sp-text-light, #94A3B8);">Hãy hoàn thành một bài thi thử để xem điểm số chi tiết từng kỹ năng Nghe và Đọc.</p>
                 </div>
-            </div>
+            @endif
         </div>
     </section>
 
@@ -430,23 +361,30 @@
         <div style="margin-top: 32px;">
             <h2 class="pt-section-title" style="font-size: 19px;">Top 3 điểm yếu ảnh hưởng đến Độ thành thạo của bạn</h2>
 
-            <div class="pt-card-box pt-card-box--flush" style="margin-top: 14px; margin-bottom: 16px;">
-                @foreach($topWeaknesses as $weakness)
-                    <div class="pt-weakness-row">
-                        <div class="pt-weakness-rank-badge">{{ $weakness['rank'] }}</div>
-                        <div class="pt-weakness-info">
-                            <div class="pt-weakness-meta">{{ $weakness['meta'] }}</div>
-                            <div class="pt-weakness-name-row">
-                                <h3 class="pt-weakness-name">{{ $weakness['title'] }}</h3>
-                                @if(!empty($weakness['practiced_count']))
-                                    <span class="pt-weakness-practiced">• Đã luyện {{ $weakness['practiced_count'] }} câu</span>
-                                @endif
+            @if(empty($topWeaknesses))
+                <div class="pt-card-box pt-card-box--flush" style="margin-top: 14px; margin-bottom: 16px; padding: 28px 16px; text-align: center;">
+                    <p style="font-size: 14.5px; font-weight: 700; margin: 0 0 4px; color: var(--sp-text-main, #111C2D);">Chưa có dữ liệu phân tích điểm yếu</p>
+                    <p style="font-size: 13px; margin: 0; color: var(--sp-text-light, #94A3B8);">StudyPrep AI sẽ phân tích các dạng câu còn yếu sau khi bạn hoàn thành thêm bài thi thử.</p>
+                </div>
+            @else
+                <div class="pt-card-box pt-card-box--flush" style="margin-top: 14px; margin-bottom: 16px;">
+                    @foreach($topWeaknesses as $weakness)
+                        <div class="pt-weakness-row">
+                            <div class="pt-weakness-rank-badge">{{ $weakness['rank'] }}</div>
+                            <div class="pt-weakness-info">
+                                <div class="pt-weakness-meta">{{ $weakness['meta'] }}</div>
+                                <div class="pt-weakness-name-row">
+                                    <h3 class="pt-weakness-name">{{ $weakness['title'] }}</h3>
+                                    @if(!empty($weakness['practiced_count']))
+                                        <span class="pt-weakness-practiced">• Đã luyện {{ $weakness['practiced_count'] }} câu</span>
+                                    @endif
+                                </div>
+                                <p class="pt-weakness-rate-text">Độ thành thạo {{ $weakness['mastery_rate'] }}%</p>
                             </div>
-                            <p class="pt-weakness-rate-text">Độ thành thạo {{ $weakness['mastery_rate'] }}%</p>
                         </div>
-                    </div>
-                @endforeach
-            </div>
+                    @endforeach
+                </div>
+            @endif
 
             <div style="margin-top: 18px;">
                 <x-button variant="primary" size="medium" class="pt-btn-full-width" :href="url('/cai-thien')">
@@ -497,25 +435,30 @@
                 </div>
             </div>
 
-            {{-- Biểu đồ Doughnut thể hiện tỉ lệ từ nắm vững và dễ quên (Dày dặn, tròn xoe dễ thương) --}}
+            {{-- Biểu đồ Doughnut thể hiện tỉ lệ từ nắm vững và dễ quên --}}
+            @php
+                $forgottenRate = $vocabStats['total_learned'] > 0 ? (100 - $vocabStats['mastery_rate']) : 0;
+            @endphp
             <div class="pt-vocab-chart-row">
                 <div class="pt-donut-container">
                     <svg viewBox="0 0 44 44" class="pt-donut-svg">
                         {{-- Vòng nền xám dày --}}
                         <circle cx="22" cy="22" r="15.91549430918954" fill="none" stroke="#F1F5F9" stroke-width="7.5"></circle>
 
-                        {{-- Phân khúc Dễ quên (Cam, 25%) --}}
-                        <circle cx="22" cy="22" r="15.91549430918954" fill="none" stroke="#F59E0B" stroke-width="7.5"
-                                stroke-dasharray="25 75" stroke-dashoffset="-75"></circle>
+                        @if($vocabStats['total_learned'] > 0)
+                            {{-- Phân khúc Dễ quên (Cam) --}}
+                            <circle cx="22" cy="22" r="15.91549430918954" fill="none" stroke="#F59E0B" stroke-width="7.5"
+                                    stroke-dasharray="{{ $forgottenRate }} {{ 100 - $forgottenRate }}" stroke-dashoffset="-{{ $vocabStats['mastery_rate'] }}"></circle>
 
-                        {{-- Phân khúc Nắm vững (Xanh lá, 75%) --}}
-                        <circle cx="22" cy="22" r="15.91549430918954" fill="none" stroke="#22C55E" stroke-width="7.5"
-                                stroke-dasharray="{{ $vocabStats['mastery_rate'] }} {{ 100 - $vocabStats['mastery_rate'] }}"
-                                stroke-dashoffset="0"></circle>
+                            {{-- Phân khúc Nắm vững (Xanh lá) --}}
+                            <circle cx="22" cy="22" r="15.91549430918954" fill="none" stroke="#22C55E" stroke-width="7.5"
+                                    stroke-dasharray="{{ $vocabStats['mastery_rate'] }} {{ 100 - $vocabStats['mastery_rate'] }}"
+                                    stroke-dashoffset="0"></circle>
+                        @endif
                     </svg>
                     <div class="pt-donut-center-info">
                         <span class="pt-donut-center-val">{{ $vocabStats['mastery_rate'] }}%</span>
-                        <span class="pt-donut-center-label">Nắm vững</span>
+                        <span class="pt-donut-center-label">{{ $vocabStats['total_learned'] > 0 ? 'Nắm vững' : 'Chưa học' }}</span>
                     </div>
                 </div>
 
@@ -557,8 +500,8 @@
         </div>
 
         <div class="pt-card-box pt-card-box--flush" style="margin-bottom: 16px;">
-            @foreach($recentActivities as $act)
-                <div class="pt-activity-row">
+            @forelse($recentActivities as $act)
+                <a href="{{ $act['result_url'] }}" class="pt-activity-row" style="text-decoration: none; color: inherit; display: flex;">
                     <div class="pt-activity-left">
                         @if($act['icon'] === 'photo')
                             <div class="pt-activity-icon-wrap pt-activity-icon-wrap--photo">
@@ -592,8 +535,13 @@
                         <span class="pt-activity-score-label">{{ $act['score_label'] }}</span>
                         <span class="pt-activity-score-number">{{ $act['score_val'] }}</span>
                     </div>
+                </a>
+            @empty
+                <div style="padding: 32px 16px; text-align: center; color: var(--sp-text-muted, #64748B);">
+                    <p style="font-size: 14.5px; font-weight: 700; margin: 0 0 4px; color: var(--sp-text-main, #111C2D);">Chưa có hoạt động nào</p>
+                    <p style="font-size: 13px; margin: 0; color: var(--sp-text-light, #94A3B8);">Hãy bắt đầu luyện tập hoặc làm bài thi thử để theo dõi hoạt động học tập.</p>
                 </div>
-            @endforeach
+            @endforelse
         </div>
 
         <div style="margin-top: 18px;">
@@ -742,11 +690,135 @@
     });
 
     /**
-     * Chuyển đổi bộ lọc thời gian bài thi Full Test
+     * Chuyển đổi bộ lọc thời gian bài thi Full Test (AJAX cập nhật biểu đồ không nhảy trang)
      */
     function switchFilterPeriod(btn, period) {
         document.querySelectorAll('.pt-filter-pill-btn').forEach(b => b.classList.remove('is-active'));
         btn.classList.add('is-active');
+
+        const box = document.getElementById('ptScoreChartBox');
+        if (!box) return;
+
+        fetch(`{{ route('phan-tich.chart-data') }}?period=${encodeURIComponent(period)}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(res => {
+            if (res.success && res.data) {
+                renderScoreChart(res.data);
+            }
+        })
+        .catch(err => {
+            console.error('Lỗi tải dữ liệu biểu đồ:', err);
+        });
+    }
+
+    /**
+     * Render lại SVG biểu đồ Full Test từ dữ liệu JSON trả về
+     */
+    function renderScoreChart(data) {
+        const box = document.getElementById('ptScoreChartBox');
+        if (!box) return;
+
+        if (!data.has_attempts || !data.points || data.points.length === 0) {
+            box.innerHTML = `
+                <div class="pt-trend-empty-wrap" style="padding: 42px 16px; text-align: center;">
+                    <div style="width: 52px; height: 52px; border-radius: 50%; background: #F1F5F9; color: #64748B; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 3v18h18"></path>
+                            <path d="m19 9-5 5-4-4-3 3"></path>
+                        </svg>
+                    </div>
+                    <h3 style="font-size: 16px; font-weight: 800; color: #111C2D; margin: 0 0 6px;">Chưa có bài thi Full Test nào trong khoảng này</h3>
+                    <p style="font-size: 13.5px; color: #64748B; margin: 0 0 16px; max-width: 440px; margin-left: auto; margin-right: auto;">
+                        Hãy hoàn thành bài thi thử ở chế độ Full Test để theo dõi xu hướng điểm số.
+                    </p>
+                    <a href="{{ url('/thi-thu') }}" class="sp-btn sp-btn-primary sp-btn-small" style="text-decoration: none; display: inline-flex;">
+                        Làm bài thi thử
+                    </a>
+                </div>
+            `;
+            return;
+        }
+
+        let linesHtml = '';
+        if (data.listening_path) {
+            linesHtml += `<path d="${data.listening_path}" fill="none" stroke="#6366F1" stroke-width="2" stroke-dasharray="4 4" />`;
+        }
+        if (data.reading_path) {
+            linesHtml += `<path d="${data.reading_path}" fill="none" stroke="#06B6D4" stroke-width="2" stroke-dasharray="4 4" />`;
+        }
+        if (data.total_path) {
+            linesHtml += `<path d="${data.total_path}" fill="none" stroke="#22C55E" stroke-width="2.5" />`;
+        }
+
+        let pointsHtml = '';
+        data.points.forEach(pt => {
+            const safeY = Math.max(14, pt.y_total - 10);
+            pointsHtml += `
+                <text x="${pt.x}" y="190" fill="#64748B" font-size="12" font-weight="700" text-anchor="middle">${pt.date_label}</text>
+                <text x="${pt.x}" y="${safeY}" fill="#111C2D" font-size="13" font-weight="800" text-anchor="middle">${pt.total_score}</text>
+                <circle cx="${pt.x}" cy="${pt.y_total}" r="4.5" fill="#FFFFFF" stroke="#22C55E" stroke-width="3">
+                    <title>${pt.test_title}: ${pt.total_score} điểm (${pt.full_date})</title>
+                </circle>
+                <circle cx="${pt.x}" cy="${pt.y_reading}" r="4" fill="#FFFFFF" stroke="#06B6D4" stroke-width="2.5">
+                    <title>Đọc: ${pt.reading_score} điểm</title>
+                </circle>
+                <circle cx="${pt.x}" cy="${pt.y_listening}" r="3.5" fill="#6366F1">
+                    <title>Nghe: ${pt.listening_score} điểm</title>
+                </circle>
+            `;
+        });
+
+        let bannerHtml = '';
+        if (data.is_single_attempt) {
+            bannerHtml = `
+                <div class="pt-trend-notice-banner" id="ptTrendNoticeBanner">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    <span>Chỉ có 1 lần thi trong khoảng này — chưa đủ để thấy xu hướng.</span>
+                </div>
+            `;
+        }
+
+        box.innerHTML = `
+            <div class="pt-score-chart-canvas-area" id="ptScoreChartCanvasArea">
+                <svg viewBox="0 0 760 200" preserveAspectRatio="none" style="width: 100%; height: 100%;">
+                    <line x1="40" y1="20" x2="740" y2="20" stroke="#CBD5E1" stroke-width="1.2" stroke-dasharray="0" />
+                    <text x="30" y="24" fill="#94A3B8" font-size="11" font-weight="600" text-anchor="end">990</text>
+
+                    <line x1="40" y1="95" x2="740" y2="95" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="3 3" />
+                    <text x="30" y="99" fill="#94A3B8" font-size="11" font-weight="600" text-anchor="end">495</text>
+
+                    <line x1="40" y1="170" x2="740" y2="170" stroke="#CBD5E1" stroke-width="1.2" stroke-dasharray="0" />
+                    <text x="30" y="174" fill="#94A3B8" font-size="11" font-weight="600" text-anchor="end">0</text>
+
+                    ${linesHtml}
+                    ${pointsHtml}
+                </svg>
+            </div>
+            <div class="pt-chart-legends">
+                <span class="pt-legend-item">
+                    <span class="pt-legend-dot pt-legend-dot--listening"></span>
+                    Nghe
+                </span>
+                <span class="pt-legend-item">
+                    <span class="pt-legend-dot pt-legend-dot--reading"></span>
+                    Đọc
+                </span>
+                <span class="pt-legend-item">
+                    <span class="pt-legend-dot pt-legend-dot--fulltest"></span>
+                    Full Test
+                </span>
+            </div>
+            ${bannerHtml}
+        `;
     }
 
     /**

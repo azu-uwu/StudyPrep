@@ -915,7 +915,7 @@ class HistoryService
      *
      * @return array<string, mixed>
      */
-    private function formatAttemptCard(TestAttempt $attempt, int $userId): array
+    public function formatAttemptCard(TestAttempt $attempt, int $userId): array
     {
         $isExam = in_array($attempt->session_type, [
             TestAttempt::SESSION_TYPE_PRACTICE_PART,
